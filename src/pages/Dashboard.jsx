@@ -1,7 +1,19 @@
 import Layout from "../components/Layout";
+import { useEffect } from "react";
+import { probarBackend } from "../services/api";
 
 function Dashboard() {
+useEffect(() => {
 
+    probarBackend()
+        .then((respuesta) => {
+            console.log("RESPUESTA DEL BACKEND:", respuesta);
+        })
+        .catch((error) => {
+            console.error("ERROR:", error);
+        });
+
+}, []);
   return (
 
     <Layout title="Dashboard Principal">

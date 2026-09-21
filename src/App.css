@@ -666,3 +666,294 @@ body {
   text-decoration:
     underline;
 }
+/* =========================================================
+   DOCUMENTOS
+   ========================================================= */
+
+.section-title {
+  color: #006b35;
+  font-size: 22px;
+  margin-bottom: 18px;
+  border-left: 6px solid #ffc400;
+  padding-left: 12px;
+}
+
+/* Información del solicitante */
+.info-box {
+  background: #eef7ef;
+  border-left: 6px solid #00a84f;
+  padding: 18px;
+  border-radius: 14px;
+  margin-bottom: 25px;
+  color: #006b35;
+  font-weight: bold;
+}
+
+/* Contenedor de las 3 tarjetas */
+.upload-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 22px;
+  margin-bottom: 25px;
+  width: 100%;
+}
+
+/* Tarjeta individual */
+.upload-card {
+  border: 2px dashed #00a84f;
+  background: #fafaf0;
+  border-radius: 18px;
+  padding: 25px;
+
+  text-align: center;
+
+  min-height: 210px;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+
+  transition: 0.2s;
+}
+
+.upload-card:hover {
+  background: #eef7ef;
+  transform: translateY(-3px);
+  box-shadow: 0 5px 15px rgba(0, 75, 36, 0.12);
+}
+
+/* Icono */
+.upload-icon {
+  font-size: 45px;
+  margin-bottom: 15px;
+}
+
+/* Título */
+.upload-card h3 {
+  color: #006b35;
+  margin-bottom: 10px;
+  font-size: 18px;
+}
+
+/* Descripción */
+.upload-card p {
+  color: #666;
+  font-size: 14px;
+  margin-bottom: 15px;
+  line-height: 1.4;
+}
+
+/* IMPORTANTE:
+   Esto oculta el input nativo que te está apareciendo
+   en la captura.
+*/
+.upload-card input[type="file"] {
+  display: none;
+}
+
+/* Botón de selección */
+.upload-btn {
+  display: inline-block;
+
+  background: #00a84f;
+  color: white;
+
+  padding: 12px 18px;
+
+  border-radius: 12px;
+
+  font-weight: bold;
+  font-size: 14px;
+
+  cursor: pointer;
+
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+
+  transition: 0.2s;
+}
+
+.upload-btn:hover {
+  background: #008f43;
+  transform: translateY(-1px);
+}
+
+
+/* =========================================================
+   TABLA DOCUMENTOS
+   ========================================================= */
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th,
+.table td {
+  padding: 15px;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
+  font-size: 15px;
+}
+
+.table th {
+  background: #f3f8ef;
+  color: #006b35;
+  font-weight: bold;
+}
+
+.table tbody tr:hover {
+  background: #fafaf0;
+}
+
+
+/* =========================================================
+   ESTADOS
+   ========================================================= */
+
+.status {
+  display: inline-block;
+
+  padding: 6px 12px;
+
+  border-radius: 20px;
+
+  font-weight: bold;
+
+  font-size: 13px;
+}
+
+.status.uploaded {
+  background: #dff7e8;
+  color: #00783f;
+}
+
+.status.pending {
+  background: #fff0d6;
+  color: #d47b00;
+}
+
+
+/* =========================================================
+   BOTONES TABLA
+   ========================================================= */
+
+.btn-small {
+  border: none;
+
+  padding: 8px 14px;
+
+  border-radius: 10px;
+
+  font-weight: bold;
+
+  cursor: pointer;
+
+  margin-right: 5px;
+
+  transition: 0.2s;
+}
+
+.btn-small:hover {
+  transform: translateY(-1px);
+}
+
+.btn-view {
+  background: #eef7ef;
+  color: #006b35;
+}
+
+.btn-delete {
+  background: #ffe1df;
+  color: #d93025;
+}
+
+
+/* =========================================================
+   BOTONES INFERIORES
+   ========================================================= */
+
+.actions {
+  display: flex;
+
+  justify-content: flex-end;
+
+  align-items: center;
+
+  gap: 15px;
+
+  margin-top: 25px;
+}
+
+.btn {
+  border: none;
+
+  padding: 14px 24px;
+
+  border-radius: 12px;
+
+  font-size: 16px;
+
+  font-weight: bold;
+
+  cursor: pointer;
+
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+
+  transition: 0.2s;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+}
+
+.btn-save {
+  background: #00a84f;
+  color: white;
+}
+
+.btn-save:hover {
+  background: #008f43;
+}
+
+.btn-cancel {
+  background: #e5e5e5;
+  color: #333;
+}
+
+.btn-cancel:hover {
+  background: #d7d7d7;
+}
+
+
+/* =========================================================
+   RESPONSIVE DOCUMENTOS
+   ========================================================= */
+
+@media (max-width: 1000px) {
+  .upload-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 700px) {
+  .upload-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .panel {
+    overflow-x: auto;
+  }
+
+  .table {
+    min-width: 750px;
+  }
+
+  .actions {
+    flex-direction: column;
+  }
+
+  .actions .btn {
+    width: 100%;
+  }
+}
