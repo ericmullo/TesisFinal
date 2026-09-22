@@ -78,3 +78,77 @@ export async function eliminarCliente(id) {
 
   return true;
 }
+
+// ================================
+// SOLICITUDES
+// ================================
+
+export async function obtenerSolicitudes() {
+  const response = await fetch(`${API_URL}/solicitudes`);
+
+  if (!response.ok) {
+    throw new Error("Error al obtener las solicitudes");
+  }
+
+  return await response.json();
+}
+
+export async function obtenerSolicitudPorId(id) {
+  const response = await fetch(`${API_URL}/solicitudes/${id}`);
+
+  if (!response.ok) {
+    throw new Error("Error al obtener la solicitud");
+  }
+
+  return await response.json();
+}
+
+export async function crearSolicitud(clienteId, solicitud) {
+  const response = await fetch(
+    `${API_URL}/solicitudes?clienteId=${clienteId}`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(solicitud),
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error("Error al crear la solicitud");
+  }
+
+  return await response.json();
+}
+
+export async function actualizarSolicitud(id, clienteId, solicitud) {
+  const response = await fetch(
+    `${API_URL}/solicitudes/${id}?clienteId=${clienteId}`,
+    {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(solicitud),
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error("Error al actualizar la solicitud");
+  }
+
+  return await response.json();
+}
+
+export async function eliminarSolicitud(id) {
+  const response = await fetch(`${API_URL}/solicitudes/${id}`, {
+    method: "DELETE",
+  });
+
+  if (!response.ok) {
+    throw new Error("Error al eliminar la solicitud");
+  }
+
+  return true;
+}

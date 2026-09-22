@@ -4,7 +4,6 @@ import com.cooperativa.cooperativaBackend.model.Cliente;
 import com.cooperativa.cooperativaBackend.model.Solicitud;
 import com.cooperativa.cooperativaBackend.repository.ClienteRepository;
 import com.cooperativa.cooperativaBackend.repository.SolicitudRepository;
-
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -23,19 +22,16 @@ public class SolicitudService {
         this.clienteRepository = clienteRepository;
     }
 
-    // OBTENER TODAS
     public List<Solicitud> obtenerSolicitudes() {
         return solicitudRepository.findAll();
     }
 
-    // OBTENER POR ID
     public Solicitud obtenerSolicitudPorId(Long id) {
         return solicitudRepository.findById(id)
                 .orElseThrow(() ->
                         new RuntimeException("Solicitud no encontrada"));
     }
 
-    // CREAR
     public Solicitud crearSolicitud(Long clienteId, Solicitud solicitud) {
 
         Cliente cliente = clienteRepository.findById(clienteId)
@@ -48,7 +44,6 @@ public class SolicitudService {
         return solicitudRepository.save(solicitud);
     }
 
-    // ACTUALIZAR
     public Solicitud actualizarSolicitud(
             Long id,
             Long clienteId,
@@ -62,22 +57,52 @@ public class SolicitudService {
                 .orElseThrow(() ->
                         new RuntimeException("Cliente no encontrado"));
 
-        solicitud.setMonto(datosActualizados.getMonto());
-        solicitud.setPlazoMeses(datosActualizados.getPlazoMeses());
-        solicitud.setTipoCredito(datosActualizados.getTipoCredito());
+        // Datos personales complementarios
+        solicitud.setEstadoCivil(datosActualizados.getEstadoCivil());
+        solicitud.setOcupacion(datosActualizados.getOcupacion());
+        solicitud.setDireccion(datosActualizados.getDireccion());
+
+        // Información financiera
         solicitud.setIngresosMensuales(
-                datosActualizados.getIngresosMensuales()
-        );
+                datosActualizados.getIngresosMensuales());
+
+        solicitud.setEgresosMensuales(
+                datosActualizados.getEgresosMensuales());
+
+        solicitud.setNivelEndeudamiento(
+                datosActualizados.getNivelEndeudamiento());
+
+        solicitud.setEmpresa(
+                datosActualizados.getEmpresa());
+
+        solicitud.setAntiguedadLaboral(
+                datosActualizados.getAntiguedadLaboral());
+
+        solicitud.setCapacidadPago(
+                datosActualizados.getCapacidadPago());
+
+        // Información del crédito
+        solicitud.setTipoCredito(
+                datosActualizados.getTipoCredito());
+
+        solicitud.setMonto(
+                datosActualizados.getMonto());
+
+        solicitud.setPlazoMeses(
+                datosActualizados.getPlazoMeses());
+
+        solicitud.setEstado(
+                datosActualizados.getEstado());
+
         solicitud.setDestinoCredito(
-                datosActualizados.getDestinoCredito()
-        );
-        solicitud.setEstado(datosActualizados.getEstado());
+                datosActualizados.getDestinoCredito());
+
+        // Cliente asociado
         solicitud.setCliente(cliente);
 
         return solicitudRepository.save(solicitud);
     }
 
-    // ELIMINAR
     public void eliminarSolicitud(Long id) {
 
         Solicitud solicitud = solicitudRepository.findById(id)

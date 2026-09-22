@@ -2134,3 +2134,808 @@ textarea {
 .btn-delete:hover {
   background: #b52a37;
 }
+/* =========================================================
+   SOLICITUDES DE CRÉDITO
+   ========================================================= */
+
+/* Tarjetas superiores */
+.summary-cards.three {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+  margin-bottom: 25px;
+}
+
+.summary-card {
+  background: white;
+  border-radius: 18px;
+  padding: 22px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12);
+  border-left: 7px solid #00a84f;
+}
+
+.summary-card.yellow {
+  border-left-color: #ffc400;
+}
+
+.summary-card.orange {
+  border-left-color: #ff9800;
+}
+
+.summary-card h3 {
+  color: #555;
+  font-size: 15px;
+  margin-bottom: 8px;
+}
+
+.summary-card strong {
+  font-size: 28px;
+  color: #006b35;
+}
+
+/* Formulario de solicitudes */
+form .form-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  margin-top: 0;
+}
+
+form .form-group {
+  width: 100%;
+  min-width: 0;
+}
+
+form .form-group.full {
+  grid-column: 1 / -1;
+}
+
+form .form-group label {
+  display: block;
+  color: #006b35;
+  font-weight: bold;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+form .form-group input,
+form .form-group select,
+form .form-group textarea {
+  width: 100%;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  padding: 12px;
+  font-size: 15px;
+  outline: none;
+  background: white;
+}
+
+form .form-group input,
+form .form-group select {
+  height: 46px;
+}
+
+form .form-group textarea {
+  height: 95px;
+  resize: none;
+}
+
+form .form-group input:focus,
+form .form-group select:focus,
+form .form-group textarea:focus {
+  border-color: #00a84f;
+  box-shadow: 0 0 0 3px rgba(0, 168, 79, 0.1);
+}
+
+/* Botón limpiar */
+.btn-clean {
+  background: #ffc400;
+  color: #004b24;
+}
+
+.btn-clean:hover {
+  background: #e5b000;
+}
+
+/* Responsive */
+@media (max-width: 1000px) {
+  form .form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  form .form-group.full {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 700px) {
+  .summary-cards.three,
+  form .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  form .form-group.full {
+    grid-column: auto;
+  }
+}
+/* =========================================================
+   LISTADO DE SOLICITUDES
+   ========================================================= */
+
+.solicitudes-listado {
+  margin-top: 25px;
+  margin-bottom: 30px;
+}
+
+.solicitudes-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 22px;
+}
+
+.solicitudes-header .section-title {
+  margin-bottom: 5px;
+}
+
+.solicitudes-subtitle {
+  color: #777;
+  font-size: 14px;
+  margin: 0;
+}
+
+.solicitudes-total {
+  background: #e8f5ee;
+  color: #006b35;
+  padding: 10px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.solicitudes-total strong {
+  font-size: 16px;
+}
+
+
+/* CONTENEDOR TABLA */
+
+.table-container {
+  width: 100%;
+  overflow-x: auto;
+}
+
+
+/* TABLA */
+
+.solicitudes-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 1050px;
+}
+
+.solicitudes-table thead {
+  background: #006b35;
+  color: white;
+}
+
+.solicitudes-table th {
+  padding: 14px 12px;
+  text-align: left;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.solicitudes-table th:first-child {
+  border-radius: 10px 0 0 10px;
+}
+
+.solicitudes-table th:last-child {
+  border-radius: 0 10px 10px 0;
+}
+
+.solicitudes-table td {
+  padding: 15px 12px;
+  border-bottom: 1px solid #eeeeee;
+  font-size: 14px;
+  color: #444;
+  vertical-align: middle;
+}
+
+.solicitudes-table tbody tr {
+  transition: background 0.2s ease;
+}
+
+.solicitudes-table tbody tr:hover {
+  background: #f7fbf9;
+}
+
+
+/* MONTO */
+
+.monto-cell {
+  font-weight: 700;
+  color: #006b35 !important;
+}
+
+
+/* ESTADOS */
+
+.estado-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 7px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.estado-badge.pendiente {
+  background: #fff4cc;
+  color: #8a6500;
+}
+
+.estado-badge.evaluacion {
+  background: #fff0d9;
+  color: #c66a00;
+}
+
+.estado-badge.aprobado {
+  background: #dff5e8;
+  color: #08783e;
+}
+
+.estado-badge.rechazado {
+  background: #fde3e3;
+  color: #b42318;
+}
+
+
+/* BOTONES DE ACCIONES */
+
+.table-actions {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.action-btn {
+  width: 35px;
+  height: 35px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  transition:
+    transform 0.15s ease,
+    opacity 0.15s ease;
+}
+
+.action-btn:hover {
+  transform: translateY(-2px);
+  opacity: 0.85;
+}
+
+.action-btn.view {
+  background: #e5f2ff;
+}
+
+.action-btn.edit {
+  background: #fff4cc;
+}
+
+.action-btn.delete {
+  background: #fde3e3;
+}
+
+
+/* SIN SOLICITUDES */
+
+.empty-state {
+  padding: 45px 20px;
+  text-align: center;
+  border: 2px dashed #d7e6de;
+  border-radius: 14px;
+  background: #fafdfb;
+}
+
+.empty-state span {
+  display: block;
+  font-size: 38px;
+  margin-bottom: 10px;
+}
+
+.empty-state h3 {
+  color: #006b35;
+  margin-bottom: 7px;
+}
+
+.empty-state p {
+  color: #777;
+  font-size: 14px;
+  margin: 0;
+}
+
+
+/* RESPONSIVE */
+
+@media (max-width: 700px) {
+
+  .solicitudes-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+}
+
+/* =========================================================
+   MODAL VER SOLICITUD
+   MISMO ESTILO DEL MODAL DE CLIENTES
+   ========================================================= */
+
+.solicitud-modal-overlay {
+  position: fixed;
+  inset: 0;
+
+  background: rgba(0, 0, 0, 0.42);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 20px;
+
+  z-index: 99999;
+}
+
+
+/* =========================================================
+   CONTENEDOR PRINCIPAL
+   ========================================================= */
+
+.solicitud-modal {
+  width: 100%;
+  max-width: 850px;
+  max-height: 90vh;
+
+  background: #ffffff;
+
+  border-radius: 22px;
+
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.25);
+
+  overflow: hidden;
+
+  display: flex;
+  flex-direction: column;
+
+  animation: solicitudModalEntrada 0.2s ease;
+}
+
+
+@keyframes solicitudModalEntrada {
+
+  from {
+    opacity: 0;
+    transform: translateY(15px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+}
+
+
+/* =========================================================
+   HEADER
+   ========================================================= */
+
+.solicitud-modal-header {
+  background: #ffffff;
+
+  padding: 28px 38px 24px;
+
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+
+  border-bottom: 1px solid #eeeeee;
+}
+
+
+.solicitud-modal-header h2 {
+  margin: 0;
+
+  color: #005b2d;
+
+  font-size: 28px;
+  font-weight: 750;
+}
+
+
+.solicitud-modal-header p {
+  margin: 5px 0 0;
+
+  color: #777777;
+
+  font-size: 15px;
+}
+
+
+/* =========================================================
+   BOTÓN X
+   ========================================================= */
+
+.solicitud-modal-close {
+  width: 48px;
+  height: 48px;
+
+  flex-shrink: 0;
+
+  border: none;
+  border-radius: 50%;
+
+  background: #f3f3f3;
+
+  color: #222222;
+
+  font-size: 30px;
+  font-weight: 300;
+
+  line-height: 1;
+
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease;
+}
+
+
+.solicitud-modal-close:hover {
+  background: #e7e7e7;
+
+  transform: scale(1.05);
+}
+
+
+/* =========================================================
+   BODY
+   ========================================================= */
+
+.solicitud-modal-body {
+  padding: 28px 38px;
+
+  overflow-y: auto;
+
+  background: #ffffff;
+}
+
+
+/* =========================================================
+   SECCIONES
+   ========================================================= */
+
+.solicitud-detail-section {
+  margin-bottom: 32px;
+}
+
+
+.solicitud-detail-section:last-child {
+  margin-bottom: 0;
+}
+
+
+.solicitud-detail-section h3 {
+  margin: 0 0 18px;
+
+  padding: 0;
+
+  border: none;
+
+  color: #005b2d;
+
+  font-size: 20px;
+  font-weight: 750;
+}
+
+
+/* =========================================================
+   GRID DE INFORMACIÓN
+   ========================================================= */
+
+.solicitud-detail-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+
+  gap: 18px 22px;
+}
+
+
+/* =========================================================
+   TARJETAS DE DATOS
+   ========================================================= */
+
+.solicitud-detail-grid > div {
+  min-height: 78px;
+
+  padding: 17px 20px;
+
+  background: #f6f8f7;
+
+  border: none;
+
+  border-radius: 13px;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+
+/* CAMPOS GRANDES */
+
+.solicitud-detail-grid > .detail-full {
+  grid-column: 1 / -1;
+}
+
+
+/* =========================================================
+   ETIQUETA
+   ========================================================= */
+
+.solicitud-detail-grid span {
+  display: block;
+
+  margin: 0 0 6px;
+
+  color: #858585;
+
+  font-size: 14px;
+  font-weight: 400;
+}
+
+
+/* =========================================================
+   VALOR
+   ========================================================= */
+
+.solicitud-detail-grid strong {
+  display: block;
+
+  color: #292929;
+
+  font-size: 16px;
+  font-weight: 700;
+
+  line-height: 1.35;
+
+  word-break: break-word;
+}
+
+
+/* =========================================================
+   MONTO DESTACADO
+   ========================================================= */
+
+.solicitud-detail-grid strong.detail-money {
+  color: #00783d;
+
+  font-size: 18px;
+}
+
+
+/* =========================================================
+   FOOTER
+   ========================================================= */
+
+.solicitud-modal-footer {
+  padding: 20px 38px 24px;
+
+  background: #ffffff;
+
+  border-top: 1px solid #eeeeee;
+
+  display: flex;
+  justify-content: flex-end;
+}
+
+
+/* =========================================================
+   BOTÓN CERRAR
+   ========================================================= */
+
+.solicitud-modal-footer .btn-cancel {
+  min-width: 120px;
+
+  padding: 13px 25px;
+
+  border: none;
+  border-radius: 12px;
+
+  background: #00b75a;
+
+  color: #ffffff;
+
+  font-size: 15px;
+  font-weight: 700;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+
+.solicitud-modal-footer .btn-cancel:hover {
+  background: #009f4e;
+
+  transform: translateY(-1px);
+
+  box-shadow:
+    0 5px 14px rgba(0, 159, 78, 0.22);
+}
+
+
+/* =========================================================
+   SCROLL DEL MODAL
+   ========================================================= */
+
+.solicitud-modal-body::-webkit-scrollbar {
+  width: 7px;
+}
+
+
+.solicitud-modal-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+
+.solicitud-modal-body::-webkit-scrollbar-thumb {
+  background: #cccccc;
+
+  border-radius: 20px;
+}
+
+
+.solicitud-modal-body::-webkit-scrollbar-thumb:hover {
+  background: #aaaaaa;
+}
+
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 700px) {
+
+  .solicitud-modal-overlay {
+    padding: 10px;
+  }
+
+
+  .solicitud-modal {
+    max-height: 95vh;
+
+    border-radius: 17px;
+  }
+
+
+  .solicitud-modal-header {
+    padding: 22px;
+  }
+
+
+  .solicitud-modal-header h2 {
+    font-size: 23px;
+  }
+
+
+  .solicitud-modal-body {
+    padding: 22px;
+  }
+
+
+  .solicitud-modal-footer {
+    padding: 18px 22px;
+  }
+
+
+  .solicitud-detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+
+  .solicitud-detail-grid > .detail-full {
+    grid-column: auto;
+  }
+
+
+  .solicitud-modal-footer .btn-cancel {
+    width: 100%;
+  }
+
+}
+/* =========================================================
+   MODO EDICIÓN - SOLICITUDES
+   ========================================================= */
+
+.editing-alert {
+  margin-bottom: 22px;
+  padding: 17px 20px;
+
+  background: #fff8dc;
+
+  border-left: 6px solid #ffc400;
+  border-radius: 12px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 20px;
+}
+
+.editing-alert div {
+  display: flex;
+  flex-direction: column;
+
+  gap: 4px;
+}
+
+.editing-alert strong {
+  color: #5d4800;
+
+  font-size: 15px;
+}
+
+.editing-alert span {
+  color: #776a3c;
+
+  font-size: 13px;
+}
+
+.editing-alert button {
+  border: none;
+
+  background: transparent;
+
+  color: #006b35;
+
+  font-weight: 700;
+
+  cursor: pointer;
+
+  white-space: nowrap;
+}
+
+.editing-alert button:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 700px) {
+
+  .editing-alert {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+}
