@@ -1,16 +1,53 @@
-# React + Vite
+# Frontend React - Cooperativa 15 de Abril
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+## 1. Crear proyecto con Vite
+```bash
+npm create vite@latest cooperativa-frontend -- --template react
+cd cooperativa-frontend
+npm install
+npm install react-router-dom
+```
 
-Currently, two official plugins are available:
+## 2. Copiar archivos
+Copia la carpeta `src` de este paquete dentro de tu proyecto React.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 3. Logo
+Coloca `coop.png` dentro de:
 
-## React Compiler
+```text
+public/coop.png
+```
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 4. Ejecutar
+```bash
+npm run dev
+```
 
-## Expanding the Oxlint configuration
+## Rutas
+- `/` Login
+- `/dashboard`
+- `/clientes`
+- `/solicitudes`
+- `/documentos`
+- `/evaluacion-riesgo`
+- `/reportes`
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+## Conexión posterior con Spring Boot
+Ejemplo:
+
+```js
+const response = await fetch("http://localhost:8080/api/clientes");
+const data = await response.json();
+```
+
+Para POST:
+
+```js
+await fetch("http://localhost:8080/api/solicitudes", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify(form)
+});
+```
+
+En Spring Boot tendrás que permitir CORS para el puerto de React durante desarrollo, normalmente `http://localhost:5173`.
