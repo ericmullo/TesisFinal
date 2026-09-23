@@ -29,6 +29,48 @@ export default function Documentos() {
 
 
   // =========================================================
+  // DOCUMENTOS OBLIGATORIOS
+  // =========================================================
+
+  const documentosObligatorios = [
+    "Identificación",
+    "Ingresos",
+    "General"
+  ];
+
+
+  // =========================================================
+  // CALCULAR DOCUMENTACIÓN COMPLETA
+  // =========================================================
+
+  const tiposCargados = documentos.map(
+    (documento) => documento.tipoDocumento
+  );
+
+
+  const documentosFaltantes =
+    documentosObligatorios.filter(
+      (tipo) => !tiposCargados.includes(tipo)
+    );
+
+
+  const documentosCompletados =
+    documentosObligatorios.length -
+    documentosFaltantes.length;
+
+
+  const documentacionCompleta =
+    documentosFaltantes.length === 0;
+
+
+  const porcentajeDocumentacion =
+    (
+      documentosCompletados /
+      documentosObligatorios.length
+    ) * 100;
+
+
+  // =========================================================
   // CARGAR SOLICITUDES
   // =========================================================
 
@@ -109,7 +151,7 @@ export default function Documentos() {
 
 
   // =========================================================
-  // CARGAR DOCUMENTOS DE LA SOLICITUD
+  // CARGAR DOCUMENTOS
   // =========================================================
 
   const cargarDocumentos = async (
@@ -202,8 +244,7 @@ export default function Documentos() {
 
 
     // =======================================================
-    // VALIDAR TAMAÑO
-    // 10 MB
+    // VALIDAR TAMAÑO - 10 MB
     // =======================================================
 
     const maximo =
@@ -397,7 +438,7 @@ export default function Documentos() {
 
 
   // =========================================================
-  // NOMBRE CLIENTE
+  // NOMBRE DEL CLIENTE
   // =========================================================
 
   const obtenerNombreCliente = () => {
@@ -518,36 +559,128 @@ export default function Documentos() {
         </h2>
 
 
-        {/* INFORMACIÓN SOLICITUD */}
+        {/* ===================================================
+            INFORMACIÓN DE LA SOLICITUD
+        =================================================== */}
 
         {solicitudSeleccionada ? (
 
-          <div className="info-box">
+          <>
 
-            Solicitud:{" "}
+            <div className="info-box">
 
-            <strong>
-              #{solicitudSeleccionada.id}
-            </strong>
+              Solicitud:{" "}
 
-            {" | "}
+              <strong>
+                #{solicitudSeleccionada.id}
+              </strong>
 
-            Cliente:{" "}
+              {" | "}
 
-            <strong>
-              {obtenerNombreCliente()}
-            </strong>
+              Cliente:{" "}
 
-            {" | "}
+              <strong>
+                {obtenerNombreCliente()}
+              </strong>
 
-            Estado:{" "}
+              {" | "}
 
-            <strong>
-              {solicitudSeleccionada.estado ||
-                "Pendiente"}
-            </strong>
+              Documentación:{" "}
 
-          </div>
+              <strong
+                className={
+                  documentacionCompleta
+                    ? "docs-completos"
+                    : "docs-pendientes"
+                }
+              >
+
+                {documentacionCompleta
+                  ? "Completa"
+                  : "Pendiente"}
+
+              </strong>
+
+            </div>
+
+
+            {/* ===============================================
+                PROGRESO DE DOCUMENTACIÓN
+            =============================================== */}
+
+            <div className="document-progress">
+
+
+              <div className="document-progress-header">
+
+                <span>
+                  Documentación requerida
+                </span>
+
+                <strong>
+
+                  {documentosCompletados}
+                  /
+                  {documentosObligatorios.length}
+
+                </strong>
+
+              </div>
+
+
+              <div className="document-progress-bar">
+
+                <div
+                  className="document-progress-value"
+                  style={{
+                    width:
+                      `${porcentajeDocumentacion}%`
+                  }}
+                />
+
+              </div>
+
+
+              {documentacionCompleta ? (
+
+                <div className="document-complete-message">
+
+                  ✅ Documentación completa. La solicitud está lista
+                  para continuar con la evaluación de riesgo.
+
+                </div>
+
+              ) : (
+
+                <div className="document-missing">
+
+
+                  <strong>
+                    Documentos pendientes:
+                  </strong>
+
+
+                  {documentosFaltantes.map(
+                    (tipo) => (
+
+                      <span key={tipo}>
+
+                        • {tipo}
+
+                      </span>
+
+                    )
+                  )}
+
+
+                </div>
+
+              )}
+
+
+            </div>
+
+          </>
 
         ) : (
 
@@ -567,6 +700,8 @@ export default function Documentos() {
         <div className="upload-grid">
 
 
+          {/* DOCUMENTO GENERAL */}
+
           <UploadCard
 
             icon="📄"
@@ -577,7 +712,17 @@ export default function Documentos() {
 
             accept=".pdf,.jpg,.jpeg,.png"
 
-            label="Seleccionar archivo"
+            label={
+              tiposCargados.includes("General")
+                ? "Agregar otro archivo"
+                : "Seleccionar archivo"
+            }
+
+            completed={
+              tiposCargados.includes(
+                "General"
+              )
+            }
 
             disabled={
               !solicitudSeleccionada ||
@@ -594,6 +739,8 @@ export default function Documentos() {
           />
 
 
+          {/* IDENTIFICACIÓN */}
+
           <UploadCard
 
             icon="🪪"
@@ -604,7 +751,19 @@ export default function Documentos() {
 
             accept=".pdf,.jpg,.jpeg,.png"
 
-            label="Seleccionar cédula"
+            label={
+              tiposCargados.includes(
+                "Identificación"
+              )
+                ? "Agregar otro archivo"
+                : "Seleccionar cédula"
+            }
+
+            completed={
+              tiposCargados.includes(
+                "Identificación"
+              )
+            }
 
             disabled={
               !solicitudSeleccionada ||
@@ -621,6 +780,8 @@ export default function Documentos() {
           />
 
 
+          {/* INGRESOS */}
+
           <UploadCard
 
             icon="💼"
@@ -631,7 +792,19 @@ export default function Documentos() {
 
             accept=".pdf,.jpg,.jpeg,.png"
 
-            label="Seleccionar archivo"
+            label={
+              tiposCargados.includes(
+                "Ingresos"
+              )
+                ? "Agregar otro archivo"
+                : "Seleccionar archivo"
+            }
+
+            completed={
+              tiposCargados.includes(
+                "Ingresos"
+              )
+            }
 
             disabled={
               !solicitudSeleccionada ||
@@ -650,6 +823,10 @@ export default function Documentos() {
 
         </div>
 
+
+        {/* ===================================================
+            MENSAJE SUBIENDO
+        =================================================== */}
 
         {subiendo && (
 
@@ -676,6 +853,7 @@ export default function Documentos() {
 
 
           <div>
+
 
             <h2 className="section-title">
               Lista de documentos cargados
@@ -712,11 +890,11 @@ export default function Documentos() {
         </div>
 
 
-        {!solicitudSeleccionada ? (
+        {/* ===================================================
+            NO HAY SOLICITUD SELECCIONADA
+        =================================================== */}
 
-          // ===================================================
-          // SIN SOLICITUD
-          // ===================================================
+        {!solicitudSeleccionada ? (
 
           <div className="document-empty">
 
@@ -734,11 +912,13 @@ export default function Documentos() {
 
           </div>
 
+
         ) : cargando ? (
 
-          // ===================================================
-          // CARGANDO
-          // ===================================================
+
+          /* =================================================
+             CARGANDO
+          ================================================= */
 
           <div className="document-empty">
 
@@ -752,11 +932,13 @@ export default function Documentos() {
 
           </div>
 
+
         ) : documentos.length === 0 ? (
 
-          // ===================================================
-          // SIN DOCUMENTOS
-          // ===================================================
+
+          /* =================================================
+             SIN DOCUMENTOS
+          ================================================= */
 
           <div className="document-empty">
 
@@ -774,11 +956,13 @@ export default function Documentos() {
 
           </div>
 
+
         ) : (
 
-          // ===================================================
-          // TABLA
-          // ===================================================
+
+          /* =================================================
+             TABLA DE DOCUMENTOS
+          ================================================= */
 
           <div className="table-container">
 
@@ -787,6 +971,7 @@ export default function Documentos() {
 
 
               <thead>
+
 
                 <tr>
 
@@ -816,6 +1001,7 @@ export default function Documentos() {
 
                 </tr>
 
+
               </thead>
 
 
@@ -832,6 +1018,8 @@ export default function Documentos() {
                     >
 
 
+                      {/* DOCUMENTO */}
+
                       <td>
 
                         <strong>
@@ -843,12 +1031,16 @@ export default function Documentos() {
                       </td>
 
 
+                      {/* TIPO */}
+
                       <td>
 
                         {documento.tipoDocumento}
 
                       </td>
 
+
+                      {/* FORMATO */}
 
                       <td>
 
@@ -859,6 +1051,8 @@ export default function Documentos() {
                       </td>
 
 
+                      {/* FECHA */}
+
                       <td>
 
                         {formatearFecha(
@@ -867,6 +1061,8 @@ export default function Documentos() {
 
                       </td>
 
+
+                      {/* ESTADO */}
 
                       <td>
 
@@ -879,6 +1075,8 @@ export default function Documentos() {
 
                       </td>
 
+
+                      {/* ACCIONES */}
 
                       <td>
 
@@ -975,7 +1173,9 @@ function UploadCard({
 
   onFile,
 
-  disabled
+  disabled,
+
+  completed
 
 }) {
 
@@ -996,8 +1196,8 @@ function UploadCard({
 
 
     /*
-     * Permitimos seleccionar nuevamente
-     * el mismo archivo si fuese necesario.
+     * Permite seleccionar nuevamente
+     * el mismo archivo.
      */
 
     e.target.value = "";
@@ -1012,8 +1212,27 @@ function UploadCard({
         disabled
           ? "upload-card-disabled"
           : ""
+      } ${
+        completed
+          ? "upload-card-completed"
+          : ""
       }`}
     >
+
+
+      {/* =====================================================
+          INDICADOR COMPLETADO
+      ===================================================== */}
+
+      {completed && (
+
+        <div className="upload-completed-badge">
+
+          ✓ Cargado
+
+        </div>
+
+      )}
 
 
       <div className="upload-icon">

@@ -234,3 +234,159 @@ export async function eliminarDocumento(id) {
 export function obtenerUrlArchivoDocumento(id) {
   return `${API_URL}/documentos/${id}/archivo`;
 }
+
+// =========================================================
+// EVALUACIONES DE RIESGO
+// =========================================================
+
+
+// OBTENER TODAS LAS EVALUACIONES
+
+export async function obtenerEvaluaciones() {
+
+  const response =
+    await fetch(
+      `${API_URL}/evaluaciones`
+    );
+
+  if (!response.ok) {
+
+    throw new Error(
+      "Error al obtener las evaluaciones"
+    );
+
+  }
+
+  return await response.json();
+
+}
+
+
+// OBTENER EVALUACIONES DE UNA SOLICITUD
+
+export async function obtenerEvaluacionesPorSolicitud(
+  solicitudId
+) {
+
+  const response =
+    await fetch(
+      `${API_URL}/evaluaciones/solicitud/${solicitudId}`
+    );
+
+  if (!response.ok) {
+
+    throw new Error(
+      "Error al obtener la evaluación"
+    );
+
+  }
+
+  return await response.json();
+
+}
+
+
+// VERIFICAR DOCUMENTACIÓN
+
+export async function verificarDocumentacion(
+  solicitudId
+) {
+
+  const response =
+    await fetch(
+      `${API_URL}/evaluaciones/documentacion/${solicitudId}`
+    );
+
+  if (!response.ok) {
+
+    throw new Error(
+      "Error al verificar la documentación"
+    );
+
+  }
+
+  return await response.json();
+
+}
+
+
+// CREAR EVALUACIÓN
+
+export async function crearEvaluacion(
+  solicitudId
+) {
+
+  const response =
+    await fetch(
+      `${API_URL}/evaluaciones?solicitudId=${solicitudId}`,
+      {
+        method: "POST"
+      }
+    );
+
+  if (!response.ok) {
+
+    throw new Error(
+      "No se pudo crear la evaluación"
+    );
+
+  }
+
+  return await response.json();
+
+}
+
+
+// ACTUALIZAR EVALUACIÓN
+
+export async function actualizarEvaluacion(
+  id,
+  datos
+) {
+
+  const response =
+    await fetch(
+      `${API_URL}/evaluaciones/${id}`,
+      {
+        method: "PUT",
+
+        headers: {
+          "Content-Type":
+            "application/json"
+        },
+
+        body: JSON.stringify(
+          datos
+        )
+      }
+    );
+
+  if (!response.ok) {
+
+    throw new Error(
+      "No se pudo actualizar la evaluación"
+    );
+
+  }
+
+  return await response.json();
+
+}
+// =========================================================
+// OBTENER HISTORIAL DE EVALUACIONES DE UN CLIENTE
+// =========================================================
+
+export async function obtenerEvaluacionesPorCliente(clienteId) {
+
+  const response = await fetch(
+    `${API_URL}/evaluaciones/cliente/${clienteId}`
+  );
+
+  if (!response.ok) {
+    throw new Error(
+      "Error al obtener el historial de evaluaciones del cliente"
+    );
+  }
+
+  return await response.json();
+}

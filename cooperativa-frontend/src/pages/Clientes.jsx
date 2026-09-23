@@ -1,27 +1,55 @@
 import Layout from "../components/Layout";
 import { useEffect, useState } from "react";
+
 import {
   obtenerClientes,
   crearCliente,
   obtenerClientePorId,
   actualizarCliente,
   eliminarCliente,
+  obtenerEvaluacionesPorCliente,
 } from "../services/api";
 
+
 function Clientes() {
+
+  // =========================================================
+  // ESTADOS
+  // =========================================================
+
   const [clientes, setClientes] = useState([]);
   const [busqueda, setBusqueda] = useState("");
 
-  // Cliente mostrado en VER
-  const [clienteSeleccionado, setClienteSeleccionado] = useState(null);
+  const [
+    clienteSeleccionado,
+    setClienteSeleccionado
+  ] = useState(null);
 
-  // Cliente que se quiere eliminar
-  const [clienteAEliminar, setClienteAEliminar] = useState(null);
+  const [
+    historialEvaluaciones,
+    setHistorialEvaluaciones
+  ] = useState([]);
 
-  // Cliente que se está editando
-  const [clienteEditandoId, setClienteEditandoId] = useState(null);
+  const [
+    cargandoHistorial,
+    setCargandoHistorial
+  ] = useState(false);
 
-  // Formulario
+  const [
+    clienteAEliminar,
+    setClienteAEliminar
+  ] = useState(null);
+
+  const [
+    clienteEditandoId,
+    setClienteEditandoId
+  ] = useState(null);
+
+
+  // =========================================================
+  // FORMULARIO
+  // =========================================================
+
   const [formulario, setFormulario] = useState({
     cedula: "",
     nombres: "",
@@ -31,33 +59,54 @@ function Clientes() {
     estado: "Activo",
   });
 
-  // Cargar clientes
+
+  // =========================================================
+  // CARGAR CLIENTES
+  // =========================================================
+
   useEffect(() => {
     cargarClientes();
   }, []);
 
+
   const cargarClientes = () => {
+
     obtenerClientes()
       .then((datos) => {
         setClientes(datos);
       })
       .catch((error) => {
-        console.error("ERROR AL CARGAR CLIENTES:", error);
+        console.error(
+          "ERROR AL CARGAR CLIENTES:",
+          error
+        );
       });
+
   };
 
-  // Cambios del formulario
+
+  // =========================================================
+  // CAMBIOS DEL FORMULARIO
+  // =========================================================
+
   const manejarCambio = (e) => {
+
     const { name, value } = e.target;
 
     setFormulario({
       ...formulario,
       [name]: value,
     });
+
   };
 
-  // Limpiar formulario
+
+  // =========================================================
+  // LIMPIAR FORMULARIO
+  // =========================================================
+
   const limpiarFormulario = () => {
+
     setFormulario({
       cedula: "",
       nombres: "",
@@ -68,10 +117,16 @@ function Clientes() {
     });
 
     setClienteEditandoId(null);
+
   };
 
-  // Validar formulario
+
+  // =========================================================
+  // VALIDAR FORMULARIO
+  // =========================================================
+
   const formularioValido = () => {
+
     return (
       formulario.cedula.trim() &&
       formulario.nombres.trim() &&
@@ -79,20 +134,29 @@ function Clientes() {
       formulario.correo.trim() &&
       formulario.telefono.trim()
     );
+
   };
 
-  // =========================
-  // CREAR
-  // =========================
+
+  // =========================================================
+  // CREAR CLIENTE
+  // =========================================================
 
   const manejarCrearCliente = async () => {
+
     if (!formularioValido()) {
-      alert("Por favor completa todos los campos.");
+
+      alert(
+        "Por favor completa todos los campos."
+      );
+
       return;
     }
 
     try {
-      const nuevoCliente = await crearCliente(formulario);
+
+      const nuevoCliente =
+        await crearCliente(formulario);
 
       setClientes((clientesActuales) => [
         ...clientesActuales,
@@ -101,40 +165,98 @@ function Clientes() {
 
       limpiarFormulario();
 
-      alert("Cliente creado correctamente.");
+      alert(
+        "Cliente creado correctamente."
+      );
+
     } catch (error) {
-      console.error("ERROR AL CREAR CLIENTE:", error);
-      alert("No se pudo crear el cliente.");
+
+      console.error(
+        "ERROR AL CREAR CLIENTE:",
+        error
+      );
+
+      alert(
+        "No se pudo crear el cliente."
+      );
+
     }
+
   };
 
-  // =========================
-  // VER
-  // =========================
+
+  // =========================================================
+  // VER CLIENTE + HISTORIAL
+  // =========================================================
 
   const manejarVerCliente = async (id) => {
+
     try {
-      const cliente = await obtenerClientePorId(id);
+
+      setCargandoHistorial(true);
+
+      const [
+        cliente,
+        evaluaciones
+      ] = await Promise.all([
+
+        obtenerClientePorId(id),
+
+        obtenerEvaluacionesPorCliente(id),
+
+      ]);
+
       setClienteSeleccionado(cliente);
+
+      setHistorialEvaluaciones(
+        evaluaciones || []
+      );
+
     } catch (error) {
-      console.error("ERROR AL OBTENER CLIENTE:", error);
-      alert("No se pudo obtener la información del cliente.");
+
+      console.error(
+        "ERROR AL OBTENER CLIENTE:",
+        error
+      );
+
+      alert(
+        "No se pudo obtener la información del cliente."
+      );
+
+    } finally {
+
+      setCargandoHistorial(false);
+
     }
+
   };
+
 
   const cerrarModalVer = () => {
+
     setClienteSeleccionado(null);
+
+    setHistorialEvaluaciones([]);
+
+    setCargandoHistorial(false);
+
   };
 
-  // =========================
-  // EDITAR
-  // =========================
+
+  // =========================================================
+  // EDITAR CLIENTE
+  // =========================================================
 
   const manejarEditarCliente = async (id) => {
-    try {
-      const cliente = await obtenerClientePorId(id);
 
-      setClienteEditandoId(cliente.id);
+    try {
+
+      const cliente =
+        await obtenerClientePorId(id);
+
+      setClienteEditandoId(
+        cliente.id
+      );
 
       setFormulario({
         cedula: cliente.cedula || "",
@@ -149,23 +271,41 @@ function Clientes() {
         top: 0,
         behavior: "smooth",
       });
+
     } catch (error) {
-      console.error("ERROR AL CARGAR CLIENTE:", error);
-      alert("No se pudo cargar el cliente para editar.");
+
+      console.error(
+        "ERROR AL CARGAR CLIENTE:",
+        error
+      );
+
+      alert(
+        "No se pudo cargar el cliente para editar."
+      );
+
     }
+
   };
 
+
   const manejarGuardarCambios = async () => {
+
     if (!formularioValido()) {
-      alert("Por favor completa todos los campos.");
+
+      alert(
+        "Por favor completa todos los campos."
+      );
+
       return;
     }
 
     try {
-      const clienteActualizado = await actualizarCliente(
-        clienteEditandoId,
-        formulario
-      );
+
+      const clienteActualizado =
+        await actualizarCliente(
+          clienteEditandoId,
+          formulario
+        );
 
       setClientes((clientesActuales) =>
         clientesActuales.map((cliente) =>
@@ -177,61 +317,102 @@ function Clientes() {
 
       limpiarFormulario();
 
-      alert("Cliente actualizado correctamente.");
-    } catch (error) {
-      console.error("ERROR AL ACTUALIZAR CLIENTE:", error);
-      alert("No se pudo actualizar el cliente.");
-    }
-  };
-
-  // =========================
-  // ELIMINAR
-  // =========================
-
-  // Abrir modal de confirmación
-  const manejarSolicitarEliminar = (cliente) => {
-    setClienteAEliminar(cliente);
-  };
-
-  // Cerrar modal
-  const cerrarModalEliminar = () => {
-    setClienteAEliminar(null);
-  };
-
-  // Confirmar eliminación
-  const manejarConfirmarEliminar = async () => {
-    if (!clienteAEliminar) {
-      return;
-    }
-
-    try {
-      await eliminarCliente(clienteAEliminar.id);
-
-      // Quitar de la tabla
-      setClientes((clientesActuales) =>
-        clientesActuales.filter(
-          (cliente) => cliente.id !== clienteAEliminar.id
-        )
+      alert(
+        "Cliente actualizado correctamente."
       );
 
-      // Si estábamos editando justamente ese cliente
-      if (clienteEditandoId === clienteAEliminar.id) {
-        limpiarFormulario();
-      }
-
-      // Cerrar modal
-      setClienteAEliminar(null);
     } catch (error) {
-      console.error("ERROR AL ELIMINAR CLIENTE:", error);
-      alert("No se pudo eliminar el cliente.");
+
+      console.error(
+        "ERROR AL ACTUALIZAR CLIENTE:",
+        error
+      );
+
+      alert(
+        "No se pudo actualizar el cliente."
+      );
+
     }
+
   };
 
-  // =========================
-  // ESTADOS
-  // =========================
 
-  const obtenerClaseEstado = (estado) => {
+  // =========================================================
+  // ELIMINAR CLIENTE
+  // =========================================================
+
+  const manejarSolicitarEliminar = (
+    cliente
+  ) => {
+
+    setClienteAEliminar(cliente);
+
+  };
+
+
+  const cerrarModalEliminar = () => {
+
+    setClienteAEliminar(null);
+
+  };
+
+
+  const manejarConfirmarEliminar =
+    async () => {
+
+      if (!clienteAEliminar) {
+        return;
+      }
+
+      try {
+
+        await eliminarCliente(
+          clienteAEliminar.id
+        );
+
+        setClientes((clientesActuales) =>
+          clientesActuales.filter(
+            (cliente) =>
+              cliente.id !==
+              clienteAEliminar.id
+          )
+        );
+
+        if (
+          clienteEditandoId ===
+          clienteAEliminar.id
+        ) {
+
+          limpiarFormulario();
+
+        }
+
+        setClienteAEliminar(null);
+
+      } catch (error) {
+
+        console.error(
+          "ERROR AL ELIMINAR CLIENTE:",
+          error
+        );
+
+        alert(
+          "No se pudo eliminar el cliente."
+        );
+
+      }
+
+    };
+
+
+  // =========================================================
+  // CLASE DE ESTADO
+  // =========================================================
+
+  const obtenerClaseEstado = (
+    estado
+  ) => {
+
     if (estado === "Activo") {
       return "status active-status";
     }
@@ -245,86 +426,267 @@ function Clientes() {
     }
 
     return "status";
+
   };
 
-  // =========================
-  // CONTADORES
-  // =========================
 
-  const totalClientes = clientes.length;
+  // =========================================================
+  // CLASE DE RIESGO
+  // =========================================================
 
-  const clientesActivos = clientes.filter(
-    (cliente) => cliente.estado === "Activo"
-  ).length;
+  const obtenerClaseRiesgo = (
+    riesgo
+  ) => {
 
-  const clientesRevision = clientes.filter(
-    (cliente) => cliente.estado === "En revisión"
-  ).length;
+    if (!riesgo) {
+      return "cliente-risk-badge";
+    }
 
-  const clientesAlerta = clientes.filter(
-    (cliente) => cliente.estado === "Alerta"
-  ).length;
+    const valor =
+      riesgo.toLowerCase();
 
-  // =========================
-  // BUSCADOR
-  // =========================
+    if (valor === "bajo") {
+      return "cliente-risk-badge low";
+    }
 
-  const clientesFiltrados = clientes.filter((cliente) => {
-    const texto = busqueda.toLowerCase().trim();
+    if (valor === "medio") {
+      return "cliente-risk-badge medium";
+    }
 
-    return (
-      String(cliente.cedula || "")
-        .toLowerCase()
-        .includes(texto) ||
-      String(cliente.nombres || "")
-        .toLowerCase()
-        .includes(texto) ||
-      String(cliente.apellidos || "")
-        .toLowerCase()
-        .includes(texto) ||
-      String(cliente.correo || "")
-        .toLowerCase()
-        .includes(texto) ||
-      String(cliente.telefono || "")
-        .toLowerCase()
-        .includes(texto)
+    if (valor === "alto") {
+      return "cliente-risk-badge high";
+    }
+
+    return "cliente-risk-badge";
+
+  };
+
+
+  // =========================================================
+  // FORMATEAR DINERO
+  // =========================================================
+
+  const formatearDinero = (
+    valor
+  ) => {
+
+    return new Intl.NumberFormat(
+      "es-EC",
+      {
+        style: "currency",
+        currency: "USD",
+      }
+    ).format(
+      Number(valor || 0)
     );
-  });
+
+  };
+
+
+  // =========================================================
+  // FORMATEAR PORCENTAJE
+  // =========================================================
+
+  const formatearPorcentaje = (
+    valor
+  ) => {
+
+    if (
+      valor === null ||
+      valor === undefined
+    ) {
+
+      return "-";
+
+    }
+
+    return `${Number(valor).toLocaleString(
+      "es-EC",
+      {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }
+    )}%`;
+
+  };
+
+
+  // =========================================================
+  // FORMATEAR FECHA
+  // =========================================================
+
+  const formatearFecha = (
+    fecha
+  ) => {
+
+    if (!fecha) {
+      return "-";
+    }
+
+    return new Date(
+      fecha
+    ).toLocaleString(
+      "es-EC",
+      {
+        dateStyle: "medium",
+        timeStyle: "short",
+      }
+    );
+
+  };
+
+
+  // =========================================================
+  // CONTADORES GENERALES
+  // =========================================================
+
+  const totalClientes =
+    clientes.length;
+
+
+  const clientesActivos =
+    clientes.filter(
+      (cliente) =>
+        cliente.estado === "Activo"
+    ).length;
+
+
+  const clientesRevision =
+    clientes.filter(
+      (cliente) =>
+        cliente.estado ===
+        "En revisión"
+    ).length;
+
+
+  const clientesAlerta =
+    clientes.filter(
+      (cliente) =>
+        cliente.estado === "Alerta"
+    ).length;
+
+
+  // =========================================================
+  // HISTORIAL DEL CLIENTE
+  // =========================================================
+
+  const ultimaEvaluacion =
+    historialEvaluaciones.length > 0
+      ? historialEvaluaciones[0]
+      : null;
+
+
+  // =========================================================
+  // BUSCADOR
+  // =========================================================
+
+  const clientesFiltrados =
+    clientes.filter((cliente) => {
+
+      const texto =
+        busqueda
+          .toLowerCase()
+          .trim();
+
+      return (
+
+        String(cliente.cedula || "")
+          .toLowerCase()
+          .includes(texto) ||
+
+        String(cliente.nombres || "")
+          .toLowerCase()
+          .includes(texto) ||
+
+        String(cliente.apellidos || "")
+          .toLowerCase()
+          .includes(texto) ||
+
+        String(cliente.correo || "")
+          .toLowerCase()
+          .includes(texto) ||
+
+        String(cliente.telefono || "")
+          .toLowerCase()
+          .includes(texto)
+
+      );
+
+    });
+
+
+  // =========================================================
+  // RETURN
+  // =========================================================
 
   return (
+
     <Layout title="Gestión de Clientes">
 
-      {/* ========================= */}
-      {/* TARJETAS */}
-      {/* ========================= */}
+
+      {/* =====================================================
+          TARJETAS
+      ===================================================== */}
 
       <section className="summary-cards four">
 
         <div className="small-card">
-          <h3>Total clientes</h3>
-          <strong>{totalClientes}</strong>
+
+          <h3>
+            Total clientes
+          </h3>
+
+          <strong>
+            {totalClientes}
+          </strong>
+
         </div>
+
 
         <div className="small-card">
-          <h3>Clientes activos</h3>
-          <strong>{clientesActivos}</strong>
+
+          <h3>
+            Clientes activos
+          </h3>
+
+          <strong>
+            {clientesActivos}
+          </strong>
+
         </div>
+
 
         <div className="small-card yellow">
-          <h3>Clientes en revisión</h3>
-          <strong>{clientesRevision}</strong>
+
+          <h3>
+            Clientes en revisión
+          </h3>
+
+          <strong>
+            {clientesRevision}
+          </strong>
+
         </div>
 
+
         <div className="small-card red">
-          <h3>Clientes con alerta</h3>
-          <strong>{clientesAlerta}</strong>
+
+          <h3>
+            Clientes con alerta
+          </h3>
+
+          <strong>
+            {clientesAlerta}
+          </strong>
+
         </div>
 
       </section>
 
-      {/* ========================= */}
-      {/* FORMULARIO */}
-      {/* ========================= */}
+
+      {/* =====================================================
+          FORMULARIO
+      ===================================================== */}
 
       <section className="panel">
 
@@ -335,24 +697,36 @@ function Clientes() {
             type="text"
             placeholder="Buscar cliente por nombre, cédula o correo..."
             value={busqueda}
-            onChange={(e) => setBusqueda(e.target.value)}
+            onChange={(e) =>
+              setBusqueda(
+                e.target.value
+              )
+            }
           />
 
+
           <button
+
             className="btn btn-green"
+
             type="button"
+
             onClick={
               clienteEditandoId
                 ? manejarGuardarCambios
                 : manejarCrearCliente
             }
+
           >
+
             {clienteEditandoId
               ? "💾 Guardar cambios"
               : "➕ Crear cliente"}
+
           </button>
 
         </div>
+
 
         {/* MODO EDICIÓN */}
 
@@ -363,7 +737,8 @@ function Clientes() {
               marginBottom: "20px",
               padding: "12px 16px",
               background: "#f4f8f5",
-              borderLeft: "4px solid #009144",
+              borderLeft:
+                "4px solid #009144",
               borderRadius: "6px",
             }}
           >
@@ -374,13 +749,17 @@ function Clientes() {
 
             <button
               type="button"
-              onClick={limpiarFormulario}
+              onClick={
+                limpiarFormulario
+              }
               style={{
                 marginLeft: "15px",
                 border: "none",
-                background: "transparent",
+                background:
+                  "transparent",
                 cursor: "pointer",
-                textDecoration: "underline",
+                textDecoration:
+                  "underline",
               }}
             >
               Cancelar edición
@@ -390,75 +769,129 @@ function Clientes() {
 
         )}
 
+
         <div className="form-grid four">
 
+
           <div className="form-group">
-            <label>Cédula</label>
+
+            <label>
+              Cédula
+            </label>
 
             <input
               type="text"
               name="cedula"
-              value={formulario.cedula}
-              onChange={manejarCambio}
+              value={
+                formulario.cedula
+              }
+              onChange={
+                manejarCambio
+              }
               placeholder="Ej. 1300000000"
             />
+
           </div>
 
+
           <div className="form-group">
-            <label>Nombres</label>
+
+            <label>
+              Nombres
+            </label>
 
             <input
               type="text"
               name="nombres"
-              value={formulario.nombres}
-              onChange={manejarCambio}
+              value={
+                formulario.nombres
+              }
+              onChange={
+                manejarCambio
+              }
               placeholder="Nombres del cliente"
             />
+
           </div>
 
+
           <div className="form-group">
-            <label>Apellidos</label>
+
+            <label>
+              Apellidos
+            </label>
 
             <input
               type="text"
               name="apellidos"
-              value={formulario.apellidos}
-              onChange={manejarCambio}
+              value={
+                formulario.apellidos
+              }
+              onChange={
+                manejarCambio
+              }
               placeholder="Apellidos del cliente"
             />
+
           </div>
 
+
           <div className="form-group">
-            <label>Correo</label>
+
+            <label>
+              Correo
+            </label>
 
             <input
               type="email"
               name="correo"
-              value={formulario.correo}
-              onChange={manejarCambio}
+              value={
+                formulario.correo
+              }
+              onChange={
+                manejarCambio
+              }
               placeholder="correo@ejemplo.com"
             />
+
           </div>
 
+
           <div className="form-group">
-            <label>Teléfono</label>
+
+            <label>
+              Teléfono
+            </label>
 
             <input
               type="text"
               name="telefono"
-              value={formulario.telefono}
-              onChange={manejarCambio}
+              value={
+                formulario.telefono
+              }
+              onChange={
+                manejarCambio
+              }
               placeholder="Ej. 0991234567"
             />
+
           </div>
 
+
           <div className="form-group">
-            <label>Estado</label>
+
+            <label>
+              Estado
+            </label>
 
             <select
               name="estado"
-              value={formulario.estado}
-              onChange={manejarCambio}
+              value={
+                formulario.estado
+              }
+              onChange={
+                manejarCambio
+              }
             >
 
               <option value="Activo">
@@ -477,13 +910,15 @@ function Clientes() {
 
           </div>
 
+
         </div>
 
       </section>
 
-      {/* ========================= */}
-      {/* TABLA */}
-      {/* ========================= */}
+
+      {/* =====================================================
+          TABLA
+      ===================================================== */}
 
       <section className="panel">
 
@@ -491,98 +926,122 @@ function Clientes() {
           Tabla de clientes registrados
         </h2>
 
+
         <table className="table">
 
           <thead>
+
             <tr>
+
               <th>Cédula</th>
+
               <th>Cliente</th>
+
               <th>Correo</th>
+
               <th>Teléfono</th>
+
               <th>Estado</th>
+
               <th>Acciones</th>
+
             </tr>
+
           </thead>
+
 
           <tbody>
 
-            {clientesFiltrados.map((cliente) => (
+            {clientesFiltrados.map(
+              (cliente) => (
 
-              <tr key={cliente.id}>
+                <tr key={cliente.id}>
 
-                <td>
-                  {cliente.cedula}
-                </td>
+                  <td>
+                    {cliente.cedula}
+                  </td>
 
-                <td>
-                  {cliente.nombres} {cliente.apellidos}
-                </td>
+                  <td>
+                    {cliente.nombres}{" "}
+                    {cliente.apellidos}
+                  </td>
 
-                <td>
-                  {cliente.correo}
-                </td>
+                  <td>
+                    {cliente.correo}
+                  </td>
 
-                <td>
-                  {cliente.telefono}
-                </td>
+                  <td>
+                    {cliente.telefono}
+                  </td>
 
-                <td>
+                  <td>
 
-                  <span
-                    className={obtenerClaseEstado(cliente.estado)}
-                  >
-                    {cliente.estado}
-                  </span>
+                    <span
+                      className={
+                        obtenerClaseEstado(
+                          cliente.estado
+                        )
+                      }
+                    >
 
-                </td>
+                      {cliente.estado}
 
-                <td>
+                    </span>
 
-                  {/* VER */}
+                  </td>
 
-                  <button
-                    className="btn-small btn-view"
-                    type="button"
-                    onClick={() =>
-                      manejarVerCliente(cliente.id)
-                    }
-                  >
-                    Ver
-                  </button>
 
-                  {/* EDITAR */}
+                  <td>
 
-                  <button
-                    className="btn-small btn-yellow"
-                    type="button"
-                    onClick={() =>
-                      manejarEditarCliente(cliente.id)
-                    }
-                  >
-                    Editar
-                  </button>
+                    <button
+                      className="btn-small btn-view"
+                      type="button"
+                      onClick={() =>
+                        manejarVerCliente(
+                          cliente.id
+                        )
+                      }
+                    >
+                      Ver
+                    </button>
 
-                  {/* ELIMINAR */}
 
-                  <button
-                    className="btn-small btn-delete"
-                    type="button"
-                    onClick={() =>
-                      manejarSolicitarEliminar(cliente)
-                    }
-                  >
-                    Eliminar
-                  </button>
+                    <button
+                      className="btn-small btn-yellow"
+                      type="button"
+                      onClick={() =>
+                        manejarEditarCliente(
+                          cliente.id
+                        )
+                      }
+                    >
+                      Editar
+                    </button>
 
-                </td>
 
-              </tr>
+                    <button
+                      className="btn-small btn-delete"
+                      type="button"
+                      onClick={() =>
+                        manejarSolicitarEliminar(
+                          cliente
+                        )
+                      }
+                    >
+                      Eliminar
+                    </button>
 
-            ))}
+                  </td>
+
+                </tr>
+
+              )
+            )}
 
           </tbody>
 
         </table>
+
 
         {clientesFiltrados.length === 0 && (
 
@@ -592,104 +1051,537 @@ function Clientes() {
               padding: "20px",
             }}
           >
+
             {busqueda
               ? "No se encontraron clientes con esa búsqueda."
               : "No hay clientes registrados."}
+
           </p>
 
         )}
 
       </section>
 
-      {/* ========================= */}
-      {/* MODAL VER */}
-      {/* ========================= */}
+
+      {/* =====================================================
+          MODAL VER CLIENTE
+      ===================================================== */}
 
       {clienteSeleccionado && (
 
         <div
           className="modal-overlay"
-          onClick={cerrarModalVer}
+          onClick={
+            cerrarModalVer
+          }
         >
 
           <div
-            className="cliente-modal"
-            onClick={(e) => e.stopPropagation()}
+            className="cliente-modal cliente-modal-history"
+            onClick={(e) =>
+              e.stopPropagation()
+            }
           >
+
+
+            {/* HEADER */}
 
             <div className="cliente-modal-header">
 
               <div>
-                <h2>Información del cliente</h2>
-                <p>Datos registrados en el sistema</p>
+
+                <h2>
+                  Información del cliente
+                </h2>
+
+                <p>
+                  Datos generales e historial
+                  crediticio interno
+                </p>
+
               </div>
+
 
               <button
                 className="modal-close"
                 type="button"
-                onClick={cerrarModalVer}
+                onClick={
+                  cerrarModalVer
+                }
               >
                 ✕
               </button>
 
             </div>
 
-            <div className="cliente-modal-body">
 
-              <div className="cliente-info">
-                <span>Cédula</span>
-                <strong>{clienteSeleccionado.cedula}</strong>
-              </div>
+            {/* BODY */}
 
-              <div className="cliente-info">
-                <span>Nombres</span>
-                <strong>{clienteSeleccionado.nombres}</strong>
-              </div>
+            <div className="cliente-modal-scroll">
 
-              <div className="cliente-info">
-                <span>Apellidos</span>
-                <strong>{clienteSeleccionado.apellidos}</strong>
-              </div>
 
-              <div className="cliente-info">
-                <span>Teléfono</span>
-                <strong>{clienteSeleccionado.telefono}</strong>
-              </div>
+              {/* DATOS PERSONALES */}
 
-              <div className="cliente-info cliente-info-full">
-                <span>Correo electrónico</span>
-                <strong>{clienteSeleccionado.correo}</strong>
-              </div>
+              <div className="cliente-history-section">
 
-              <div className="cliente-info cliente-info-full">
+                <h3 className="cliente-history-title">
+                  Datos generales
+                </h3>
 
-                <span>Estado</span>
 
-                <div>
-                  <span
-                    className={obtenerClaseEstado(
-                      clienteSeleccionado.estado
-                    )}
-                  >
-                    {clienteSeleccionado.estado}
-                  </span>
+                <div className="cliente-modal-body">
+
+                  <div className="cliente-info">
+
+                    <span>
+                      Cédula
+                    </span>
+
+                    <strong>
+                      {clienteSeleccionado.cedula}
+                    </strong>
+
+                  </div>
+
+
+                  <div className="cliente-info">
+
+                    <span>
+                      Nombres
+                    </span>
+
+                    <strong>
+                      {clienteSeleccionado.nombres}
+                    </strong>
+
+                  </div>
+
+
+                  <div className="cliente-info">
+
+                    <span>
+                      Apellidos
+                    </span>
+
+                    <strong>
+                      {clienteSeleccionado.apellidos}
+                    </strong>
+
+                  </div>
+
+
+                  <div className="cliente-info">
+
+                    <span>
+                      Teléfono
+                    </span>
+
+                    <strong>
+                      {clienteSeleccionado.telefono}
+                    </strong>
+
+                  </div>
+
+
+                  <div className="cliente-info cliente-info-full">
+
+                    <span>
+                      Correo electrónico
+                    </span>
+
+                    <strong>
+                      {clienteSeleccionado.correo}
+                    </strong>
+
+                  </div>
+
+
+                  <div className="cliente-info cliente-info-full">
+
+                    <span>
+                      Estado
+                    </span>
+
+                    <div>
+
+                      <span
+                        className={
+                          obtenerClaseEstado(
+                            clienteSeleccionado.estado
+                          )
+                        }
+                      >
+
+                        {clienteSeleccionado.estado}
+
+                      </span>
+
+                    </div>
+
+                  </div>
+
                 </div>
 
               </div>
 
+
+              {/* CARGANDO */}
+
+              {cargandoHistorial && (
+
+                <div className="cliente-history-loading">
+
+                  ⏳ Cargando historial
+                  crediticio...
+
+                </div>
+
+              )}
+
+
+              {/* HISTORIAL DISPONIBLE */}
+
+              {!cargandoHistorial &&
+                historialEvaluaciones.length > 0 && (
+
+                  <>
+
+                    {/* RESUMEN */}
+
+                    <div className="cliente-history-section">
+
+                      <h3 className="cliente-history-title">
+                        Historial crediticio interno
+                      </h3>
+
+
+                      <div className="cliente-credit-summary">
+
+
+                        <div className="cliente-credit-card">
+
+                          <span>
+                            Evaluaciones
+                          </span>
+
+                          <strong>
+                            {historialEvaluaciones.length}
+                          </strong>
+
+                          <small>
+                            realizadas
+                          </small>
+
+                        </div>
+
+
+                        <div className="cliente-credit-card">
+
+                          <span>
+                            Último Score IA
+                          </span>
+
+                          <strong>
+
+                            {ultimaEvaluacion?.scoreIa != null
+                              ? `${ultimaEvaluacion.scoreIa}/100`
+                              : "-"}
+
+                          </strong>
+
+                          <small>
+                            evaluación más reciente
+                          </small>
+
+                        </div>
+
+
+                        <div className="cliente-credit-card">
+
+                          <span>
+                            Última mora estimada
+                          </span>
+
+                          <strong>
+
+                            {formatearPorcentaje(
+                              ultimaEvaluacion
+                                ?.probabilidadMora
+                            )}
+
+                          </strong>
+
+                          <small>
+                            probabilidad estimada
+                          </small>
+
+                        </div>
+
+
+                        <div className="cliente-credit-card">
+
+                          <span>
+                            Último nivel de riesgo
+                          </span>
+
+                          <strong
+                            className={
+                              obtenerClaseRiesgo(
+                                ultimaEvaluacion
+                                  ?.nivelRiesgo
+                              )
+                            }
+                          >
+
+                            {ultimaEvaluacion
+                              ?.nivelRiesgo ||
+                              "-"}
+
+                          </strong>
+
+                          <small>
+                            clasificación reciente
+                          </small>
+
+                        </div>
+
+
+                      </div>
+
+                    </div>
+
+
+                    {/* HISTORIAL */}
+
+                    <div className="cliente-history-section">
+
+                      <h3 className="cliente-history-title">
+                        Historial de evaluaciones
+                      </h3>
+
+
+                      <div className="cliente-evaluation-list">
+
+                        {historialEvaluaciones.map(
+                          (item) => (
+
+                            <div
+                              className="cliente-evaluation-card"
+                              key={item.id}
+                            >
+
+
+                              <div className="cliente-evaluation-header">
+
+                                <div>
+
+                                  <strong>
+
+                                    Solicitud #
+                                    {item.solicitud?.id}
+
+                                  </strong>
+
+                                  <span>
+
+                                    {item.solicitud
+                                      ?.tipoCredito ||
+                                      "Tipo no registrado"}
+
+                                  </span>
+
+                                </div>
+
+
+                                <span
+                                  className={
+                                    obtenerClaseRiesgo(
+                                      item.nivelRiesgo
+                                    )
+                                  }
+                                >
+
+                                  Riesgo{" "}
+                                  {item.nivelRiesgo ||
+                                    "-"}
+
+                                </span>
+
+                              </div>
+
+
+                              <div className="cliente-evaluation-credit">
+
+                                <span>
+
+                                  Monto solicitado:{" "}
+
+                                  <strong>
+
+                                    {formatearDinero(
+                                      item.solicitud
+                                        ?.monto
+                                    )}
+
+                                  </strong>
+
+                                </span>
+
+
+                                <span>
+
+                                  Plazo:{" "}
+
+                                  <strong>
+
+                                    {item.solicitud
+                                      ?.plazoMeses
+                                      ? `${item.solicitud.plazoMeses} meses`
+                                      : "-"}
+
+                                  </strong>
+
+                                </span>
+
+                              </div>
+
+
+                              <div className="cliente-evaluation-metrics">
+
+
+                                <div>
+
+                                  <span>
+                                    Score IA
+                                  </span>
+
+                                  <strong>
+
+                                    {item.scoreIa != null
+                                      ? `${item.scoreIa}/100`
+                                      : "-"}
+
+                                  </strong>
+
+                                </div>
+
+
+                                <div>
+
+                                  <span>
+                                    Mora estimada
+                                  </span>
+
+                                  <strong>
+
+                                    {formatearPorcentaje(
+                                      item.probabilidadMora
+                                    )}
+
+                                  </strong>
+
+                                </div>
+
+
+                                <div>
+
+                                  <span>
+                                    Nivel de riesgo
+                                  </span>
+
+                                  <strong>
+
+                                    {item.nivelRiesgo ||
+                                      "-"}
+
+                                  </strong>
+
+                                </div>
+
+
+                              </div>
+
+
+                              <div className="cliente-evaluation-footer">
+
+                                <span>
+
+                                  🤖{" "}
+                                  {item.modeloUtilizado ||
+                                    "Modelo no registrado"}
+
+                                </span>
+
+                                <span>
+
+                                  {formatearFecha(
+                                    item.fechaEvaluacion
+                                  )}
+
+                                </span>
+
+                              </div>
+
+
+                            </div>
+
+                          )
+                        )}
+
+                      </div>
+
+                    </div>
+
+                  </>
+
+                )}
+
+
+              {/* SIN HISTORIAL */}
+
+              {!cargandoHistorial &&
+                historialEvaluaciones.length === 0 && (
+
+                  <div className="cliente-no-history">
+
+                    <div className="cliente-no-history-icon">
+                      🧠
+                    </div>
+
+                    <h3>
+                      Sin historial de evaluaciones
+                    </h3>
+
+                    <p>
+                      Este cliente todavía no cuenta
+                      con evaluaciones de riesgo
+                      realizadas mediante el modelo
+                      de inteligencia artificial.
+                    </p>
+
+                  </div>
+
+                )}
+
             </div>
+
+
+            {/* FOOTER */}
 
             <div className="cliente-modal-footer">
 
               <button
                 className="btn btn-green"
                 type="button"
-                onClick={cerrarModalVer}
+                onClick={
+                  cerrarModalVer
+                }
               >
                 Cerrar
               </button>
 
             </div>
+
 
           </div>
 
@@ -697,38 +1589,54 @@ function Clientes() {
 
       )}
 
-      {/* ========================= */}
-      {/* MODAL ELIMINAR */}
-      {/* ========================= */}
+
+      {/* =====================================================
+          MODAL ELIMINAR
+      ===================================================== */}
 
       {clienteAEliminar && (
 
         <div
           className="modal-overlay"
-          onClick={cerrarModalEliminar}
+          onClick={
+            cerrarModalEliminar
+          }
         >
 
           <div
             className="cliente-modal"
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e) =>
+              e.stopPropagation()
+            }
           >
 
             <div className="cliente-modal-header">
 
               <div>
-                <h2>Eliminar cliente</h2>
-                <p>Confirmación de eliminación</p>
+
+                <h2>
+                  Eliminar cliente
+                </h2>
+
+                <p>
+                  Confirmación de eliminación
+                </p>
+
               </div>
+
 
               <button
                 className="modal-close"
                 type="button"
-                onClick={cerrarModalEliminar}
+                onClick={
+                  cerrarModalEliminar
+                }
               >
                 ✕
               </button>
 
             </div>
+
 
             <div
               style={{
@@ -741,16 +1649,25 @@ function Clientes() {
                   marginTop: "0",
                 }}
               >
+
                 ¿Estás seguro de eliminar este cliente?
+
               </h3>
 
+
               <p>
+
                 Estás a punto de eliminar a{" "}
+
                 <strong>
+
                   {clienteAEliminar.nombres}{" "}
                   {clienteAEliminar.apellidos}
+
                 </strong>.
+
               </p>
+
 
               <p
                 style={{
@@ -758,25 +1675,33 @@ function Clientes() {
                   marginBottom: "0",
                 }}
               >
+
                 El registro será eliminado de la base de datos.
+
               </p>
 
             </div>
+
 
             <div className="cliente-modal-footer">
 
               <button
                 className="btn-small btn-view"
                 type="button"
-                onClick={cerrarModalEliminar}
+                onClick={
+                  cerrarModalEliminar
+                }
               >
                 Cancelar
               </button>
 
+
               <button
                 className="btn-small btn-delete"
                 type="button"
-                onClick={manejarConfirmarEliminar}
+                onClick={
+                  manejarConfirmarEliminar
+                }
               >
                 Eliminar
               </button>
@@ -790,7 +1715,10 @@ function Clientes() {
       )}
 
     </Layout>
+
   );
+
 }
+
 
 export default Clientes;

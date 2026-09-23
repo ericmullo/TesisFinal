@@ -3037,3 +3037,692 @@ form .form-group textarea:focus {
   }
 
 }
+
+/* =========================================================
+   ESTADO DE DOCUMENTACIÓN
+   ========================================================= */
+
+.docs-completos {
+  color: #008c46;
+}
+
+.docs-pendientes {
+  color: #d18400;
+}
+
+
+/* =========================================================
+   PROGRESO DE DOCUMENTOS
+   ========================================================= */
+
+.document-progress {
+  margin-top: 20px;
+  padding: 20px;
+
+  background: #f8faf9;
+
+  border: 1px solid #e2ebe6;
+  border-radius: 14px;
+}
+
+
+.document-progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  margin-bottom: 10px;
+
+  color: #444;
+
+  font-size: 14px;
+}
+
+
+.document-progress-header strong {
+  color: #006b35;
+  font-size: 16px;
+}
+
+
+/* BARRA */
+
+.document-progress-bar {
+  width: 100%;
+  height: 10px;
+
+  background: #e4e7e5;
+
+  border-radius: 20px;
+
+  overflow: hidden;
+}
+
+
+.document-progress-value {
+  height: 100%;
+
+  background: #00a84f;
+
+  border-radius: 20px;
+
+  transition: width 0.35s ease;
+}
+
+
+/* DOCUMENTACIÓN COMPLETA */
+
+.document-complete-message {
+  margin-top: 15px;
+  padding: 12px 15px;
+
+  background: #e5f7ed;
+
+  color: #08783e;
+
+  border-radius: 9px;
+
+  font-size: 14px;
+  font-weight: 600;
+}
+
+
+/* DOCUMENTOS FALTANTES */
+
+.document-missing {
+  margin-top: 15px;
+
+  display: flex;
+  flex-direction: column;
+
+  gap: 4px;
+
+  color: #777;
+
+  font-size: 14px;
+}
+
+
+.document-missing strong {
+  color: #6c5700;
+
+  margin-bottom: 3px;
+}
+/* =========================================================
+   EVALUACIÓN DE RIESGO - SOLICITUD
+   ========================================================= */
+
+.risk-request-header {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 15px;
+  margin-top: 15px;
+}
+
+.risk-request-header > div {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+
+  padding: 18px;
+
+  background: #f8faf9;
+  border: 1px solid #e1e9e4;
+  border-radius: 12px;
+}
+
+.risk-request-header span {
+  color: #777;
+  font-size: 12px;
+}
+
+.risk-request-header strong {
+  color: #004b24;
+  font-size: 15px;
+}
+
+
+/* =========================================================
+   CABECERA DE SECCIONES
+   ========================================================= */
+
+.risk-section-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+}
+
+.risk-section-heading p {
+  margin: 5px 0 0;
+  color: #777;
+  font-size: 13px;
+}
+
+
+/* =========================================================
+   ESTADO DOCUMENTAL
+   ========================================================= */
+
+.risk-doc-status {
+  padding: 8px 14px;
+  border-radius: 20px;
+
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.risk-doc-status.complete {
+  background: #def5e7;
+  color: #08783e;
+}
+
+.risk-doc-status.incomplete {
+  background: #fff1d7;
+  color: #a26800;
+}
+
+
+/* =========================================================
+   DOCUMENTOS
+   ========================================================= */
+
+.risk-document-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 15px;
+
+  margin-top: 20px;
+}
+
+.risk-document-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  padding: 16px;
+
+  border-radius: 12px;
+  border: 1px solid #e4e4e4;
+}
+
+.risk-document-item > span {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  width: 32px;
+  height: 32px;
+
+  border-radius: 50%;
+
+  font-weight: 800;
+}
+
+.risk-document-item div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.risk-document-item small {
+  color: #777;
+}
+
+.risk-document-item.completed {
+  background: #f3fbf6;
+  border-color: #a8dfbe;
+}
+
+.risk-document-item.completed > span {
+  background: #d8f3e3;
+  color: #08783e;
+}
+
+.risk-document-item.pending {
+  background: #fffaf0;
+  border-color: #ead8a9;
+}
+
+.risk-document-item.pending > span {
+  background: #fff0c5;
+  color: #a26800;
+}
+
+.risk-document-summary {
+  margin-top: 15px;
+
+  color: #666;
+  font-size: 13px;
+}
+
+.risk-document-summary strong {
+  color: #006b35;
+}
+
+
+/* =========================================================
+   ADVERTENCIA
+   ========================================================= */
+
+.risk-warning-box {
+  margin-top: 16px;
+  padding: 13px 15px;
+
+  background: #fff8e8;
+
+  border-left: 4px solid #e6a500;
+  border-radius: 8px;
+
+  color: #795700;
+  font-size: 13px;
+}
+
+
+/* =========================================================
+   ESTADO EVALUACIÓN
+   ========================================================= */
+
+.evaluation-state {
+  padding: 7px 13px;
+
+  border-radius: 20px;
+
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.evaluation-state.created {
+  background: #e4f5ea;
+  color: #08783e;
+}
+
+.evaluation-state.waiting {
+  background: #f0f0f0;
+  color: #666;
+}
+
+
+/* =========================================================
+   SIN RESULTADO
+   ========================================================= */
+
+.risk-no-result,
+.risk-empty {
+  padding: 45px 20px;
+
+  text-align: center;
+
+  color: #777;
+}
+
+.risk-no-result > div,
+.risk-empty-icon {
+  margin-bottom: 10px;
+
+  font-size: 40px;
+}
+
+.risk-no-result h3,
+.risk-empty h2 {
+  margin-bottom: 8px;
+
+  color: #004b24;
+}
+
+.risk-no-result p,
+.risk-empty p {
+  max-width: 500px;
+
+  margin: 0 auto;
+
+  line-height: 1.6;
+}
+
+
+/* =========================================================
+   NIVEL DE RIESGO ACTUAL
+   ========================================================= */
+
+.risk-current {
+  display: flex;
+  flex-direction: column;
+
+  align-items: center;
+
+  margin: 15px 0 20px;
+
+  color: #777;
+
+  font-size: 12px;
+}
+
+.risk-current strong {
+  margin-top: 4px;
+
+  color: #004b24;
+
+  font-size: 20px;
+}
+
+
+/* =========================================================
+   SCORE PENDIENTE
+   ========================================================= */
+
+.circle-pending {
+  opacity: 0.65;
+}
+
+.circle-pending .circle-inner span {
+  font-size: 14px;
+}
+
+
+/* =========================================================
+   BOTONES DESHABILITADOS
+   ========================================================= */
+
+.actions button:disabled {
+  cursor: not-allowed;
+
+  opacity: 0.5;
+}
+
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 1000px) {
+
+  .risk-request-header {
+    grid-template-columns:
+      repeat(2, 1fr);
+  }
+
+  .risk-document-grid {
+    grid-template-columns: 1fr;
+  }
+
+}
+
+
+@media (max-width: 650px) {
+
+  .risk-request-header {
+    grid-template-columns: 1fr;
+  }
+
+  .risk-section-heading {
+    flex-direction: column;
+  }
+
+}
+
+/* =========================================================
+   HISTORIAL CREDITICIO DEL CLIENTE
+========================================================= */
+
+.cliente-modal-history {
+  width: min(920px, 94vw);
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.cliente-modal-scroll {
+  overflow-y: auto;
+  padding-bottom: 10px;
+}
+
+.cliente-history-section {
+  padding: 24px 30px 0;
+}
+
+.cliente-history-title {
+  margin: 0 0 18px;
+  padding-left: 12px;
+  border-left: 4px solid #009144;
+  color: #004b24;
+  font-size: 20px;
+}
+
+.cliente-history-loading {
+  margin: 25px 30px;
+  padding: 22px;
+  text-align: center;
+  background: #f5f7f5;
+  border-radius: 12px;
+  color: #555;
+  font-weight: 600;
+}
+
+
+/* =========================================================
+   RESUMEN CREDITICIO
+========================================================= */
+
+.cliente-credit-summary {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+
+.cliente-credit-card {
+  padding: 18px;
+  background: #f7faf8;
+  border: 1px solid #e1ebe4;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cliente-credit-card > span {
+  font-size: 13px;
+  color: #68736c;
+}
+
+.cliente-credit-card > strong {
+  color: #004b24;
+  font-size: 24px;
+}
+
+.cliente-credit-card small {
+  color: #89918c;
+  font-size: 11px;
+}
+
+
+/* =========================================================
+   BADGES DE RIESGO
+========================================================= */
+
+.cliente-risk-badge {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 13px !important;
+  font-weight: 700;
+}
+
+.cliente-risk-badge.low {
+  background: #e5f6eb;
+  color: #08752f;
+}
+
+.cliente-risk-badge.medium {
+  background: #fff5d6;
+  color: #8a6800;
+}
+
+.cliente-risk-badge.high {
+  background: #fde8e8;
+  color: #a51f1f;
+}
+
+
+/* =========================================================
+   HISTORIAL DE EVALUACIONES
+========================================================= */
+
+.cliente-evaluation-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-bottom: 15px;
+}
+
+.cliente-evaluation-card {
+  border: 1px solid #dde7e0;
+  border-left: 5px solid #009144;
+  border-radius: 12px;
+  background: #ffffff;
+  padding: 20px;
+}
+
+.cliente-evaluation-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 15px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #edf1ee;
+}
+
+.cliente-evaluation-header > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cliente-evaluation-header > div > strong {
+  color: #004b24;
+  font-size: 18px;
+}
+
+.cliente-evaluation-header > div > span {
+  color: #666;
+  font-size: 14px;
+}
+
+.cliente-evaluation-credit {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 25px;
+  padding: 14px 0;
+  color: #555;
+  font-size: 14px;
+}
+
+.cliente-evaluation-credit strong {
+  color: #26352c;
+}
+
+.cliente-evaluation-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.cliente-evaluation-metrics > div {
+  padding: 14px;
+  background: #f7faf8;
+  border-radius: 9px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.cliente-evaluation-metrics span {
+  color: #747d77;
+  font-size: 12px;
+}
+
+.cliente-evaluation-metrics strong {
+  color: #004b24;
+  font-size: 17px;
+}
+
+.cliente-evaluation-footer {
+  margin-top: 15px;
+  padding-top: 13px;
+  border-top: 1px solid #edf1ee;
+  display: flex;
+  justify-content: space-between;
+  gap: 15px;
+  color: #7a827d;
+  font-size: 12px;
+}
+
+
+/* =========================================================
+   CLIENTE SIN HISTORIAL
+========================================================= */
+
+.cliente-no-history {
+  margin: 25px 30px;
+  padding: 35px 25px;
+  background: #f7faf8;
+  border: 1px dashed #cbdacf;
+  border-radius: 12px;
+  text-align: center;
+}
+
+.cliente-no-history-icon {
+  font-size: 34px;
+  margin-bottom: 8px;
+}
+
+.cliente-no-history h3 {
+  margin: 0 0 8px;
+  color: #004b24;
+}
+
+.cliente-no-history p {
+  max-width: 520px;
+  margin: auto;
+  color: #68736c;
+  line-height: 1.5;
+}
+
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media (max-width: 850px) {
+
+  .cliente-credit-summary {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .cliente-evaluation-metrics {
+    grid-template-columns: 1fr;
+  }
+
+}
+
+@media (max-width: 550px) {
+
+  .cliente-credit-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .cliente-history-section {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+
+  .cliente-evaluation-header,
+  .cliente-evaluation-footer {
+    flex-direction: column;
+  }
+
+}
