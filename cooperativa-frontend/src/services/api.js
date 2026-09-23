@@ -152,3 +152,85 @@ export async function eliminarSolicitud(id) {
 
   return true;
 }
+
+// =========================================================
+// DOCUMENTOS
+// =========================================================
+
+// OBTENER TODOS LOS DOCUMENTOS
+export async function obtenerDocumentos() {
+  const response = await fetch(`${API_URL}/documentos`);
+
+  if (!response.ok) {
+    throw new Error("Error al obtener los documentos");
+  }
+
+  return await response.json();
+}
+
+
+// OBTENER DOCUMENTOS DE UNA SOLICITUD
+export async function obtenerDocumentosPorSolicitud(solicitudId) {
+  const response = await fetch(
+    `${API_URL}/documentos/solicitud/${solicitudId}`
+  );
+
+  if (!response.ok) {
+    throw new Error(
+      "Error al obtener los documentos de la solicitud"
+    );
+  }
+
+  return await response.json();
+}
+
+
+// SUBIR DOCUMENTO
+export async function subirDocumento(
+  solicitudId,
+  tipoDocumento,
+  archivo
+) {
+  const formData = new FormData();
+
+  formData.append("solicitudId", solicitudId);
+  formData.append("tipoDocumento", tipoDocumento);
+  formData.append("archivo", archivo);
+
+  const response = await fetch(
+    `${API_URL}/documentos/subir`,
+    {
+      method: "POST",
+      body: formData
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error("Error al subir el documento");
+  }
+
+  return await response.json();
+}
+
+
+// ELIMINAR DOCUMENTO
+export async function eliminarDocumento(id) {
+  const response = await fetch(
+    `${API_URL}/documentos/${id}`,
+    {
+      method: "DELETE"
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error("Error al eliminar el documento");
+  }
+
+  return true;
+}
+
+
+// URL PARA VER EL ARCHIVO
+export function obtenerUrlArchivoDocumento(id) {
+  return `${API_URL}/documentos/${id}/archivo`;
+}

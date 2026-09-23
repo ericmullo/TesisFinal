@@ -2939,3 +2939,101 @@ form .form-group textarea:focus {
   }
 
 }
+
+/* =========================================================
+   DOCUMENTOS - INTEGRACIÓN BACKEND
+   ========================================================= */
+
+.document-list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.document-list-header .section-title {
+  margin-bottom: 5px;
+}
+
+.document-list-subtitle {
+  margin: 0;
+  color: #777;
+  font-size: 14px;
+}
+
+.document-count {
+  background: #e8f5ee;
+  color: #006b35;
+  padding: 10px 16px;
+  border-radius: 20px;
+  white-space: nowrap;
+  font-size: 14px;
+}
+
+.document-count strong {
+  font-size: 16px;
+}
+
+.document-empty {
+  padding: 45px 20px;
+  text-align: center;
+  background: #fafdfb;
+  border: 2px dashed #d7e6de;
+  border-radius: 14px;
+}
+
+.document-empty span {
+  display: block;
+  margin-bottom: 10px;
+  font-size: 38px;
+}
+
+.document-empty h3 {
+  margin-bottom: 7px;
+  color: #006b35;
+}
+
+.document-empty p {
+  margin: 0;
+  color: #777;
+  font-size: 14px;
+}
+
+.document-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.document-upload-message {
+  margin-top: 18px;
+  padding: 13px 18px;
+  background: #e8f5ee;
+  color: #006b35;
+  border-radius: 10px;
+  text-align: center;
+  font-weight: 700;
+}
+
+.upload-card-disabled {
+  opacity: 0.55;
+}
+
+.upload-card-disabled .upload-btn {
+  cursor: not-allowed;
+}
+
+@media (max-width: 700px) {
+
+  .document-list-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .document-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+}
