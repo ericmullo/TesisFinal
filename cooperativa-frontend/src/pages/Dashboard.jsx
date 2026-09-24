@@ -1,24 +1,407 @@
 import Layout from "../components/Layout";
-import { useEffect } from "react";
-import { probarBackend } from "../services/api";
+import { useEffect, useState } from "react";
+
+import {
+  obtenerClientes,
+  obtenerSolicitudes,
+  obtenerEvaluaciones,
+} from "../services/api";
 
 function Dashboard() {
-useEffect(() => {
+  // =========================================================
+  // ESTADOS
+  // =========================================================
 
-    probarBackend()
-        .then((respuesta) => {
-            console.log("RESPUESTA DEL BACKEND:", respuesta);
-        })
-        .catch((error) => {
-            console.error("ERROR:", error);
-        });
+  const [clientes, setClientes] = useState([]);
+  const [solicitudes, setSolicitudes] = useState([]);
+  const [evaluaciones, setEvaluaciones] = useState([]);
 
-}, []);
+  const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState("");
+
+
+  // =========================================================
+  // CARGAR INFORMACIÓN DEL DASHBOARD
+  // =========================================================
+
+  useEffect(() => {
+    cargarDashboard();
+  }, []);
+
+
+  const cargarDashboard = async () => {
+    try {
+      setCargando(true);
+      setError("");
+
+      const [
+        datosClientes,
+        datosSolicitudes,
+        datosEvaluaciones,
+      ] = await Promise.all([
+        obtenerClientes(),
+        obtenerSolicitudes(),
+        obtenerEvaluaciones(),
+      ]);
+
+      setClientes(datosClientes || []);
+      setSolicitudes(datosSolicitudes || []);
+      setEvaluaciones(datosEvaluaciones || []);
+
+    } catch (error) {
+      console.error(
+        "ERROR AL CARGAR DASHBOARD:",
+        error
+      );
+
+      setError(
+        "No se pudo cargar la información del dashboard."
+      );
+
+    } finally {
+      setCargando(false);
+    }
+  };
+
+
+  // =========================================================
+  // CONTADORES GENERALES
+  // =========================================================
+
+  const totalClientes = clientes.length;
+
+  const totalSolicitudes = solicitudes.length;
+
+  const totalEvaluaciones = evaluaciones.length;
+
+
+  // =========================================================
+  // DISTRIBUCIÓN DE RIESGO
+  // =========================================================
+
+  const riesgoAlto = evaluaciones.filter(
+    (evaluacion) =>
+      String(evaluacion.nivelRiesgo || "")
+        .toLowerCase() === "alto"
+  ).length;
+
+
+  const riesgoMedio = evaluaciones.filter(
+    (evaluacion) =>
+      String(evaluacion.nivelRiesgo || "")
+        .toLowerCase() === "medio"
+  ).length;
+
+
+  const riesgoBajo = evaluaciones.filter(
+    (evaluacion) =>
+      String(evaluacion.nivelRiesgo || "")
+        .toLowerCase() === "bajo"
+  ).length;
+
+
+  // =========================================================
+  // SOLICITUDES APROBADAS / RECHAZADAS
+  // =========================================================
+
+  const solicitudesAprobadas = solicitudes.filter(
+    (solicitud) =>
+      String(solicitud.estado || "")
+        .toLowerCase() === "aprobado" ||
+      String(solicitud.estado || "")
+        .toLowerCase() === "aprobada"
+  ).length;
+
+
+  const solicitudesRechazadas = solicitudes.filter(
+    (solicitud) =>
+      String(solicitud.estado || "")
+        .toLowerCase() === "rechazado" ||
+      String(solicitud.estado || "")
+        .toLowerCase() === "rechazada"
+  ).length;
+
+
+  // =========================================================
+  // SOLICITUDES PENDIENTES / EN EVALUACIÓN
+  // =========================================================
+
+  const solicitudesPendientes = solicitudes.filter(
+    (solicitud) => {
+      const estado = String(
+        solicitud.estado || ""
+      ).toLowerCase();
+
+      return (
+        estado === "pendiente" ||
+        estado === "en evaluación" ||
+        estado === "en evaluacion"
+      );
+    }
+  ).length;
+
+
+  // =========================================================
+  // SOLICITUDES POR MES
+  // =========================================================
+
+  const obtenerSolicitudesPorMes = () => {
+    const meses = [
+      "Ene",
+      "Feb",
+      "Mar",
+      "Abr",
+      "May",
+      "Jun",
+      "Jul",
+      "Ago",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dic",
+    ];
+
+    const conteo = Array(12).fill(0);
+
+    solicitudes.forEach((solicitud) => {
+      if (!solicitud.fechaSolicitud) {
+        return;
+      }
+
+      const fecha = new Date(
+        solicitud.fechaSolicitud
+      );
+
+      if (Number.isNaN(fecha.getTime())) {
+        return;
+      }
+
+      const mes = fecha.getMonth();
+
+      conteo[mes] += 1;
+    });
+
+    return meses.map((mes, index) => ({
+      mes,
+      cantidad: conteo[index],
+    }));
+  };
+
+
+  const solicitudesPorMes =
+    obtenerSolicitudesPorMes();
+
+
+  // =========================================================
+  // ALTURA DE LAS BARRAS
+  // =========================================================
+
+  const maximoSolicitudesMes = Math.max(
+    ...solicitudesPorMes.map(
+      (item) => item.cantidad
+    ),
+    1
+  );
+
+
+  const calcularAlturaBarra = (cantidad) => {
+    if (cantidad === 0) {
+      return "10px";
+    }
+
+    const alturaMinima = 35;
+    const alturaMaxima = 220;
+
+    const altura =
+      (cantidad / maximoSolicitudesMes) *
+      alturaMaxima;
+
+    return `${Math.max(
+      altura,
+      alturaMinima
+    )}px`;
+  };
+
+
+  // =========================================================
+  // ÚLTIMAS EVALUACIONES
+  // =========================================================
+
+  const evaluacionesRecientes = [
+    ...evaluaciones,
+  ]
+    .sort((a, b) => {
+      const fechaA = a.fechaEvaluacion
+        ? new Date(a.fechaEvaluacion).getTime()
+        : 0;
+
+      const fechaB = b.fechaEvaluacion
+        ? new Date(b.fechaEvaluacion).getTime()
+        : 0;
+
+      return fechaB - fechaA;
+    })
+    .slice(0, 5);
+
+
+  // =========================================================
+  // FORMATEAR PORCENTAJE
+  // =========================================================
+
+  const formatearPorcentaje = (valor) => {
+    if (
+      valor === null ||
+      valor === undefined
+    ) {
+      return "-";
+    }
+
+    return `${Number(valor).toLocaleString(
+      "es-EC",
+      {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }
+    )}%`;
+  };
+
+
+  // =========================================================
+  // FORMATEAR FECHA
+  // =========================================================
+
+  const formatearFecha = (fecha) => {
+    if (!fecha) {
+      return "-";
+    }
+
+    return new Date(fecha).toLocaleDateString(
+      "es-EC",
+      {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      }
+    );
+  };
+
+
+  // =========================================================
+  // CLASE DEL BADGE DE RIESGO
+  // =========================================================
+
+  const obtenerClaseRiesgo = (riesgo) => {
+    const valor = String(
+      riesgo || ""
+    ).toLowerCase();
+
+    if (valor === "bajo") {
+      return "badge bajo";
+    }
+
+    if (valor === "medio") {
+      return "badge medio";
+    }
+
+    if (valor === "alto") {
+      return "badge alto";
+    }
+
+    return "badge";
+  };
+
+
+  // =========================================================
+  // ESTADO VISUAL DE LA EVALUACIÓN
+  // =========================================================
+
+  const obtenerTextoEstado = (evaluacion) => {
+    if (evaluacion.estado) {
+      return evaluacion.estado;
+    }
+
+    return "Evaluada";
+  };
+
+
+  // =========================================================
+  // CARGANDO
+  // =========================================================
+
+  if (cargando) {
+    return (
+      <Layout title="Dashboard Principal">
+
+        <section className="panel">
+
+          <p
+            style={{
+              textAlign: "center",
+              padding: "40px",
+            }}
+          >
+            ⏳ Cargando información del dashboard...
+          </p>
+
+        </section>
+
+      </Layout>
+    );
+  }
+
+
+  // =========================================================
+  // RETURN
+  // =========================================================
+
   return (
-
     <Layout title="Dashboard Principal">
 
+      {/* =====================================================
+          ERROR
+      ===================================================== */}
+
+      {error && (
+        <section
+          className="panel"
+          style={{
+            marginBottom: "20px",
+            borderLeft: "4px solid #c62828",
+          }}
+        >
+          <strong>
+            ⚠️ {error}
+          </strong>
+        </section>
+      )}
+
+
+      {/* =====================================================
+          TARJETAS PRINCIPALES
+      ===================================================== */}
+
       <section className="cards five">
+
+        {/* CLIENTES */}
+
+        <div className="card">
+
+          <h3>
+            Total clientes
+          </h3>
+
+          <div className="number">
+            {totalClientes}
+          </div>
+
+          <p>
+            Clientes registrados
+          </p>
+
+        </div>
+
+
+        {/* SOLICITUDES */}
 
         <div className="card">
 
@@ -27,7 +410,7 @@ useEffect(() => {
           </h3>
 
           <div className="number">
-            128
+            {totalSolicitudes}
           </div>
 
           <p>
@@ -36,6 +419,9 @@ useEffect(() => {
 
         </div>
 
+
+        {/* RIESGO ALTO */}
+
         <div className="card red">
 
           <h3>
@@ -43,14 +429,17 @@ useEffect(() => {
           </h3>
 
           <div className="number">
-            24
+            {riesgoAlto}
           </div>
 
           <p>
-            Clientes con alto riesgo
+            Evaluaciones de riesgo alto
           </p>
 
         </div>
+
+
+        {/* RIESGO MEDIO */}
 
         <div className="card orange">
 
@@ -59,14 +448,17 @@ useEffect(() => {
           </h3>
 
           <div className="number">
-            51
+            {riesgoMedio}
           </div>
 
           <p>
-            Clientes en revisión
+            Evaluaciones de riesgo medio
           </p>
 
         </div>
+
+
+        {/* RIESGO BAJO */}
 
         <div className="card yellow">
 
@@ -75,34 +467,90 @@ useEffect(() => {
           </h3>
 
           <div className="number">
-            53
+            {riesgoBajo}
           </div>
 
           <p>
-            Clientes viables
-          </p>
-
-        </div>
-
-        <div className="card gray">
-
-          <h3>
-            Aprobadas / Rechazadas
-          </h3>
-
-          <div className="number">
-            76 / 28
-          </div>
-
-          <p>
-            Resultado de solicitudes
+            Evaluaciones de riesgo bajo
           </p>
 
         </div>
 
       </section>
 
+
+      {/* =====================================================
+          SEGUNDA FILA DE INDICADORES
+      ===================================================== */}
+
+      <section
+        className="summary-cards four"
+        style={{
+          marginBottom: "24px",
+        }}
+      >
+
+        <div className="small-card">
+
+          <h3>
+            Evaluaciones IA
+          </h3>
+
+          <strong>
+            {totalEvaluaciones}
+          </strong>
+
+        </div>
+
+
+        <div className="small-card yellow">
+
+          <h3>
+            Pendientes / En evaluación
+          </h3>
+
+          <strong>
+            {solicitudesPendientes}
+          </strong>
+
+        </div>
+
+
+        <div className="small-card">
+
+          <h3>
+            Solicitudes aprobadas
+          </h3>
+
+          <strong>
+            {solicitudesAprobadas}
+          </strong>
+
+        </div>
+
+
+        <div className="small-card red">
+
+          <h3>
+            Solicitudes rechazadas
+          </h3>
+
+          <strong>
+            {solicitudesRechazadas}
+          </strong>
+
+        </div>
+
+      </section>
+
+
+      {/* =====================================================
+          GRÁFICO + RESUMEN DE RIESGO
+      ===================================================== */}
+
       <section className="dashboard-grid">
+
+        {/* SOLICITUDES POR MES */}
 
         <div className="panel">
 
@@ -110,51 +558,53 @@ useEffect(() => {
             Solicitudes por mes
           </h2>
 
+          <p
+            style={{
+              color: "#777",
+              marginTop: "-5px",
+              marginBottom: "25px",
+            }}
+          >
+            Distribución mensual de solicitudes registradas
+          </p>
+
+
           <div className="bar-chart">
 
-            <div
-              className="bar"
-              style={{ height: "120px" }}
-            >
-              <small>34</small>
-              <span>Ene</span>
-            </div>
+            {solicitudesPorMes.map(
+              (item) => (
 
-            <div
-              className="bar"
-              style={{ height: "170px" }}
-            >
-              <small>48</small>
-              <span>Feb</span>
-            </div>
+                <div
+                  className="bar"
+                  style={{
+                    height:
+                      calcularAlturaBarra(
+                        item.cantidad
+                      ),
+                  }}
+                  key={item.mes}
+                  title={`${item.mes}: ${item.cantidad} solicitudes`}
+                >
 
-            <div
-              className="bar"
-              style={{ height: "210px" }}
-            >
-              <small>61</small>
-              <span>Mar</span>
-            </div>
+                  <small>
+                    {item.cantidad}
+                  </small>
 
-            <div
-              className="bar"
-              style={{ height: "150px" }}
-            >
-              <small>42</small>
-              <span>Abr</span>
-            </div>
+                  <span>
+                    {item.mes}
+                  </span>
 
-            <div
-              className="bar"
-              style={{ height: "230px" }}
-            >
-              <small>70</small>
-              <span>May</span>
-            </div>
+                </div>
+
+              )
+            )}
 
           </div>
 
         </div>
+
+
+        {/* RESUMEN DE RIESGO */}
 
         <div className="panel">
 
@@ -162,35 +612,48 @@ useEffect(() => {
             Resumen de riesgo
           </h2>
 
+          <p
+            style={{
+              color: "#777",
+              marginTop: "-5px",
+              marginBottom: "20px",
+            }}
+          >
+            Clasificación de las evaluaciones realizadas
+          </p>
+
+
           <div className="risk-list">
 
             <div className="risk-item high">
 
               <strong>
-                Riesgo alto
+                Riesgo alto ({riesgoAlto})
               </strong>
 
               Requiere revisión detallada del analista.
 
             </div>
 
+
             <div className="risk-item medium">
 
               <strong>
-                Riesgo medio
+                Riesgo medio ({riesgoMedio})
               </strong>
 
-              Solicitudes con condiciones por validar.
+              Solicitudes que requieren revisión adicional.
 
             </div>
+
 
             <div className="risk-item low">
 
               <strong>
-                Riesgo bajo
+                Riesgo bajo ({riesgoBajo})
               </strong>
 
-              Solicitudes con perfil favorable.
+              Solicitudes con menor riesgo estimado por el modelo.
 
             </div>
 
@@ -200,17 +663,67 @@ useEffect(() => {
 
       </section>
 
+
+      {/* =====================================================
+          ÚLTIMAS EVALUACIONES
+      ===================================================== */}
+
       <section className="panel footer-panel">
 
-        <h2>
-          Últimas solicitudes evaluadas
-        </h2>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: "20px",
+            marginBottom: "20px",
+          }}
+        >
+
+          <div>
+
+            <h2
+              style={{
+                marginBottom: "5px",
+              }}
+            >
+              Últimas solicitudes evaluadas
+            </h2>
+
+            <p
+              style={{
+                margin: 0,
+                color: "#777",
+              }}
+            >
+              Resultados más recientes generados por el modelo de IA
+            </p>
+
+          </div>
+
+
+          <span
+            style={{
+              fontSize: "13px",
+              color: "#777",
+            }}
+          >
+            Mostrando las últimas{" "}
+            {evaluacionesRecientes.length}
+          </span>
+
+        </div>
+
 
         <table className="table">
 
           <thead>
 
             <tr>
+
+              <th>
+                Solicitud
+              </th>
 
               <th>
                 Cliente
@@ -221,7 +734,11 @@ useEffect(() => {
               </th>
 
               <th>
-                Score
+                Score IA
+              </th>
+
+              <th>
+                Mora estimada
               </th>
 
               <th>
@@ -232,93 +749,152 @@ useEffect(() => {
                 Estado
               </th>
 
+              <th>
+                Fecha
+              </th>
+
             </tr>
 
           </thead>
 
+
           <tbody>
 
-            <tr>
+            {evaluacionesRecientes.map(
+              (evaluacion) => {
 
-              <td>
-                Juan Pérez
-              </td>
+                const solicitud =
+                  evaluacion.solicitud;
 
-              <td>
-                Microcrédito
-              </td>
+                const cliente =
+                  solicitud?.cliente;
 
-              <td>
-                780
-              </td>
+                return (
 
-              <td>
-                <span className="badge bajo">
-                  Bajo
-                </span>
-              </td>
+                  <tr key={evaluacion.id}>
 
-              <td>
-                Aprobación sugerida
-              </td>
+                    <td>
+                      #{solicitud?.id || "-"}
+                    </td>
 
-            </tr>
 
-            <tr>
+                    <td>
 
-              <td>
-                María López
-              </td>
+                      {cliente
+                        ? `${cliente.nombres || ""} ${cliente.apellidos || ""}`
+                        : "-"}
 
-              <td>
-                Consumo
-              </td>
+                    </td>
 
-              <td>
-                620
-              </td>
 
-              <td>
-                <span className="badge medio">
-                  Medio
-                </span>
-              </td>
+                    <td>
 
-              <td>
-                En revisión
-              </td>
+                      {solicitud?.tipoCredito ||
+                        "-"}
 
-            </tr>
+                    </td>
 
-            <tr>
 
-              <td>
-                Carlos Zambrano
-              </td>
+                    <td>
 
-              <td>
-                Comercial
-              </td>
+                      <strong>
 
-              <td>
-                480
-              </td>
+                        {evaluacion.scoreIa != null
+                          ? `${evaluacion.scoreIa}/100`
+                          : "-"}
 
-              <td>
-                <span className="badge alto">
-                  Alto
-                </span>
-              </td>
+                      </strong>
 
-              <td>
-                Revisión crítica
-              </td>
+                    </td>
 
-            </tr>
+
+                    <td>
+
+                      {formatearPorcentaje(
+                        evaluacion.probabilidadMora
+                      )}
+
+                    </td>
+
+
+                    <td>
+
+                      <span
+                        className={
+                          obtenerClaseRiesgo(
+                            evaluacion.nivelRiesgo
+                          )
+                        }
+                      >
+
+                        {evaluacion.nivelRiesgo ||
+                          "-"}
+
+                      </span>
+
+                    </td>
+
+
+                    <td>
+
+                      {obtenerTextoEstado(
+                        evaluacion
+                      )}
+
+                    </td>
+
+
+                    <td>
+
+                      {formatearFecha(
+                        evaluacion.fechaEvaluacion
+                      )}
+
+                    </td>
+
+                  </tr>
+
+                );
+
+              }
+            )}
 
           </tbody>
 
         </table>
+
+
+        {evaluacionesRecientes.length === 0 && (
+
+          <div
+            style={{
+              padding: "35px",
+              textAlign: "center",
+              color: "#777",
+            }}
+          >
+
+            <div
+              style={{
+                fontSize: "32px",
+                marginBottom: "10px",
+              }}
+            >
+              🧠
+            </div>
+
+            <strong>
+              No existen evaluaciones de riesgo todavía.
+            </strong>
+
+            <p>
+              Cuando una solicitud sea evaluada mediante
+              el modelo de IA, aparecerá aquí.
+            </p>
+
+          </div>
+
+        )}
 
       </section>
 
