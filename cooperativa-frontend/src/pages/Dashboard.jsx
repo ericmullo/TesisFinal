@@ -101,43 +101,73 @@ function Dashboard() {
 
 
   // =========================================================
-  // SOLICITUDES APROBADAS / RECHAZADAS
+  // DECISIONES FORMALES DEL ANALISTA
+  // =========================================================
+  // Solo contamos una decisión como formal cuando existe
+  // fechaDecision. Así no mezclamos registros antiguos.
   // =========================================================
 
-  const solicitudesAprobadas = solicitudes.filter(
-    (solicitud) =>
-      String(solicitud.estado || "")
-        .toLowerCase() === "aprobado" ||
-      String(solicitud.estado || "")
-        .toLowerCase() === "aprobada"
-  ).length;
-
-
-  const solicitudesRechazadas = solicitudes.filter(
-    (solicitud) =>
-      String(solicitud.estado || "")
-        .toLowerCase() === "rechazado" ||
-      String(solicitud.estado || "")
-        .toLowerCase() === "rechazada"
-  ).length;
-
-
-  // =========================================================
-  // SOLICITUDES PENDIENTES / EN EVALUACIÓN
-  // =========================================================
-
-  const solicitudesPendientes = solicitudes.filter(
+  const decisionesFormales = solicitudes.filter(
     (solicitud) => {
       const estado = String(
         solicitud.estado || ""
       ).toLowerCase();
 
-      return (
-        estado === "pendiente" ||
-        estado === "en evaluación" ||
-        estado === "en evaluacion"
+      const esDecisionFinal =
+        estado === "aprobado" ||
+        estado === "aprobada" ||
+        estado === "rechazado" ||
+        estado === "rechazada";
+
+      return Boolean(
+        solicitud.fechaDecision &&
+        esDecisionFinal
       );
     }
+  );
+
+
+  const solicitudesAprobadas =
+    decisionesFormales.filter(
+      (solicitud) => {
+        const estado = String(
+          solicitud.estado || ""
+        ).toLowerCase();
+
+        return (
+          estado === "aprobado" ||
+          estado === "aprobada"
+        );
+      }
+    ).length;
+
+
+  const solicitudesRechazadas =
+    decisionesFormales.filter(
+      (solicitud) => {
+        const estado = String(
+          solicitud.estado || ""
+        ).toLowerCase();
+
+        return (
+          estado === "rechazado" ||
+          estado === "rechazada"
+        );
+      }
+    ).length;
+
+
+  const totalDecisionesFormales =
+    decisionesFormales.length;
+
+
+  // =========================================================
+  // SOLICITUDES SIN DECISIÓN FORMAL
+  // =========================================================
+
+  const solicitudesPendientes = solicitudes.filter(
+    (solicitud) =>
+      !solicitud.fechaDecision
   ).length;
 
 
@@ -500,13 +530,23 @@ function Dashboard() {
             {totalEvaluaciones}
           </strong>
 
+          <small
+            style={{
+              display: "block",
+              marginTop: "6px",
+              color: "#777",
+            }}
+          >
+            Decisiones formales: {totalDecisionesFormales}
+          </small>
+
         </div>
 
 
         <div className="small-card yellow">
 
           <h3>
-            Pendientes / En evaluación
+            Sin decisión formal
           </h3>
 
           <strong>
@@ -519,7 +559,7 @@ function Dashboard() {
         <div className="small-card">
 
           <h3>
-            Solicitudes aprobadas
+            Aprobadas por analista
           </h3>
 
           <strong>
@@ -532,7 +572,7 @@ function Dashboard() {
         <div className="small-card red">
 
           <h3>
-            Solicitudes rechazadas
+            Rechazadas por analista
           </h3>
 
           <strong>

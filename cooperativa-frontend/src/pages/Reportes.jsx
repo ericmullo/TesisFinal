@@ -6,6 +6,7 @@ import autoTable from "jspdf-autotable";
 
 import {
   obtenerEvaluaciones,
+  obtenerSolicitudes,
 } from "../services/api";
 
 export default function Reportes() {
@@ -15,6 +16,7 @@ export default function Reportes() {
   // =========================================================
 
   const [evaluaciones, setEvaluaciones] = useState([]);
+  const [solicitudes, setSolicitudes] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
 
@@ -27,6 +29,7 @@ export default function Reportes() {
   const [fechaFin, setFechaFin] = useState("");
   const [tipoCredito, setTipoCredito] = useState("Todos");
   const [nivelRiesgo, setNivelRiesgo] = useState("Todos");
+  const [decisionAnalista, setDecisionAnalista] = useState("Todos");
 
 
   // Estos son los filtros que realmente están aplicados.
@@ -35,6 +38,7 @@ export default function Reportes() {
     fechaFin: "",
     tipoCredito: "Todos",
     nivelRiesgo: "Todos",
+    decisionAnalista: "Todos",
   });
 
 
@@ -54,9 +58,16 @@ export default function Reportes() {
       setCargando(true);
       setError("");
 
-      const datos = await obtenerEvaluaciones();
+      const [
+        datosEvaluaciones,
+        datosSolicitudes,
+      ] = await Promise.all([
+        obtenerEvaluaciones(),
+        obtenerSolicitudes(),
+      ]);
 
-      setEvaluaciones(datos || []);
+      setEvaluaciones(datosEvaluaciones || []);
+      setSolicitudes(datosSolicitudes || []);
 
     } catch (error) {
 
@@ -103,6 +114,7 @@ export default function Reportes() {
       fechaFin,
       tipoCredito,
       nivelRiesgo,
+      decisionAnalista,
     });
 
   };
@@ -118,14 +130,47 @@ export default function Reportes() {
     setFechaFin("");
     setTipoCredito("Todos");
     setNivelRiesgo("Todos");
+    setDecisionAnalista("Todos");
 
     setFiltrosAplicados({
       fechaInicio: "",
       fechaFin: "",
       tipoCredito: "Todos",
       nivelRiesgo: "Todos",
+      decisionAnalista: "Todos",
     });
 
+  };
+
+
+  // =========================================================
+  // DECISIÓN FORMAL DEL ANALISTA
+  // =========================================================
+
+  const obtenerDecisionFormal = (solicitud) => {
+    if (!solicitud?.fechaDecision) {
+      return "Sin decisión";
+    }
+
+    const estado = String(
+      solicitud.estado || ""
+    ).toLowerCase();
+
+    if (
+      estado === "aprobado" ||
+      estado === "aprobada"
+    ) {
+      return "Aprobado";
+    }
+
+    if (
+      estado === "rechazado" ||
+      estado === "rechazada"
+    ) {
+      return "Rechazado";
+    }
+
+    return "Sin decisión";
   };
 
 
@@ -222,6 +267,19 @@ export default function Reportes() {
       }
 
 
+      // -----------------------------------------------------
+      // DECISIÓN FINAL DEL ANALISTA
+      // -----------------------------------------------------
+
+      if (
+        filtrosAplicados.decisionAnalista !== "Todos" &&
+        obtenerDecisionFormal(solicitud) !==
+          filtrosAplicados.decisionAnalista
+      ) {
+        return false;
+      }
+
+
       return true;
 
     });
@@ -264,6 +322,53 @@ export default function Reportes() {
         String(
           evaluacion.nivelRiesgo || ""
         ).toLowerCase() === "bajo"
+    ).length;
+
+
+  // =========================================================
+  // DECISIONES FORMALES DEL ANALISTA
+  // =========================================================
+
+  const decisionesFormalesFiltradas =
+    evaluacionesFiltradas.filter(
+      (evaluacion) =>
+        obtenerDecisionFormal(
+          evaluacion.solicitud
+        ) !== "Sin decisión"
+    );
+
+  const totalDecisionesFormales =
+    decisionesFormalesFiltradas.length;
+
+  const totalDecisionesSistema =
+    solicitudes.filter(
+      (solicitud) =>
+        obtenerDecisionFormal(solicitud) !==
+        "Sin decisión"
+    ).length;
+
+  const totalAprobadas =
+    decisionesFormalesFiltradas.filter(
+      (evaluacion) =>
+        obtenerDecisionFormal(
+          evaluacion.solicitud
+        ) === "Aprobado"
+    ).length;
+
+  const totalRechazadas =
+    decisionesFormalesFiltradas.filter(
+      (evaluacion) =>
+        obtenerDecisionFormal(
+          evaluacion.solicitud
+        ) === "Rechazado"
+    ).length;
+
+  const totalSinDecision =
+    evaluacionesFiltradas.filter(
+      (evaluacion) =>
+        obtenerDecisionFormal(
+          evaluacion.solicitud
+        ) === "Sin decisión"
     ).length;
 
 
@@ -782,6 +887,12 @@ export default function Reportes() {
     49
   );
 
+  pdf.text(
+    `Decision: ${filtrosAplicados.decisionAnalista}`,
+    14,
+    54
+  );
+
 
   // =========================================================
   // RESUMEN
@@ -813,6 +924,8 @@ export default function Reportes() {
       "Riesgo medio",
       "Riesgo bajo",
       "Predominante",
+      "Aprobadas",
+      "Rechazadas",
     ]],
 
     body: [[
@@ -834,6 +947,10 @@ export default function Reportes() {
       riesgoBajo,
 
       riesgoPredominante,
+
+      totalAprobadas,
+
+      totalRechazadas,
 
     ]],
 
@@ -925,8 +1042,13 @@ export default function Reportes() {
           evaluacion.nivelRiesgo ||
             "-",
 
-          evaluacion.estado ||
-            "-",
+          obtenerDecisionFormal(
+            solicitud
+          ),
+
+          formatearFecha(
+            solicitud?.fechaDecision
+          ),
 
         ];
 
@@ -953,7 +1075,8 @@ export default function Reportes() {
       "Score IA",
       "Mora estimada",
       "Riesgo",
-      "Estado",
+      "Decision",
+      "Fecha decision",
 
     ]],
 
@@ -1013,7 +1136,12 @@ export default function Reportes() {
       },
 
       8: {
-        cellWidth: 25,
+        cellWidth: 22,
+        halign: "center"
+      },
+
+      9: {
+        cellWidth: 24,
         halign: "center"
       },
 
@@ -1226,6 +1354,11 @@ export default function Reportes() {
       filtrosAplicados.nivelRiesgo
     ],
 
+    [
+      "Decisión del analista",
+      filtrosAplicados.decisionAnalista
+    ],
+
     [],
 
     [
@@ -1278,6 +1411,26 @@ export default function Reportes() {
       riesgoPredominante
     ],
 
+    [
+      "Decisiones formales",
+      totalDecisionesFormales
+    ],
+
+    [
+      "Aprobadas por analista",
+      totalAprobadas
+    ],
+
+    [
+      "Rechazadas por analista",
+      totalRechazadas
+    ],
+
+    [
+      "Sin decisión formal",
+      totalSinDecision
+    ],
+
   ];
 
 
@@ -1288,11 +1441,28 @@ export default function Reportes() {
 
 
   // Formato porcentaje para la probabilidad promedio.
-  // La fila 14 del Excel corresponde a este indicador.
+  // Buscamos la fila por su etiqueta para que el formato
+  // siga funcionando aunque agreguemos nuevos indicadores.
 
-  if (hojaResumen["B14"]) {
-    hojaResumen["B14"].z = "0.00%";
-  }
+  Object.keys(hojaResumen).forEach((referencia) => {
+    const celda = hojaResumen[referencia];
+
+    if (
+      celda?.v ===
+      "Probabilidad de mora promedio"
+    ) {
+      const fila = Number(
+        referencia.replace(/\D/g, "")
+      );
+
+      const celdaValor =
+        hojaResumen[`B${fila}`];
+
+      if (celdaValor) {
+        celdaValor.z = "0.00%";
+      }
+    }
+  });
 
 
   // Ancho de columnas
@@ -1396,8 +1566,21 @@ export default function Reportes() {
           "Modelo utilizado":
             evaluacion.modeloUtilizado || "",
 
-          "Estado":
+          "Estado evaluación IA":
             evaluacion.estado || "",
+
+          "Decisión analista":
+            obtenerDecisionFormal(
+              solicitud
+            ),
+
+          "Fecha decisión":
+            formatearFecha(
+              solicitud?.fechaDecision
+            ),
+
+          "Observación decisión":
+            solicitud?.observacionDecision || "",
 
         };
 
@@ -1434,7 +1617,10 @@ export default function Reportes() {
     { wch: 18 }, // Riesgo
     { wch: 55 }, // Recomendación
     { wch: 30 }, // Modelo
-    { wch: 18 }, // Estado
+    { wch: 20 }, // Estado evaluación IA
+    { wch: 20 }, // Decisión analista
+    { wch: 18 }, // Fecha decisión
+    { wch: 70 }, // Observación decisión
 
   ];
 
@@ -1806,6 +1992,34 @@ export default function Reportes() {
           </div>
 
 
+          {/* DECISIÓN DEL ANALISTA */}
+
+          <div className="form-group">
+
+            <label>
+              Decisión del analista
+            </label>
+
+            <select
+              value={decisionAnalista}
+              onChange={
+                (event) =>
+                  setDecisionAnalista(
+                    event.target.value
+                  )
+              }
+            >
+
+              <option>Todos</option>
+              <option>Aprobado</option>
+              <option>Rechazado</option>
+              <option>Sin decisión</option>
+
+            </select>
+
+          </div>
+
+
           <button
             className="btn btn-green"
             onClick={aplicarFiltros}
@@ -2004,6 +2218,17 @@ export default function Reportes() {
             Resumen del periodo
           </h2>
 
+          <p
+            style={{
+              color: "#777",
+              marginTop: "-5px",
+              marginBottom: "18px",
+            }}
+          >
+            Decisiones formales registradas en el sistema:{" "}
+            {totalDecisionesSistema}
+          </p>
+
 
           <div className="report-list">
 
@@ -2089,6 +2314,57 @@ export default function Reportes() {
 
             </div>
 
+            <div className="report-item">
+
+              <strong>
+                Decisiones formales
+              </strong>
+
+              <p>
+                {totalDecisionesFormales}
+              </p>
+
+            </div>
+
+
+            <div className="report-item">
+
+              <strong>
+                Aprobadas por analista
+              </strong>
+
+              <p>
+                {totalAprobadas}
+              </p>
+
+            </div>
+
+
+            <div className="report-item">
+
+              <strong>
+                Rechazadas por analista
+              </strong>
+
+              <p>
+                {totalRechazadas}
+              </p>
+
+            </div>
+
+
+            <div className="report-item">
+
+              <strong>
+                Sin decisión formal
+              </strong>
+
+              <p>
+                {totalSinDecision}
+              </p>
+
+            </div>
+
           </div>
 
         </div>
@@ -2152,7 +2428,15 @@ export default function Reportes() {
                 </th>
 
                 <th>
-                  Estado
+                  Estado IA
+                </th>
+
+                <th>
+                  Decisión analista
+                </th>
+
+                <th>
+                  Fecha decisión
                 </th>
 
               </tr>
@@ -2270,6 +2554,24 @@ export default function Reportes() {
                         {evaluacion.estado ||
                           "-"
                         }
+
+                      </td>
+
+
+                      <td>
+
+                        {obtenerDecisionFormal(
+                          solicitud
+                        )}
+
+                      </td>
+
+
+                      <td>
+
+                        {formatearFecha(
+                          solicitud?.fechaDecision
+                        )}
 
                       </td>
 
