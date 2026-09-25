@@ -6,7 +6,9 @@ import {
   obtenerDocumentosPorSolicitud,
   obtenerEvaluacionesPorSolicitud,
   verificarDocumentacion,
-  crearEvaluacion
+  crearEvaluacion,
+  aprobarSolicitud,
+  rechazarSolicitud
 } from "../services/api";
 
 
@@ -35,6 +37,14 @@ export default function EvaluacionRiesgo() {
   const [cargando, setCargando] = useState(false);
 
   const [generando, setGenerando] = useState(false);
+
+  // =========================================================
+  // DECISIÓN DEL ANALISTA
+  // =========================================================
+
+  const [modalDecision, setModalDecision] = useState(false);
+  const [observacionDecision, setObservacionDecision] = useState("");
+  const [guardandoDecision, setGuardandoDecision] = useState(false);
 
 
   // =========================================================
@@ -285,6 +295,160 @@ export default function EvaluacionRiesgo() {
     } finally {
 
       setGenerando(false);
+
+    }
+
+  };
+
+
+  // =========================================================
+  // DECISIÓN FINAL DEL ANALISTA
+  // =========================================================
+
+  const tieneDecisionFinal = () => {
+
+    const estado =
+      solicitudSeleccionada?.estado?.toLowerCase();
+
+    return (
+      estado === "aprobado" ||
+      estado === "rechazado"
+    );
+
+  };
+
+
+  const abrirModalDecision = () => {
+
+    if (!solicitudSeleccionada || !evaluacion) {
+
+      alert(
+        "La solicitud debe contar con una evaluación de riesgo antes de registrar una decisión."
+      );
+
+      return;
+    }
+
+    if (
+      evaluacion.estado?.toLowerCase() !==
+      "completada"
+    ) {
+
+      alert(
+        "La evaluación de riesgo todavía no está completada."
+      );
+
+      return;
+    }
+
+    setObservacionDecision(
+      solicitudSeleccionada.observacionDecision || ""
+    );
+
+    setModalDecision(true);
+
+  };
+
+
+  const cerrarModalDecision = () => {
+
+    if (guardandoDecision) {
+      return;
+    }
+
+    setModalDecision(false);
+    setObservacionDecision("");
+
+  };
+
+
+  const registrarDecision = async (decision) => {
+
+    if (!solicitudSeleccionada) {
+      return;
+    }
+
+    const observacion =
+      observacionDecision.trim();
+
+    if (!observacion) {
+
+      alert(
+        "Debe ingresar una observación o justificación para registrar la decisión."
+      );
+
+      return;
+    }
+
+    if (observacion.length < 5) {
+
+      alert(
+        "La observación debe contener al menos 5 caracteres."
+      );
+
+      return;
+    }
+
+    try {
+
+      setGuardandoDecision(true);
+
+      let solicitudActualizada;
+
+      if (decision === "aprobar") {
+
+        solicitudActualizada =
+          await aprobarSolicitud(
+            solicitudSeleccionada.id,
+            observacion
+          );
+
+      } else {
+
+        solicitudActualizada =
+          await rechazarSolicitud(
+            solicitudSeleccionada.id,
+            observacion
+          );
+
+      }
+
+      setSolicitudSeleccionada(
+        solicitudActualizada
+      );
+
+      setSolicitudes((anteriores) =>
+        anteriores.map((solicitud) =>
+          solicitud.id === solicitudActualizada.id
+            ? solicitudActualizada
+            : solicitud
+        )
+      );
+
+      setModalDecision(false);
+      setObservacionDecision("");
+
+      alert(
+        decision === "aprobar"
+          ? "Crédito aprobado y decisión registrada correctamente."
+          : "Crédito rechazado y decisión registrada correctamente."
+      );
+
+    } catch (error) {
+
+      console.error(
+        "Error al registrar decisión:",
+        error
+      );
+
+      alert(
+        error.message ||
+        "No se pudo registrar la decisión del analista."
+      );
+
+    } finally {
+
+      setGuardandoDecision(false);
 
     }
 
@@ -1315,6 +1479,160 @@ export default function EvaluacionRiesgo() {
 
 
             {/* =================================================
+                DECISIÓN FINAL DEL ANALISTA
+            ================================================= */}
+
+            {evaluacion && (
+
+              <section className="panel">
+
+                <div className="risk-section-heading">
+
+                  <div>
+
+                    <h2 className="section-title">
+                      Decisión final del analista
+                    </h2>
+
+                    <p>
+                      La evaluación de IA funciona como apoyo.
+                      La aprobación o rechazo corresponde al
+                      analista autorizado.
+                    </p>
+
+                  </div>
+
+                  <span
+                    className={`evaluation-state ${
+                      tieneDecisionFinal()
+                        ? "created"
+                        : "waiting"
+                    }`}
+                  >
+                    {tieneDecisionFinal()
+                      ? solicitudSeleccionada.estado
+                      : "Pendiente de decisión"}
+                  </span>
+
+                </div>
+
+
+                {tieneDecisionFinal() ? (
+
+                  <div className="explain-box">
+
+                    <p>
+                      <strong>Decisión:</strong>{" "}
+                      {solicitudSeleccionada.estado}
+                    </p>
+
+                    <p>
+                      <strong>Justificación del analista:</strong>{" "}
+                      {solicitudSeleccionada.observacionDecision ||
+                        "Sin observación registrada."}
+                    </p>
+
+                    <p>
+                      <strong>Fecha de decisión:</strong>{" "}
+                      {formatearFecha(
+                        solicitudSeleccionada.fechaDecision
+                      )}
+                    </p>
+
+                  </div>
+
+                ) : (
+
+                  <>
+
+                    <div className="bureau-grid">
+
+                      <InfoItem
+                        title="Score IA"
+                        value={
+                          evaluacion.scoreIa != null
+                            ? `${evaluacion.scoreIa}/100`
+                            : "Pendiente"
+                        }
+                      />
+
+                      <InfoItem
+                        title="Probabilidad de mora"
+                        value={formatearPorcentaje(
+                          evaluacion.probabilidadMora
+                        )}
+                        extra="yellow-left"
+                      />
+
+                      <InfoItem
+                        title="Nivel de riesgo"
+                        value={
+                          evaluacion.nivelRiesgo ||
+                          "Pendiente"
+                        }
+                        extra="orange-left"
+                      />
+
+                      <InfoItem
+                        title="Estado de evaluación"
+                        value={
+                          evaluacion.estado ||
+                          "Pendiente"
+                        }
+                      />
+
+                    </div>
+
+
+                    <div
+                      className="explain-box"
+                      style={{ marginTop: "20px" }}
+                    >
+
+                      <p>
+                        <strong>Recomendación de la IA:</strong>{" "}
+                        {evaluacion.recomendacion ||
+                          "Sin recomendación registrada."}
+                      </p>
+
+                      <p>
+                        La recomendación del modelo no aprueba ni
+                        rechaza automáticamente el crédito. La
+                        decisión debe ser registrada por el analista.
+                      </p>
+
+                    </div>
+
+
+                    <div
+                      className="actions"
+                      style={{ marginTop: "20px" }}
+                    >
+
+                      <button
+                        type="button"
+                        className="btn btn-yellow"
+                        onClick={abrirModalDecision}
+                        disabled={
+                          evaluacion.estado?.toLowerCase() !==
+                          "completada"
+                        }
+                      >
+                        Revisar y tomar decisión
+                      </button>
+
+                    </div>
+
+                  </>
+
+                )}
+
+              </section>
+
+            )}
+
+
+            {/* =================================================
                 ACCIONES
             ================================================= */}
 
@@ -1386,6 +1704,226 @@ export default function EvaluacionRiesgo() {
             </section>
 
           </>
+
+        )}
+
+      {/* =====================================================
+          MODAL - DECISIÓN DEL ANALISTA
+      ===================================================== */}
+
+      {modalDecision &&
+        solicitudSeleccionada &&
+        evaluacion && (
+
+          <div
+            style={{
+              position: "fixed",
+              inset: 0,
+              background: "rgba(0, 0, 0, 0.45)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "20px",
+              zIndex: 9999
+            }}
+            onClick={cerrarModalDecision}
+          >
+
+            <div
+              className="panel"
+              style={{
+                width: "min(760px, 100%)",
+                maxHeight: "90vh",
+                overflowY: "auto",
+                margin: 0
+              }}
+              onClick={(event) =>
+                event.stopPropagation()
+              }
+            >
+
+              <div className="risk-section-heading">
+
+                <div>
+
+                  <span>
+                    Solicitud #{solicitudSeleccionada.id}
+                  </span>
+
+                  <h2 className="section-title">
+                    Decisión del analista
+                  </h2>
+
+                </div>
+
+                <button
+                  type="button"
+                  className="btn btn-gray"
+                  onClick={cerrarModalDecision}
+                  disabled={guardandoDecision}
+                >
+                  Cerrar
+                </button>
+
+              </div>
+
+
+              <div className="bureau-grid">
+
+                <InfoItem
+                  title="Cliente"
+                  value={obtenerNombreCliente()}
+                />
+
+                <InfoItem
+                  title="Score IA"
+                  value={
+                    evaluacion.scoreIa != null
+                      ? `${evaluacion.scoreIa}/100`
+                      : "Pendiente"
+                  }
+                />
+
+                <InfoItem
+                  title="Probabilidad de mora"
+                  value={formatearPorcentaje(
+                    evaluacion.probabilidadMora
+                  )}
+                  extra="yellow-left"
+                />
+
+                <InfoItem
+                  title="Nivel de riesgo"
+                  value={
+                    evaluacion.nivelRiesgo ||
+                    "Pendiente"
+                  }
+                  extra="orange-left"
+                />
+
+              </div>
+
+
+              <div
+                className="explain-box"
+                style={{ marginTop: "20px" }}
+              >
+
+                <p>
+                  <strong>Recomendación de la IA:</strong>{" "}
+                  {evaluacion.recomendacion ||
+                    "Sin recomendación registrada."}
+                </p>
+
+              </div>
+
+
+              <div
+                className="form-group full"
+                style={{ marginTop: "20px" }}
+              >
+
+                <label>
+                  Observación / justificación *
+                </label>
+
+                <textarea
+                  rows="6"
+                  maxLength="1500"
+                  value={observacionDecision}
+                  onChange={(event) =>
+                    setObservacionDecision(
+                      event.target.value
+                    )
+                  }
+                  placeholder="Explique los motivos de la decisión del crédito..."
+                  disabled={guardandoDecision}
+                  style={{
+                    width: "100%",
+                    resize: "vertical",
+                    boxSizing: "border-box",
+                    padding: "14px",
+                    borderRadius: "10px",
+                    border: "1px solid #d6d6d6",
+                    font: "inherit"
+                  }}
+                />
+
+                <small>
+                  {observacionDecision.length}/1500 caracteres
+                </small>
+
+              </div>
+
+
+              <div
+                className="risk-warning-box"
+                style={{ marginTop: "20px" }}
+              >
+                La predicción de la IA funciona como apoyo para
+                el análisis. La decisión final registrada
+                corresponde al criterio del analista.
+              </div>
+
+
+              <div
+                className="actions"
+                style={{
+                  marginTop: "22px",
+                  display: "flex",
+                  gap: "12px",
+                  flexWrap: "wrap"
+                }}
+              >
+
+                <button
+                  type="button"
+                  className="btn btn-gray"
+                  onClick={cerrarModalDecision}
+                  disabled={guardandoDecision}
+                >
+                  Cancelar
+                </button>
+
+                <button
+                  type="button"
+                  className="btn"
+                  onClick={() =>
+                    registrarDecision("rechazar")
+                  }
+                  disabled={guardandoDecision}
+                  style={{
+                    background: "#b42318",
+                    color: "white"
+                  }}
+                >
+                  {guardandoDecision
+                    ? "Guardando..."
+                    : "✕ Rechazar crédito"}
+                </button>
+
+                <button
+                  type="button"
+                  className="btn"
+                  onClick={() =>
+                    registrarDecision("aprobar")
+                  }
+                  disabled={guardandoDecision}
+                  style={{
+                    background: "#08783e",
+                    color: "white"
+                  }}
+                >
+                  {guardandoDecision
+                    ? "Guardando..."
+                    : "✓ Aprobar crédito"}
+                </button>
+
+              </div>
+
+            </div>
+
+          </div>
 
         )}
 

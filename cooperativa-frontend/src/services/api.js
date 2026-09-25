@@ -390,3 +390,53 @@ export async function obtenerEvaluacionesPorCliente(clienteId) {
 
   return await response.json();
 }
+// =========================================================
+// DECISIÓN FINAL DEL ANALISTA
+// =========================================================
+
+export async function aprobarSolicitud(id, observacion) {
+  const response = await fetch(
+    `${API_URL}/solicitudes/${id}/aprobar`,
+    {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        observacion,
+      }),
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(
+      "No se pudo aprobar la solicitud."
+    );
+  }
+
+  return await response.json();
+}
+
+
+export async function rechazarSolicitud(id, observacion) {
+  const response = await fetch(
+    `${API_URL}/solicitudes/${id}/rechazar`,
+    {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        observacion,
+      }),
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(
+      "No se pudo rechazar la solicitud."
+    );
+  }
+
+  return await response.json();
+}
