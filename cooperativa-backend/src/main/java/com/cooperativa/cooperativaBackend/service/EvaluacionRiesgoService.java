@@ -2,15 +2,23 @@ package com.cooperativa.cooperativaBackend.service;
 
 import com.cooperativa.cooperativaBackend.dto.PrediccionRiesgoRequest;
 import com.cooperativa.cooperativaBackend.dto.PrediccionRiesgoResponse;
+
+import com.cooperativa.cooperativaBackend.exception.RecursoNoEncontradoException;
+import com.cooperativa.cooperativaBackend.exception.ReglaNegocioException;
+import com.cooperativa.cooperativaBackend.exception.ValidacionException;
+
 import com.cooperativa.cooperativaBackend.model.Documento;
 import com.cooperativa.cooperativaBackend.model.EvaluacionRiesgo;
 import com.cooperativa.cooperativaBackend.model.Solicitud;
+
 import com.cooperativa.cooperativaBackend.repository.DocumentoRepository;
 import com.cooperativa.cooperativaBackend.repository.EvaluacionRiesgoRepository;
 import com.cooperativa.cooperativaBackend.repository.SolicitudRepository;
+
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+
 
 @Service
 public class EvaluacionRiesgoService {
@@ -42,7 +50,6 @@ public class EvaluacionRiesgoService {
     public List<EvaluacionRiesgo> obtenerEvaluaciones() {
 
         return evaluacionRiesgoRepository.findAll();
-
     }
 
 
@@ -55,11 +62,10 @@ public class EvaluacionRiesgoService {
         return evaluacionRiesgoRepository
                 .findById(id)
                 .orElseThrow(() ->
-                        new RuntimeException(
+                        new RecursoNoEncontradoException(
                                 "No se encontró la evaluación con ID: " + id
                         )
                 );
-
     }
 
 
@@ -73,7 +79,6 @@ public class EvaluacionRiesgoService {
 
         return evaluacionRiesgoRepository
                 .findBySolicitudId(solicitudId);
-
     }
 
 
@@ -89,7 +94,6 @@ public class EvaluacionRiesgoService {
                 .findBySolicitudClienteIdOrderByFechaEvaluacionDesc(
                         clienteId
                 );
-
     }
 
 
@@ -106,10 +110,6 @@ public class EvaluacionRiesgoService {
                         .findBySolicitudId(solicitudId);
 
 
-        // -----------------------------------------------------
-        // IDENTIFICACIÓN
-        // -----------------------------------------------------
-
         boolean identificacion =
                 documentos.stream()
                         .anyMatch(documento ->
@@ -122,10 +122,6 @@ public class EvaluacionRiesgoService {
                         );
 
 
-        // -----------------------------------------------------
-        // INGRESOS
-        // -----------------------------------------------------
-
         boolean ingresos =
                 documentos.stream()
                         .anyMatch(documento ->
@@ -137,10 +133,6 @@ public class EvaluacionRiesgoService {
                                         )
                         );
 
-
-        // -----------------------------------------------------
-        // GENERAL
-        // -----------------------------------------------------
 
         boolean general =
                 documentos.stream()
@@ -157,7 +149,6 @@ public class EvaluacionRiesgoService {
         return identificacion
                 && ingresos
                 && general;
-
     }
 
 
@@ -169,6 +160,7 @@ public class EvaluacionRiesgoService {
             Long solicitudId
     ) {
 
+
         // -----------------------------------------------------
         // 1. BUSCAR SOLICITUD
         // -----------------------------------------------------
@@ -177,7 +169,7 @@ public class EvaluacionRiesgoService {
                 solicitudRepository
                         .findById(solicitudId)
                         .orElseThrow(() ->
-                                new RuntimeException(
+                                new RecursoNoEncontradoException(
                                         "No se encontró la solicitud con ID: "
                                                 + solicitudId
                                 )
@@ -197,10 +189,9 @@ public class EvaluacionRiesgoService {
 
         if (!evaluacionesExistentes.isEmpty()) {
 
-            throw new RuntimeException(
+            throw new ReglaNegocioException(
                     "Esta solicitud ya cuenta con una evaluación de riesgo."
             );
-
         }
 
 
@@ -212,10 +203,9 @@ public class EvaluacionRiesgoService {
                 solicitudId
         )) {
 
-            throw new RuntimeException(
+            throw new ValidacionException(
                     "La solicitud no tiene toda la documentación requerida."
             );
-
         }
 
 
@@ -248,46 +238,32 @@ public class EvaluacionRiesgoService {
 
 
         request.setIngresosMensuales(
-                solicitud
-                        .getIngresosMensuales()
+                solicitud.getIngresosMensuales()
         );
-
 
         request.setEgresosMensuales(
-                solicitud
-                        .getEgresosMensuales()
+                solicitud.getEgresosMensuales()
         );
-
 
         request.setNivelEndeudamiento(
-                solicitud
-                        .getNivelEndeudamiento()
+                solicitud.getNivelEndeudamiento()
         );
-
 
         request.setCapacidadPago(
-                solicitud
-                        .getCapacidadPago()
+                solicitud.getCapacidadPago()
         );
-
 
         request.setTipoCredito(
-                solicitud
-                        .getTipoCredito()
+                solicitud.getTipoCredito()
         );
-
 
         request.setMontoSolicitado(
-                solicitud
-                        .getMonto()
+                solicitud.getMonto()
         );
-
 
         request.setPlazoMeses(
-                solicitud
-                        .getPlazoMeses()
+                solicitud.getPlazoMeses()
         );
-
 
         request.setAntiguedadLaboralAnios(
                 antiguedadLaboral
@@ -317,16 +293,12 @@ public class EvaluacionRiesgoService {
                 solicitud
         );
 
-
         evaluacion.setScoreIa(
-                respuestaIa
-                        .getScoreIa()
+                respuestaIa.getScoreIa()
         );
 
-
         evaluacion.setProbabilidadMora(
-                respuestaIa
-                        .getProbabilidadMora()
+                respuestaIa.getProbabilidadMora()
         );
 
 
@@ -340,27 +312,20 @@ public class EvaluacionRiesgoService {
 
 
         evaluacion.setNivelRiesgo(
-                respuestaIa
-                        .getNivelRiesgo()
+                respuestaIa.getNivelRiesgo()
         );
-
 
         evaluacion.setRecomendacion(
-                respuestaIa
-                        .getRecomendacion()
+                respuestaIa.getRecomendacion()
         );
-
 
         evaluacion.setModeloUtilizado(
-                respuestaIa
-                        .getModelo()
+                respuestaIa.getModelo()
         );
-
 
         evaluacion.setEstado(
                 "Completada"
         );
-
 
         evaluacion.setExplicacion(
                 generarExplicacion(
@@ -378,7 +343,6 @@ public class EvaluacionRiesgoService {
                 .save(
                         evaluacion
                 );
-
     }
 
 
@@ -402,91 +366,62 @@ public class EvaluacionRiesgoService {
             evaluacion.setScoreIa(
                     datos.getScoreIa()
             );
-
         }
 
 
-        if (
-                datos.getProbabilidadMora()
-                        != null
-        ) {
+        if (datos.getProbabilidadMora() != null) {
 
             evaluacion.setProbabilidadMora(
                     datos.getProbabilidadMora()
             );
-
         }
 
 
-        if (
-                datos.getConfianzaModelo()
-                        != null
-        ) {
+        if (datos.getConfianzaModelo() != null) {
 
             evaluacion.setConfianzaModelo(
                     datos.getConfianzaModelo()
             );
-
         }
 
 
-        if (
-                datos.getNivelRiesgo()
-                        != null
-        ) {
+        if (datos.getNivelRiesgo() != null) {
 
             evaluacion.setNivelRiesgo(
                     datos.getNivelRiesgo()
             );
-
         }
 
 
-        if (
-                datos.getRecomendacion()
-                        != null
-        ) {
+        if (datos.getRecomendacion() != null) {
 
             evaluacion.setRecomendacion(
                     datos.getRecomendacion()
             );
-
         }
 
 
-        if (
-                datos.getModeloUtilizado()
-                        != null
-        ) {
+        if (datos.getModeloUtilizado() != null) {
 
             evaluacion.setModeloUtilizado(
                     datos.getModeloUtilizado()
             );
-
         }
 
 
-        if (
-                datos.getEstado()
-                        != null
-        ) {
+        if (datos.getEstado() != null) {
 
             evaluacion.setEstado(
                     datos.getEstado()
             );
-
         }
 
 
-        if (
-                datos.getExplicacion()
-                        != null
-        ) {
+        if (datos.getExplicacion() != null) {
 
             evaluacion.setExplicacion(
                     datos.getExplicacion()
             );
-
         }
 
 
@@ -494,7 +429,6 @@ public class EvaluacionRiesgoService {
                 .save(
                         evaluacion
                 );
-
     }
 
 
@@ -516,7 +450,6 @@ public class EvaluacionRiesgoService {
                 .delete(
                         evaluacion
                 );
-
     }
 
 
@@ -533,15 +466,11 @@ public class EvaluacionRiesgoService {
         // INGRESOS
         // -----------------------------------------------------
 
-        if (
-                solicitud.getIngresosMensuales()
-                        == null
-        ) {
+        if (solicitud.getIngresosMensuales() == null) {
 
-            throw new RuntimeException(
+            throw new ValidacionException(
                     "La solicitud no tiene ingresos mensuales."
             );
-
         }
 
 
@@ -549,15 +478,11 @@ public class EvaluacionRiesgoService {
         // EGRESOS
         // -----------------------------------------------------
 
-        if (
-                solicitud.getEgresosMensuales()
-                        == null
-        ) {
+        if (solicitud.getEgresosMensuales() == null) {
 
-            throw new RuntimeException(
+            throw new ValidacionException(
                     "La solicitud no tiene egresos mensuales."
             );
-
         }
 
 
@@ -565,15 +490,11 @@ public class EvaluacionRiesgoService {
         // NIVEL DE ENDEUDAMIENTO
         // -----------------------------------------------------
 
-        if (
-                solicitud.getNivelEndeudamiento()
-                        == null
-        ) {
+        if (solicitud.getNivelEndeudamiento() == null) {
 
-            throw new RuntimeException(
+            throw new ValidacionException(
                     "La solicitud no tiene nivel de endeudamiento."
             );
-
         }
 
 
@@ -581,15 +502,11 @@ public class EvaluacionRiesgoService {
         // CAPACIDAD DE PAGO
         // -----------------------------------------------------
 
-        if (
-                solicitud.getCapacidadPago()
-                        == null
-        ) {
+        if (solicitud.getCapacidadPago() == null) {
 
-            throw new RuntimeException(
+            throw new ValidacionException(
                     "La solicitud no tiene capacidad de pago."
             );
-
         }
 
 
@@ -598,18 +515,14 @@ public class EvaluacionRiesgoService {
         // -----------------------------------------------------
 
         if (
-                solicitud.getTipoCredito()
-                        == null
+                solicitud.getTipoCredito() == null
                         ||
-                        solicitud
-                                .getTipoCredito()
-                                .isBlank()
+                solicitud.getTipoCredito().isBlank()
         ) {
 
-            throw new RuntimeException(
+            throw new ValidacionException(
                     "La solicitud no tiene tipo de crédito."
             );
-
         }
 
 
@@ -617,15 +530,11 @@ public class EvaluacionRiesgoService {
         // MONTO
         // -----------------------------------------------------
 
-        if (
-                solicitud.getMonto()
-                        == null
-        ) {
+        if (solicitud.getMonto() == null) {
 
-            throw new RuntimeException(
+            throw new ValidacionException(
                     "La solicitud no tiene monto solicitado."
             );
-
         }
 
 
@@ -633,15 +542,11 @@ public class EvaluacionRiesgoService {
         // PLAZO
         // -----------------------------------------------------
 
-        if (
-                solicitud.getPlazoMeses()
-                        == null
-        ) {
+        if (solicitud.getPlazoMeses() == null) {
 
-            throw new RuntimeException(
+            throw new ValidacionException(
                     "La solicitud no tiene plazo."
             );
-
         }
 
 
@@ -650,20 +555,15 @@ public class EvaluacionRiesgoService {
         // -----------------------------------------------------
 
         if (
-                solicitud.getAntiguedadLaboral()
-                        == null
+                solicitud.getAntiguedadLaboral() == null
                         ||
-                        solicitud
-                                .getAntiguedadLaboral()
-                                .isBlank()
+                solicitud.getAntiguedadLaboral().isBlank()
         ) {
 
-            throw new RuntimeException(
+            throw new ValidacionException(
                     "La solicitud no tiene antigüedad laboral."
             );
-
         }
-
     }
 
 
@@ -700,12 +600,9 @@ public class EvaluacionRiesgoService {
                             );
 
 
-            if (
-                    valorLimpio.isBlank()
-            ) {
+            if (valorLimpio.isBlank()) {
 
                 throw new NumberFormatException();
-
             }
 
 
@@ -714,17 +611,13 @@ public class EvaluacionRiesgoService {
             );
 
 
-        } catch (
-                NumberFormatException e
-        ) {
+        } catch (NumberFormatException e) {
 
-            throw new RuntimeException(
+            throw new ValidacionException(
                     "La antigüedad laboral no tiene un formato válido: "
                             + antiguedad
             );
-
         }
-
     }
 
 
@@ -757,9 +650,6 @@ public class EvaluacionRiesgoService {
                 respuesta.getScoreIa(),
 
                 respuesta.getNivelRiesgo()
-
         );
-
     }
-
 }
