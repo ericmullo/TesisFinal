@@ -81,11 +81,24 @@ public class GlobalExceptionHandler {
             Exception exception
     ) {
 
+        /*
+         * IMPORTANTE:
+         *
+         * Durante el desarrollo imprimimos el error completo
+         * en la consola de Spring Boot.
+         *
+         * Esto nos permite encontrar la causa real de cualquier
+         * error 500 sin enviar información interna al frontend.
+         */
+        exception.printStackTrace();
+
+
         ErrorResponse error = new ErrorResponse(
                 HttpStatus.INTERNAL_SERVER_ERROR.value(),
                 "Internal Server Error",
                 "Ocurrió un error interno en el servidor."
         );
+
 
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)

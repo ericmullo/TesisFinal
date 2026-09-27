@@ -35,23 +35,15 @@ const initialForm = {
 
 export default function Solicitudes() {
 
-  // =========================================================
-  // ESTADOS
-  // =========================================================
-
   const [form, setForm] = useState(initialForm);
-
   const [clientes, setClientes] = useState([]);
-
   const [solicitudes, setSolicitudes] = useState([]);
-
   const [guardando, setGuardando] = useState(false);
 
   const [solicitudSeleccionada, setSolicitudSeleccionada] =
     useState(null);
 
   const [modalVer, setModalVer] = useState(false);
-
   const [modoEdicion, setModoEdicion] = useState(false);
 
   const [solicitudEditandoId, setSolicitudEditandoId] =
@@ -59,28 +51,20 @@ export default function Solicitudes() {
 
 
   // =========================================================
-  // CARGAR DATOS AL INICIAR
+  // CARGAR DATOS
   // =========================================================
 
   useEffect(() => {
-
     cargarClientes();
-
     cargarSolicitudes();
-
   }, []);
 
-
-  // =========================================================
-  // CARGAR CLIENTES
-  // =========================================================
 
   const cargarClientes = async () => {
 
     try {
 
       const datos = await obtenerClientes();
-
       setClientes(datos);
 
     } catch (error) {
@@ -93,22 +77,15 @@ export default function Solicitudes() {
       alert(
         "No se pudieron cargar los clientes."
       );
-
     }
-
   };
 
-
-  // =========================================================
-  // CARGAR SOLICITUDES
-  // =========================================================
 
   const cargarSolicitudes = async () => {
 
     try {
 
       const datos = await obtenerSolicitudes();
-
       setSolicitudes(datos);
 
     } catch (error) {
@@ -117,14 +94,12 @@ export default function Solicitudes() {
         "Error al cargar solicitudes:",
         error
       );
-
     }
-
   };
 
 
   // =========================================================
-  // ACTUALIZAR CAMPOS DEL FORMULARIO
+  // ACTUALIZAR FORMULARIO
   // =========================================================
 
   const update = (e) => {
@@ -133,7 +108,6 @@ export default function Solicitudes() {
       ...form,
       [e.target.name]: e.target.value
     });
-
   };
 
 
@@ -157,27 +131,21 @@ export default function Solicitudes() {
       });
 
       return;
-
     }
-
 
     const cliente = clientes.find(
       (cliente) =>
         String(cliente.id) === String(id)
     );
 
-
     if (!cliente) {
       return;
     }
 
-
     setForm((formAnterior) => ({
-
       ...formAnterior,
 
-      clienteId:
-        cliente.id,
+      clienteId: cliente.id,
 
       cedula:
         cliente.cedula || "",
@@ -190,29 +158,24 @@ export default function Solicitudes() {
 
       telefono:
         cliente.telefono || ""
-
     }));
-
   };
 
 
   // =========================================================
-  // LIMPIAR / CANCELAR EDICIÓN
+  // LIMPIAR
   // =========================================================
 
   const limpiar = () => {
 
     setForm(initialForm);
-
     setModoEdicion(false);
-
     setSolicitudEditandoId(null);
-
   };
 
 
   // =========================================================
-  // CREAR OBJETO SOLICITUD
+  // CONSTRUIR SOLICITUD
   // =========================================================
 
   const construirSolicitud = () => {
@@ -266,27 +229,32 @@ export default function Solicitudes() {
           )
         ),
 
+      /*
+       * El frontend muestra el estado,
+       * pero no permite modificarlo manualmente.
+       *
+       * El backend conserva/controla el estado
+       * durante las actualizaciones.
+       */
       estado:
-        form.estado,
+        modoEdicion
+          ? form.estado
+          : "Pendiente",
 
       destinoCredito:
         form.destino
-
     };
-
   };
 
 
   // =========================================================
-  // GUARDAR / ACTUALIZAR SOLICITUD
+  // GUARDAR / ACTUALIZAR
   // =========================================================
 
   const guardar = async (e) => {
 
     e.preventDefault();
 
-
-    // VALIDAR CLIENTE
 
     if (!form.clienteId) {
 
@@ -295,11 +263,8 @@ export default function Solicitudes() {
       );
 
       return;
-
     }
 
-
-    // VALIDAR INGRESOS
 
     if (!form.ingresos) {
 
@@ -308,11 +273,8 @@ export default function Solicitudes() {
       );
 
       return;
-
     }
 
-
-    // VALIDAR MONTO
 
     if (!form.monto) {
 
@@ -321,7 +283,6 @@ export default function Solicitudes() {
       );
 
       return;
-
     }
 
 
@@ -334,10 +295,6 @@ export default function Solicitudes() {
       setGuardando(true);
 
 
-      // =====================================================
-      // EDITAR
-      // =====================================================
-
       if (modoEdicion) {
 
         const solicitudActualizada =
@@ -347,24 +304,16 @@ export default function Solicitudes() {
             solicitud
           );
 
-
         console.log(
           "Solicitud actualizada:",
           solicitudActualizada
         );
 
-
         alert(
           "Solicitud actualizada correctamente."
         );
 
-      }
-
-      // =====================================================
-      // CREAR
-      // =====================================================
-
-      else {
+      } else {
 
         const nuevaSolicitud =
           await crearSolicitud(
@@ -372,27 +321,18 @@ export default function Solicitudes() {
             solicitud
           );
 
-
         console.log(
           "Solicitud registrada:",
           nuevaSolicitud
         );
 
-
         alert(
           "Solicitud registrada correctamente."
         );
-
       }
 
 
-      // ACTUALIZAR TABLA
-
       await cargarSolicitudes();
-
-
-      // LIMPIAR
-
       limpiar();
 
 
@@ -402,7 +342,6 @@ export default function Solicitudes() {
         "Error al guardar la solicitud:",
         error
       );
-
 
       if (modoEdicion) {
 
@@ -415,16 +354,12 @@ export default function Solicitudes() {
         alert(
           "No se pudo registrar la solicitud."
         );
-
       }
-
 
     } finally {
 
       setGuardando(false);
-
     }
-
   };
 
 
@@ -439,20 +374,13 @@ export default function Solicitudes() {
     );
 
     setModalVer(true);
-
   };
 
-
-  // =========================================================
-  // CERRAR MODAL VER
-  // =========================================================
 
   const cerrarModalVer = () => {
 
     setModalVer(false);
-
     setSolicitudSeleccionada(null);
-
   };
 
 
@@ -485,7 +413,6 @@ export default function Solicitudes() {
       telefono:
         cliente?.telefono || "",
 
-
       estadoCivil:
         solicitud.estadoCivil ||
         "Soltero/a",
@@ -496,30 +423,23 @@ export default function Solicitudes() {
       direccion:
         solicitud.direccion || "",
 
-
       ingresos:
-        solicitud.ingresosMensuales ??
-        "",
+        solicitud.ingresosMensuales ?? "",
 
       egresos:
-        solicitud.egresosMensuales ??
-        "",
+        solicitud.egresosMensuales ?? "",
 
       endeudamiento:
-        solicitud.nivelEndeudamiento ??
-        "",
+        solicitud.nivelEndeudamiento ?? "",
 
       empresa:
         solicitud.empresa || "",
 
       antiguedad:
-        solicitud.antiguedadLaboral ||
-        "",
+        solicitud.antiguedadLaboral || "",
 
       capacidadPago:
-        solicitud.capacidadPago ??
-        "",
-
+        solicitud.capacidadPago ?? "",
 
       tipoCredito:
         solicitud.tipoCredito ||
@@ -537,14 +457,12 @@ export default function Solicitudes() {
 
       destino:
         solicitud.destinoCredito || ""
-
     });
 
 
     setSolicitudEditandoId(
       solicitud.id
     );
-
 
     setModoEdicion(true);
 
@@ -553,12 +471,11 @@ export default function Solicitudes() {
       top: 0,
       behavior: "smooth"
     });
-
   };
 
 
   // =========================================================
-  // ELIMINAR SOLICITUD
+  // ELIMINAR
   // =========================================================
 
   const borrarSolicitud = async (solicitud) => {
@@ -592,19 +509,14 @@ export default function Solicitudes() {
       );
 
 
-      // Si estábamos editando justo esa solicitud
-
       if (
         solicitudEditandoId ===
         solicitud.id
       ) {
 
         limpiar();
-
       }
 
-
-      // Si estaba abierta en el modal
 
       if (
         solicitudSeleccionada?.id ===
@@ -612,11 +524,8 @@ export default function Solicitudes() {
       ) {
 
         cerrarModalVer();
-
       }
 
-
-      // ACTUALIZAR TABLA
 
       await cargarSolicitudes();
 
@@ -632,9 +541,7 @@ export default function Solicitudes() {
       alert(
         "No se pudo eliminar la solicitud."
       );
-
     }
-
   };
 
 
@@ -653,12 +560,11 @@ export default function Solicitudes() {
         maximumFractionDigits: 2
       }
     )}`;
-
   };
 
 
   // =========================================================
-  // OBTENER CLASE DEL ESTADO
+  // CLASE ESTADO
   // =========================================================
 
   const obtenerClaseEstado = (estado) => {
@@ -676,13 +582,8 @@ export default function Solicitudes() {
     }
 
     return "pendiente";
-
   };
 
-
-  // =========================================================
-  // RETURN
-  // =========================================================
 
   return (
 
@@ -690,11 +591,10 @@ export default function Solicitudes() {
 
 
       {/* =====================================================
-          TARJETAS SUPERIORES
+          TARJETAS
       ===================================================== */}
 
       <section className="summary-cards three">
-
 
         <div className="summary-card">
 
@@ -703,10 +603,8 @@ export default function Solicitudes() {
           </h3>
 
           <strong>
-
             {form.nombres ||
               "Sin seleccionar"}
-
           </strong>
 
         </div>
@@ -738,17 +636,16 @@ export default function Solicitudes() {
           </h3>
 
           <strong>
-            {form.estado}
+            {form.estado || "Pendiente"}
           </strong>
 
         </div>
-
 
       </section>
 
 
       {/* =====================================================
-          AVISO MODO EDICIÓN
+          EDICIÓN
       ===================================================== */}
 
       {modoEdicion && (
@@ -776,7 +673,6 @@ export default function Solicitudes() {
           </button>
 
         </div>
-
       )}
 
 
@@ -787,9 +683,7 @@ export default function Solicitudes() {
       <form onSubmit={guardar}>
 
 
-        {/* ===================================================
-            DATOS PERSONALES
-        =================================================== */}
+        {/* DATOS PERSONALES */}
 
         <section className="panel">
 
@@ -810,15 +704,12 @@ export default function Solicitudes() {
               <select
                 name="clienteId"
                 value={form.clienteId}
-                onChange={
-                  seleccionarCliente
-                }
+                onChange={seleccionarCliente}
               >
 
                 <option value="">
                   Seleccione un cliente
                 </option>
-
 
                 {clientes.map(
                   (cliente) => (
@@ -835,7 +726,6 @@ export default function Solicitudes() {
                       {cliente.apellidos}
 
                     </option>
-
                   )
                 )}
 
@@ -972,7 +862,6 @@ export default function Solicitudes() {
 
             </div>
 
-
           </div>
 
         </section>
@@ -1099,7 +988,6 @@ export default function Solicitudes() {
 
             </div>
 
-
           </div>
 
         </section>
@@ -1183,30 +1071,18 @@ export default function Solicitudes() {
                 onChange={update}
               >
 
-                <option>
-                  6 meses
-                </option>
-
-                <option>
-                  12 meses
-                </option>
-
-                <option>
-                  24 meses
-                </option>
-
-                <option>
-                  36 meses
-                </option>
-
-                <option>
-                  48 meses
-                </option>
+                <option>6 meses</option>
+                <option>12 meses</option>
+                <option>24 meses</option>
+                <option>36 meses</option>
+                <option>48 meses</option>
 
               </select>
 
             </div>
 
+
+            {/* ESTADO AUTOMÁTICO */}
 
             <div className="form-group">
 
@@ -1214,29 +1090,15 @@ export default function Solicitudes() {
                 Estado de la solicitud
               </label>
 
-              <select
-                name="estado"
-                value={form.estado}
-                onChange={update}
-              >
+              <input
+                type="text"
+                value={form.estado || "Pendiente"}
+                readOnly
+              />
 
-                <option>
-                  Pendiente
-                </option>
-
-                <option>
-                  En evaluación
-                </option>
-
-                <option>
-                  Aprobado
-                </option>
-
-                <option>
-                  Rechazado
-                </option>
-
-              </select>
+              <small>
+                El estado se actualiza automáticamente según el proceso del crédito.
+              </small>
 
             </div>
 
@@ -1256,16 +1118,10 @@ export default function Solicitudes() {
 
             </div>
 
-
           </div>
 
 
-          {/* =================================================
-              BOTONES
-          ================================================= */}
-
           <div className="actions">
-
 
             <button
               type="button"
@@ -1307,12 +1163,9 @@ export default function Solicitudes() {
 
             </button>
 
-
           </div>
 
-
         </section>
-
 
       </form>
 
@@ -1323,9 +1176,7 @@ export default function Solicitudes() {
 
       <section className="panel solicitudes-listado">
 
-
         <div className="solicitudes-header">
-
 
           <div>
 
@@ -1350,21 +1201,14 @@ export default function Solicitudes() {
 
           </div>
 
-
         </div>
 
 
         {solicitudes.length === 0 ? (
 
-          // ===================================================
-          // SIN SOLICITUDES
-          // ===================================================
-
           <div className="empty-state">
 
-            <span>
-              📄
-            </span>
+            <span>📄</span>
 
             <h3>
               No existen solicitudes registradas
@@ -1378,36 +1222,22 @@ export default function Solicitudes() {
 
         ) : (
 
-          // ===================================================
-          // TABLA
-          // ===================================================
-
           <div className="table-container">
 
-
             <table className="solicitudes-table">
-
 
               <thead>
 
                 <tr>
 
                   <th>ID</th>
-
                   <th>Cliente</th>
-
                   <th>Cédula</th>
-
                   <th>Tipo</th>
-
                   <th>Monto</th>
-
                   <th>Plazo</th>
-
                   <th>Fecha</th>
-
                   <th>Estado</th>
-
                   <th>Acciones</th>
 
                 </tr>
@@ -1417,21 +1247,15 @@ export default function Solicitudes() {
 
               <tbody>
 
-
                 {solicitudes.map(
                   (solicitud) => (
 
                     <tr key={solicitud.id}>
 
-
-                      {/* ID */}
-
                       <td>
                         #{solicitud.id}
                       </td>
 
-
-                      {/* CLIENTE */}
 
                       <td>
 
@@ -1448,8 +1272,6 @@ export default function Solicitudes() {
                       </td>
 
 
-                      {/* CÉDULA */}
-
                       <td>
 
                         {solicitud.cliente?.cedula ||
@@ -1457,8 +1279,6 @@ export default function Solicitudes() {
 
                       </td>
 
-
-                      {/* TIPO */}
 
                       <td>
 
@@ -1468,8 +1288,6 @@ export default function Solicitudes() {
                       </td>
 
 
-                      {/* MONTO */}
-
                       <td className="monto-cell">
 
                         {formatearDinero(
@@ -1478,8 +1296,6 @@ export default function Solicitudes() {
 
                       </td>
 
-
-                      {/* PLAZO */}
 
                       <td>
 
@@ -1491,8 +1307,6 @@ export default function Solicitudes() {
 
                       </td>
 
-
-                      {/* FECHA */}
 
                       <td>
 
@@ -1508,8 +1322,6 @@ export default function Solicitudes() {
 
                       </td>
 
-
-                      {/* ESTADO */}
 
                       <td>
 
@@ -1527,15 +1339,9 @@ export default function Solicitudes() {
                       </td>
 
 
-                      {/* ACCIONES */}
-
                       <td>
 
-
                         <div className="table-actions">
-
-
-                          {/* VER */}
 
                           <button
                             type="button"
@@ -1551,8 +1357,6 @@ export default function Solicitudes() {
                           </button>
 
 
-                          {/* EDITAR */}
-
                           <button
                             type="button"
                             className="action-btn edit"
@@ -1567,8 +1371,6 @@ export default function Solicitudes() {
                           </button>
 
 
-                          {/* ELIMINAR */}
-
                           <button
                             type="button"
                             className="action-btn delete"
@@ -1582,29 +1384,20 @@ export default function Solicitudes() {
                             🗑️
                           </button>
 
-
                         </div>
-
 
                       </td>
 
-
                     </tr>
-
                   )
                 )}
 
-
               </tbody>
-
 
             </table>
 
-
           </div>
-
         )}
-
 
       </section>
 
@@ -1616,496 +1409,403 @@ export default function Solicitudes() {
       {modalVer &&
         solicitudSeleccionada && (
 
-        <div
-          className="solicitud-modal-overlay"
-          onClick={
-            cerrarModalVer
-          }
-        >
-
-
           <div
-            className="solicitud-modal"
-            onClick={(e) =>
-              e.stopPropagation()
-            }
+            className="solicitud-modal-overlay"
+            onClick={cerrarModalVer}
           >
 
+            <div
+              className="solicitud-modal"
+              onClick={(e) =>
+                e.stopPropagation()
+              }
+            >
 
-            {/* =================================================
-                HEADER
-            ================================================= */}
 
-            <div className="solicitud-modal-header">
+              <div className="solicitud-modal-header">
 
+                <div>
 
-              <div>
+                  <h2>
+                    Detalle de la solicitud
+                  </h2>
 
-                <h2>
-                  Detalle de la solicitud
-                </h2>
-
-                <p>
-                  Solicitud #{solicitudSeleccionada.id}
-                </p>
-
-              </div>
-
-
-              <button
-                type="button"
-                className="solicitud-modal-close"
-                onClick={
-                  cerrarModalVer
-                }
-              >
-                ×
-              </button>
-
-
-            </div>
-
-
-            {/* =================================================
-                BODY
-            ================================================= */}
-
-            <div className="solicitud-modal-body">
-
-
-              {/* ===============================================
-                  CLIENTE
-              =============================================== */}
-
-              <div className="solicitud-detail-section">
-
-
-                <h3>
-                  👤 Información del cliente
-                </h3>
-
-
-                <div className="solicitud-detail-grid">
-
-
-                  <div>
-
-                    <span>
-                      Nombre completo
-                    </span>
-
-                    <strong>
-
-                      {solicitudSeleccionada.cliente
-
-                        ? `${solicitudSeleccionada.cliente.nombres || ""} ${solicitudSeleccionada.cliente.apellidos || ""}`.trim()
-
-                        : "-"}
-
-                    </strong>
-
-                  </div>
-
-
-                  <div>
-
-                    <span>
-                      Cédula
-                    </span>
-
-                    <strong>
-
-                      {solicitudSeleccionada
-                        .cliente
-                        ?.cedula || "-"}
-
-                    </strong>
-
-                  </div>
-
-
-                  <div>
-
-                    <span>
-                      Correo
-                    </span>
-
-                    <strong>
-
-                      {solicitudSeleccionada
-                        .cliente
-                        ?.correo || "-"}
-
-                    </strong>
-
-                  </div>
-
-
-                  <div>
-
-                    <span>
-                      Teléfono
-                    </span>
-
-                    <strong>
-
-                      {solicitudSeleccionada
-                        .cliente
-                        ?.telefono || "-"}
-
-                    </strong>
-
-                  </div>
-
-
-                  <div>
-
-                    <span>
-                      Estado civil
-                    </span>
-
-                    <strong>
-
-                      {solicitudSeleccionada
-                        .estadoCivil || "-"}
-
-                    </strong>
-
-                  </div>
-
-
-                  <div>
-
-                    <span>
-                      Ocupación
-                    </span>
-
-                    <strong>
-
-                      {solicitudSeleccionada
-                        .ocupacion || "-"}
-
-                    </strong>
-
-                  </div>
-
-
-                  <div className="detail-full">
-
-                    <span>
-                      Dirección
-                    </span>
-
-                    <strong>
-
-                      {solicitudSeleccionada
-                        .direccion || "-"}
-
-                    </strong>
-
-                  </div>
-
+                  <p>
+                    Solicitud #{solicitudSeleccionada.id}
+                  </p>
 
                 </div>
 
 
+                <button
+                  type="button"
+                  className="solicitud-modal-close"
+                  onClick={cerrarModalVer}
+                >
+                  ×
+                </button>
+
               </div>
 
 
-              {/* ===============================================
-                  INFORMACIÓN FINANCIERA
-              =============================================== */}
-
-              <div className="solicitud-detail-section">
+              <div className="solicitud-modal-body">
 
 
-                <h3>
-                  💰 Información financiera
-                </h3>
+                <div className="solicitud-detail-section">
+
+                  <h3>
+                    👤 Información del cliente
+                  </h3>
 
 
-                <div className="solicitud-detail-grid">
+                  <div className="solicitud-detail-grid">
+
+                    <div>
+
+                      <span>
+                        Nombre completo
+                      </span>
+
+                      <strong>
+
+                        {solicitudSeleccionada.cliente
+
+                          ? `${solicitudSeleccionada.cliente.nombres || ""} ${solicitudSeleccionada.cliente.apellidos || ""}`.trim()
+
+                          : "-"}
+
+                      </strong>
+
+                    </div>
 
 
-                  <div>
+                    <div>
 
-                    <span>
-                      Ingresos mensuales
-                    </span>
+                      <span>Cédula</span>
 
-                    <strong>
+                      <strong>
+                        {solicitudSeleccionada
+                          .cliente
+                          ?.cedula || "-"}
+                      </strong>
 
-                      {formatearDinero(
-                        solicitudSeleccionada
-                          .ingresosMensuales
-                      )}
-
-                    </strong>
-
-                  </div>
+                    </div>
 
 
-                  <div>
+                    <div>
 
-                    <span>
-                      Egresos mensuales
-                    </span>
+                      <span>Correo</span>
 
-                    <strong>
+                      <strong>
+                        {solicitudSeleccionada
+                          .cliente
+                          ?.correo || "-"}
+                      </strong>
 
-                      {formatearDinero(
-                        solicitudSeleccionada
-                          .egresosMensuales
-                      )}
-
-                    </strong>
-
-                  </div>
+                    </div>
 
 
-                  <div>
+                    <div>
 
-                    <span>
-                      Nivel de endeudamiento
-                    </span>
+                      <span>Teléfono</span>
 
-                    <strong>
+                      <strong>
+                        {solicitudSeleccionada
+                          .cliente
+                          ?.telefono || "-"}
+                      </strong>
 
-                      {solicitudSeleccionada
-                        .nivelEndeudamiento ??
-                        0}
-                      %
-
-                    </strong>
-
-                  </div>
+                    </div>
 
 
-                  <div>
+                    <div>
 
-                    <span>
-                      Capacidad de pago
-                    </span>
+                      <span>
+                        Estado civil
+                      </span>
 
-                    <strong>
+                      <strong>
+                        {solicitudSeleccionada
+                          .estadoCivil || "-"}
+                      </strong>
 
-                      {formatearDinero(
-                        solicitudSeleccionada
-                          .capacidadPago
-                      )}
-
-                    </strong>
-
-                  </div>
+                    </div>
 
 
-                  <div>
+                    <div>
 
-                    <span>
-                      Empresa / Actividad
-                    </span>
+                      <span>
+                        Ocupación
+                      </span>
 
-                    <strong>
+                      <strong>
+                        {solicitudSeleccionada
+                          .ocupacion || "-"}
+                      </strong>
 
-                      {solicitudSeleccionada
-                        .empresa || "-"}
-
-                    </strong>
-
-                  </div>
+                    </div>
 
 
-                  <div>
+                    <div className="detail-full">
 
-                    <span>
-                      Antigüedad laboral
-                    </span>
+                      <span>
+                        Dirección
+                      </span>
 
-                    <strong>
+                      <strong>
+                        {solicitudSeleccionada
+                          .direccion || "-"}
+                      </strong>
 
-                      {solicitudSeleccionada
-                        .antiguedadLaboral ||
-                        "-"}
-
-                    </strong>
+                    </div>
 
                   </div>
-
 
                 </div>
 
 
-              </div>
+                <div className="solicitud-detail-section">
+
+                  <h3>
+                    💰 Información financiera
+                  </h3>
 
 
-              {/* ===============================================
-                  CRÉDITO
-              =============================================== */}
+                  <div className="solicitud-detail-grid">
 
-              <div className="solicitud-detail-section">
+                    <div>
 
+                      <span>
+                        Ingresos mensuales
+                      </span>
 
-                <h3>
-                  💳 Información del crédito
-                </h3>
+                      <strong>
+                        {formatearDinero(
+                          solicitudSeleccionada
+                            .ingresosMensuales
+                        )}
+                      </strong>
 
-
-                <div className="solicitud-detail-grid">
-
-
-                  <div>
-
-                    <span>
-                      Tipo de crédito
-                    </span>
-
-                    <strong>
-
-                      {solicitudSeleccionada
-                        .tipoCredito || "-"}
-
-                    </strong>
-
-                  </div>
+                    </div>
 
 
-                  <div>
+                    <div>
 
-                    <span>
-                      Monto solicitado
-                    </span>
+                      <span>
+                        Egresos mensuales
+                      </span>
 
-                    <strong className="detail-money">
+                      <strong>
+                        {formatearDinero(
+                          solicitudSeleccionada
+                            .egresosMensuales
+                        )}
+                      </strong>
 
-                      {formatearDinero(
-                        solicitudSeleccionada
-                          .monto
-                      )}
-
-                    </strong>
-
-                  </div>
+                    </div>
 
 
-                  <div>
+                    <div>
 
-                    <span>
-                      Plazo
-                    </span>
+                      <span>
+                        Nivel de endeudamiento
+                      </span>
 
-                    <strong>
+                      <strong>
+                        {solicitudSeleccionada
+                          .nivelEndeudamiento ?? 0}
+                        %
+                      </strong>
 
-                      {solicitudSeleccionada
-                        .plazoMeses
-
-                        ? `${solicitudSeleccionada.plazoMeses} meses`
-
-                        : "-"}
-
-                    </strong>
-
-                  </div>
+                    </div>
 
 
-                  <div>
+                    <div>
 
-                    <span>
-                      Estado
-                    </span>
+                      <span>
+                        Capacidad de pago
+                      </span>
 
-                    <strong>
+                      <strong>
+                        {formatearDinero(
+                          solicitudSeleccionada
+                            .capacidadPago
+                        )}
+                      </strong>
 
-                      {solicitudSeleccionada
-                        .estado ||
-                        "Pendiente"}
-
-                    </strong>
-
-                  </div>
+                    </div>
 
 
-                  <div>
+                    <div>
 
-                    <span>
-                      Fecha de solicitud
-                    </span>
+                      <span>
+                        Empresa / Actividad
+                      </span>
 
-                    <strong>
+                      <strong>
+                        {solicitudSeleccionada
+                          .empresa || "-"}
+                      </strong>
 
-                      {solicitudSeleccionada
-                        .fechaSolicitud
+                    </div>
 
-                        ? new Date(
-                            solicitudSeleccionada
-                              .fechaSolicitud
-                          ).toLocaleString(
-                            "es-EC"
-                          )
 
-                        : "-"}
+                    <div>
 
-                    </strong>
+                      <span>
+                        Antigüedad laboral
+                      </span>
+
+                      <strong>
+                        {solicitudSeleccionada
+                          .antiguedadLaboral || "-"}
+                      </strong>
+
+                    </div>
 
                   </div>
-
-
-                  <div className="detail-full">
-
-                    <span>
-                      Destino del crédito
-                    </span>
-
-                    <strong>
-
-                      {solicitudSeleccionada
-                        .destinoCredito ||
-                        "-"}
-
-                    </strong>
-
-                  </div>
-
 
                 </div>
 
 
+                <div className="solicitud-detail-section">
+
+                  <h3>
+                    💳 Información del crédito
+                  </h3>
+
+
+                  <div className="solicitud-detail-grid">
+
+                    <div>
+
+                      <span>
+                        Tipo de crédito
+                      </span>
+
+                      <strong>
+                        {solicitudSeleccionada
+                          .tipoCredito || "-"}
+                      </strong>
+
+                    </div>
+
+
+                    <div>
+
+                      <span>
+                        Monto solicitado
+                      </span>
+
+                      <strong className="detail-money">
+                        {formatearDinero(
+                          solicitudSeleccionada
+                            .monto
+                        )}
+                      </strong>
+
+                    </div>
+
+
+                    <div>
+
+                      <span>
+                        Plazo
+                      </span>
+
+                      <strong>
+
+                        {solicitudSeleccionada
+                          .plazoMeses
+
+                          ? `${solicitudSeleccionada.plazoMeses} meses`
+
+                          : "-"}
+
+                      </strong>
+
+                    </div>
+
+
+                    <div>
+
+                      <span>
+                        Estado
+                      </span>
+
+                      <strong>
+                        {solicitudSeleccionada
+                          .estado ||
+                          "Pendiente"}
+                      </strong>
+
+                    </div>
+
+
+                    <div>
+
+                      <span>
+                        Fecha de solicitud
+                      </span>
+
+                      <strong>
+
+                        {solicitudSeleccionada
+                          .fechaSolicitud
+
+                          ? new Date(
+                              solicitudSeleccionada
+                                .fechaSolicitud
+                            ).toLocaleString(
+                              "es-EC"
+                            )
+
+                          : "-"}
+
+                      </strong>
+
+                    </div>
+
+
+                    <div className="detail-full">
+
+                      <span>
+                        Destino del crédito
+                      </span>
+
+                      <strong>
+                        {solicitudSeleccionada
+                          .destinoCredito ||
+                          "-"}
+                      </strong>
+
+                    </div>
+
+                  </div>
+
+                </div>
+
               </div>
 
 
-            </div>
+              <div className="solicitud-modal-footer">
 
+                <button
+                  type="button"
+                  className="btn btn-cancel"
+                  onClick={cerrarModalVer}
+                >
+                  Cerrar
+                </button>
 
-            {/* =================================================
-                FOOTER
-            ================================================= */}
-
-            <div className="solicitud-modal-footer">
-
-
-              <button
-                type="button"
-                className="btn btn-cancel"
-                onClick={
-                  cerrarModalVer
-                }
-              >
-                Cerrar
-              </button>
-
+              </div>
 
             </div>
-
 
           </div>
-
-
-        </div>
-
-      )}
+        )}
 
 
     </Layout>
-
   );
-
 }

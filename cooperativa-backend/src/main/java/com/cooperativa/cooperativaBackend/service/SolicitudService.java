@@ -1,5 +1,8 @@
 package com.cooperativa.cooperativaBackend.service;
 
+import com.cooperativa.cooperativaBackend.exception.RecursoNoEncontradoException;
+import com.cooperativa.cooperativaBackend.exception.ReglaNegocioException;
+import com.cooperativa.cooperativaBackend.exception.ValidacionException;
 import com.cooperativa.cooperativaBackend.model.Cliente;
 import com.cooperativa.cooperativaBackend.model.EvaluacionRiesgo;
 import com.cooperativa.cooperativaBackend.model.Solicitud;
@@ -46,7 +49,9 @@ public class SolicitudService {
 
         return solicitudRepository.findById(id)
                 .orElseThrow(() ->
-                        new RuntimeException("Solicitud no encontrada")
+                        new RecursoNoEncontradoException(
+                                "Solicitud no encontrada con ID: " + id
+                        )
                 );
     }
 
@@ -62,13 +67,28 @@ public class SolicitudService {
 
         Cliente cliente = clienteRepository.findById(clienteId)
                 .orElseThrow(() ->
-                        new RuntimeException("Cliente no encontrado")
+                        new RecursoNoEncontradoException(
+                                "Cliente no encontrado con ID: " + clienteId
+                        )
                 );
+
+        /*
+         * Una solicitud nueva:
+         *
+         * - No puede traer un ID manual.
+         * - Siempre empieza Pendiente.
+         * - No puede tener decisión final.
+         *
+         * Aunque el frontend intente enviar "Aprobado",
+         * "Rechazado" o "En evaluación", el backend
+         * lo reemplaza por "Pendiente".
+         */
 
         solicitud.setId(null);
         solicitud.setCliente(cliente);
 
-        // Una nueva solicitud todavía no tiene decisión.
+        solicitud.setEstado("Pendiente");
+
         solicitud.setObservacionDecision(null);
         solicitud.setFechaDecision(null);
 
@@ -88,16 +108,22 @@ public class SolicitudService {
 
         Solicitud solicitud = solicitudRepository.findById(id)
                 .orElseThrow(() ->
-                        new RuntimeException("Solicitud no encontrada")
+                        new RecursoNoEncontradoException(
+                                "Solicitud no encontrada con ID: " + id
+                        )
                 );
 
         Cliente cliente = clienteRepository.findById(clienteId)
                 .orElseThrow(() ->
-                        new RuntimeException("Cliente no encontrado")
+                        new RecursoNoEncontradoException(
+                                "Cliente no encontrado con ID: " + clienteId
+                        )
                 );
 
 
-        // Datos personales complementarios
+        // =====================================================
+        // DATOS PERSONALES COMPLEMENTARIOS
+        // =====================================================
 
         solicitud.setEstadoCivil(
                 datosActualizados.getEstadoCivil()
@@ -112,7 +138,9 @@ public class SolicitudService {
         );
 
 
-        // Información financiera
+        // =====================================================
+        // INFORMACIÓN FINANCIERA
+        // =====================================================
 
         solicitud.setIngresosMensuales(
                 datosActualizados.getIngresosMensuales()
@@ -139,7 +167,9 @@ public class SolicitudService {
         );
 
 
-        // Información del crédito
+        // =====================================================
+        // INFORMACIÓN DEL CRÉDITO
+        // =====================================================
 
         solicitud.setTipoCredito(
                 datosActualizados.getTipoCredito()
@@ -159,17 +189,24 @@ public class SolicitudService {
 
 
         /*
-         * IMPORTANTE:
+         * MUY IMPORTANTE:
          *
-         * No actualizamos aquí:
+         * NO hacemos:
          *
-         * estado
-         * observacionDecision
-         * fechaDecision
+         * solicitud.setEstado(...)
+         * solicitud.setObservacionDecision(...)
+         * solicitud.setFechaDecision(...)
          *
-         * La decisión final se administra exclusivamente
-         * mediante aprobarSolicitud() y rechazarSolicitud().
+         * Por lo tanto, aunque alguien envíe mediante Postman:
+         *
+         * "estado": "Aprobado"
+         *
+         * este método lo ignora.
+         *
+         * La decisión final solamente puede realizarse
+         * mediante aprobarSolicitud() o rechazarSolicitud().
          */
+
 
         solicitud.setCliente(cliente);
 
@@ -186,28 +223,40 @@ public class SolicitudService {
             String observacion
     ) {
 
-        Solicitud solicitud = obtenerSolicitudPorId(id);
+        Solicitud solicitud =
+                obtenerSolicitudPorId(id);
 
-        // Verificar que la IA ya haya terminado
+
+        // Debe existir evaluación IA completada
         verificarEvaluacionCompletada(id);
 
-        // Verificar observación del analista
+
+        // Debe existir una observación válida
         validarObservacion(observacion);
 
-        // Evitar volver a decidir una solicitud
+
+        // No puede existir una decisión anterior
         verificarSinDecisionFinal(solicitud);
 
-        solicitud.setEstado("Aprobado");
+
+        solicitud.setEstado(
+                "Aprobado"
+        );
+
 
         solicitud.setObservacionDecision(
                 observacion.trim()
         );
 
+
         solicitud.setFechaDecision(
                 LocalDateTime.now()
         );
 
-        return solicitudRepository.save(solicitud);
+
+        return solicitudRepository.save(
+                solicitud
+        );
     }
 
 
@@ -220,28 +269,40 @@ public class SolicitudService {
             String observacion
     ) {
 
-        Solicitud solicitud = obtenerSolicitudPorId(id);
+        Solicitud solicitud =
+                obtenerSolicitudPorId(id);
 
-        // Verificar que la IA ya haya terminado
+
+        // Debe existir evaluación IA completada
         verificarEvaluacionCompletada(id);
 
-        // Verificar observación del analista
+
+        // Debe existir una observación válida
         validarObservacion(observacion);
 
-        // Evitar volver a decidir una solicitud
+
+        // No puede existir una decisión anterior
         verificarSinDecisionFinal(solicitud);
 
-        solicitud.setEstado("Rechazado");
+
+        solicitud.setEstado(
+                "Rechazado"
+        );
+
 
         solicitud.setObservacionDecision(
                 observacion.trim()
         );
 
+
         solicitud.setFechaDecision(
                 LocalDateTime.now()
         );
 
-        return solicitudRepository.save(solicitud);
+
+        return solicitudRepository.save(
+                solicitud
+        );
     }
 
 
@@ -259,14 +320,17 @@ public class SolicitudService {
                 observacion.isBlank()
         ) {
 
-            throw new RuntimeException(
+            throw new ValidacionException(
                     "Debe ingresar una observación para registrar la decisión."
             );
         }
 
-        if (observacion.trim().length() < 5) {
 
-            throw new RuntimeException(
+        if (
+                observacion.trim().length() < 5
+        ) {
+
+            throw new ValidacionException(
                     "La observación debe contener al menos 5 caracteres."
             );
         }
@@ -274,24 +338,33 @@ public class SolicitudService {
 
 
     // =========================================================
-    // VERIFICAR QUE TODAVÍA NO EXISTA DECISIÓN FINAL
+    // VERIFICAR QUE NO EXISTA DECISIÓN FINAL
     // =========================================================
 
     private void verificarSinDecisionFinal(
             Solicitud solicitud
     ) {
 
+        /*
+         * Usamos fechaDecision como parte fundamental
+         * para identificar una decisión formal.
+         */
+
         if (
-                "Aprobado".equalsIgnoreCase(
-                        solicitud.getEstado()
-                )
-                        ||
-                "Rechazado".equalsIgnoreCase(
-                        solicitud.getEstado()
+                solicitud.getFechaDecision() != null
+                        &&
+                (
+                        "Aprobado".equalsIgnoreCase(
+                                solicitud.getEstado()
+                        )
+                                ||
+                        "Rechazado".equalsIgnoreCase(
+                                solicitud.getEstado()
+                        )
                 )
         ) {
 
-            throw new RuntimeException(
+            throw new ReglaNegocioException(
                     "Esta solicitud ya tiene una decisión final registrada."
             );
         }
@@ -308,27 +381,40 @@ public class SolicitudService {
 
         List<EvaluacionRiesgo> evaluaciones =
                 evaluacionRiesgoRepository
-                        .findBySolicitudId(solicitudId);
+                        .findBySolicitudId(
+                                solicitudId
+                        );
 
-        if (evaluaciones.isEmpty()) {
 
-            throw new RuntimeException(
+        if (
+                evaluaciones.isEmpty()
+        ) {
+
+            throw new ValidacionException(
                     "La solicitud todavía no tiene una evaluación de riesgo."
             );
         }
 
+
         boolean completada =
                 evaluaciones.stream()
-                        .anyMatch(evaluacion ->
-                                evaluacion.getEstado() != null
-                                        &&
-                                evaluacion.getEstado()
-                                        .equalsIgnoreCase("Completada")
+                        .anyMatch(
+                                evaluacion ->
+                                        evaluacion.getEstado() != null
+                                                &&
+                                        evaluacion
+                                                .getEstado()
+                                                .equalsIgnoreCase(
+                                                        "Completada"
+                                                )
                         );
 
-        if (!completada) {
 
-            throw new RuntimeException(
+        if (
+                !completada
+        ) {
+
+            throw new ValidacionException(
                     "La evaluación de riesgo todavía no ha sido completada."
             );
         }
@@ -339,11 +425,15 @@ public class SolicitudService {
     // ELIMINAR
     // =========================================================
 
-    public void eliminarSolicitud(Long id) {
+    public void eliminarSolicitud(
+            Long id
+    ) {
 
         Solicitud solicitud =
                 obtenerSolicitudPorId(id);
 
-        solicitudRepository.delete(solicitud);
+        solicitudRepository.delete(
+                solicitud
+        );
     }
 }

@@ -336,13 +336,51 @@ public class EvaluacionRiesgoService {
 
 
         // -----------------------------------------------------
-        // 9. GUARDAR RESULTADO EN POSTGRESQL
-        // -----------------------------------------------------
+// 9. GUARDAR RESULTADO EN POSTGRESQL
+// -----------------------------------------------------
 
-        return evaluacionRiesgoRepository
-                .save(
-                        evaluacion
-                );
+EvaluacionRiesgo evaluacionGuardada =
+        evaluacionRiesgoRepository.save(
+                evaluacion
+        );
+
+
+// -----------------------------------------------------
+// 10. ACTUALIZAR ESTADO DE LA SOLICITUD
+// -----------------------------------------------------
+
+/*
+ * Una vez que la evaluación de riesgo fue completada
+ * correctamente, la solicitud pasa automáticamente
+ * de "Pendiente" a "En evaluación".
+ *
+ * No se cambia el estado si la solicitud ya tiene
+ * una decisión final formal.
+ */
+
+if (
+        solicitud.getFechaDecision() == null
+                &&
+        !"Aprobado".equalsIgnoreCase(
+                solicitud.getEstado()
+        )
+                &&
+        !"Rechazado".equalsIgnoreCase(
+                solicitud.getEstado()
+        )
+) {
+
+    solicitud.setEstado(
+            "En evaluación"
+    );
+
+    solicitudRepository.save(
+            solicitud
+    );
+}
+
+
+return evaluacionGuardada;
     }
 
 
