@@ -10,8 +10,29 @@ import {
   obtenerEvaluacionesPorCliente,
 } from "../services/api";
 
-
 function Clientes() {
+  // =========================================================
+  // USUARIO Y PERMISOS
+  // =========================================================
+
+  let usuario = null;
+
+  try {
+    const usuarioGuardado = sessionStorage.getItem("usuario");
+
+    if (usuarioGuardado) {
+      usuario = JSON.parse(usuarioGuardado);
+    }
+  } catch (error) {
+    console.error("Error al obtener usuario:", error);
+  }
+
+  const puedeModificar =
+    usuario?.rol === "ADMIN" ||
+    usuario?.rol === "ANALISTA";
+
+  const esGerencia =
+    usuario?.rol === "GERENCIA";
 
   // =========================================================
   // ESTADOS
@@ -45,7 +66,6 @@ function Clientes() {
     setClienteEditandoId
   ] = useState(null);
 
-
   // =========================================================
   // FORMULARIO
   // =========================================================
@@ -59,7 +79,6 @@ function Clientes() {
     estado: "Activo",
   });
 
-
   // =========================================================
   // CARGAR CLIENTES
   // =========================================================
@@ -68,9 +87,7 @@ function Clientes() {
     cargarClientes();
   }, []);
 
-
   const cargarClientes = () => {
-
     obtenerClientes()
       .then((datos) => {
         setClientes(datos);
@@ -81,32 +98,26 @@ function Clientes() {
           error
         );
       });
-
   };
-
 
   // =========================================================
   // CAMBIOS DEL FORMULARIO
   // =========================================================
 
   const manejarCambio = (e) => {
-
     const { name, value } = e.target;
 
     setFormulario({
       ...formulario,
       [name]: value,
     });
-
   };
-
 
   // =========================================================
   // LIMPIAR FORMULARIO
   // =========================================================
 
   const limpiarFormulario = () => {
-
     setFormulario({
       cedula: "",
       nombres: "",
@@ -117,16 +128,13 @@ function Clientes() {
     });
 
     setClienteEditandoId(null);
-
   };
-
 
   // =========================================================
   // VALIDAR FORMULARIO
   // =========================================================
 
   const formularioValido = () => {
-
     return (
       formulario.cedula.trim() &&
       formulario.nombres.trim() &&
@@ -134,18 +142,14 @@ function Clientes() {
       formulario.correo.trim() &&
       formulario.telefono.trim()
     );
-
   };
-
 
   // =========================================================
   // CREAR CLIENTE
   // =========================================================
 
   const manejarCrearCliente = async () => {
-
     if (!formularioValido()) {
-
       alert(
         "Por favor completa todos los campos."
       );
@@ -154,7 +158,6 @@ function Clientes() {
     }
 
     try {
-
       const nuevoCliente =
         await crearCliente(formulario);
 
@@ -168,9 +171,7 @@ function Clientes() {
       alert(
         "Cliente creado correctamente."
       );
-
     } catch (error) {
-
       console.error(
         "ERROR AL CREAR CLIENTE:",
         error
@@ -179,31 +180,23 @@ function Clientes() {
       alert(
         "No se pudo crear el cliente."
       );
-
     }
-
   };
-
 
   // =========================================================
   // VER CLIENTE + HISTORIAL
   // =========================================================
 
   const manejarVerCliente = async (id) => {
-
     try {
-
       setCargandoHistorial(true);
 
       const [
         cliente,
         evaluaciones
       ] = await Promise.all([
-
         obtenerClientePorId(id),
-
         obtenerEvaluacionesPorCliente(id),
-
       ]);
 
       setClienteSeleccionado(cliente);
@@ -211,9 +204,7 @@ function Clientes() {
       setHistorialEvaluaciones(
         evaluaciones || []
       );
-
     } catch (error) {
-
       console.error(
         "ERROR AL OBTENER CLIENTE:",
         error
@@ -222,35 +213,27 @@ function Clientes() {
       alert(
         "No se pudo obtener la información del cliente."
       );
-
     } finally {
-
       setCargandoHistorial(false);
-
     }
-
   };
-
 
   const cerrarModalVer = () => {
-
     setClienteSeleccionado(null);
-
     setHistorialEvaluaciones([]);
-
     setCargandoHistorial(false);
-
   };
-
 
   // =========================================================
   // EDITAR CLIENTE
   // =========================================================
 
   const manejarEditarCliente = async (id) => {
+    if (!puedeModificar) {
+      return;
+    }
 
     try {
-
       const cliente =
         await obtenerClientePorId(id);
 
@@ -271,9 +254,7 @@ function Clientes() {
         top: 0,
         behavior: "smooth",
       });
-
     } catch (error) {
-
       console.error(
         "ERROR AL CARGAR CLIENTE:",
         error
@@ -282,16 +263,15 @@ function Clientes() {
       alert(
         "No se pudo cargar el cliente para editar."
       );
-
     }
-
   };
 
-
   const manejarGuardarCambios = async () => {
+    if (!puedeModificar) {
+      return;
+    }
 
     if (!formularioValido()) {
-
       alert(
         "Por favor completa todos los campos."
       );
@@ -300,7 +280,6 @@ function Clientes() {
     }
 
     try {
-
       const clienteActualizado =
         await actualizarCliente(
           clienteEditandoId,
@@ -320,9 +299,7 @@ function Clientes() {
       alert(
         "Cliente actualizado correctamente."
       );
-
     } catch (error) {
-
       console.error(
         "ERROR AL ACTUALIZAR CLIENTE:",
         error
@@ -331,11 +308,8 @@ function Clientes() {
       alert(
         "No se pudo actualizar el cliente."
       );
-
     }
-
   };
-
 
   // =========================================================
   // ELIMINAR CLIENTE
@@ -344,28 +318,27 @@ function Clientes() {
   const manejarSolicitarEliminar = (
     cliente
   ) => {
+    if (!puedeModificar) {
+      return;
+    }
 
     setClienteAEliminar(cliente);
-
   };
-
 
   const cerrarModalEliminar = () => {
-
     setClienteAEliminar(null);
-
   };
-
 
   const manejarConfirmarEliminar =
     async () => {
-
-      if (!clienteAEliminar) {
+      if (
+        !puedeModificar ||
+        !clienteAEliminar
+      ) {
         return;
       }
 
       try {
-
         await eliminarCliente(
           clienteAEliminar.id
         );
@@ -382,15 +355,11 @@ function Clientes() {
           clienteEditandoId ===
           clienteAEliminar.id
         ) {
-
           limpiarFormulario();
-
         }
 
         setClienteAEliminar(null);
-
       } catch (error) {
-
         console.error(
           "ERROR AL ELIMINAR CLIENTE:",
           error
@@ -399,11 +368,8 @@ function Clientes() {
         alert(
           "No se pudo eliminar el cliente."
         );
-
       }
-
     };
-
 
   // =========================================================
   // CLASE DE ESTADO
@@ -412,7 +378,6 @@ function Clientes() {
   const obtenerClaseEstado = (
     estado
   ) => {
-
     if (estado === "Activo") {
       return "status active-status";
     }
@@ -426,9 +391,7 @@ function Clientes() {
     }
 
     return "status";
-
   };
-
 
   // =========================================================
   // CLASE DE RIESGO
@@ -437,7 +400,6 @@ function Clientes() {
   const obtenerClaseRiesgo = (
     riesgo
   ) => {
-
     if (!riesgo) {
       return "cliente-risk-badge";
     }
@@ -458,9 +420,7 @@ function Clientes() {
     }
 
     return "cliente-risk-badge";
-
   };
-
 
   // =========================================================
   // FORMATEAR DINERO
@@ -469,7 +429,6 @@ function Clientes() {
   const formatearDinero = (
     valor
   ) => {
-
     return new Intl.NumberFormat(
       "es-EC",
       {
@@ -479,9 +438,7 @@ function Clientes() {
     ).format(
       Number(valor || 0)
     );
-
   };
-
 
   // =========================================================
   // FORMATEAR PORCENTAJE
@@ -490,14 +447,11 @@ function Clientes() {
   const formatearPorcentaje = (
     valor
   ) => {
-
     if (
       valor === null ||
       valor === undefined
     ) {
-
       return "-";
-
     }
 
     return `${Number(valor).toLocaleString(
@@ -507,9 +461,7 @@ function Clientes() {
         maximumFractionDigits: 2,
       }
     )}%`;
-
   };
-
 
   // =========================================================
   // FORMATEAR FECHA
@@ -518,7 +470,6 @@ function Clientes() {
   const formatearFecha = (
     fecha
   ) => {
-
     if (!fecha) {
       return "-";
     }
@@ -532,9 +483,7 @@ function Clientes() {
         timeStyle: "short",
       }
     );
-
   };
-
 
   // =========================================================
   // CONTADORES GENERALES
@@ -543,13 +492,11 @@ function Clientes() {
   const totalClientes =
     clientes.length;
 
-
   const clientesActivos =
     clientes.filter(
       (cliente) =>
         cliente.estado === "Activo"
     ).length;
-
 
   const clientesRevision =
     clientes.filter(
@@ -558,13 +505,11 @@ function Clientes() {
         "En revisión"
     ).length;
 
-
   const clientesAlerta =
     clientes.filter(
       (cliente) =>
         cliente.estado === "Alerta"
     ).length;
-
 
   // =========================================================
   // HISTORIAL DEL CLIENTE
@@ -575,21 +520,18 @@ function Clientes() {
       ? historialEvaluaciones[0]
       : null;
 
-
   // =========================================================
   // BUSCADOR
   // =========================================================
 
   const clientesFiltrados =
     clientes.filter((cliente) => {
-
       const texto =
         busqueda
           .toLowerCase()
           .trim();
 
       return (
-
         String(cliente.cedula || "")
           .toLowerCase()
           .includes(texto) ||
@@ -609,20 +551,15 @@ function Clientes() {
         String(cliente.telefono || "")
           .toLowerCase()
           .includes(texto)
-
       );
-
     });
-
 
   // =========================================================
   // RETURN
   // =========================================================
 
   return (
-
     <Layout title="Gestión de Clientes">
-
 
       {/* =====================================================
           TARJETAS
@@ -631,7 +568,6 @@ function Clientes() {
       <section className="summary-cards four">
 
         <div className="small-card">
-
           <h3>
             Total clientes
           </h3>
@@ -639,12 +575,9 @@ function Clientes() {
           <strong>
             {totalClientes}
           </strong>
-
         </div>
 
-
         <div className="small-card">
-
           <h3>
             Clientes activos
           </h3>
@@ -652,12 +585,9 @@ function Clientes() {
           <strong>
             {clientesActivos}
           </strong>
-
         </div>
 
-
         <div className="small-card yellow">
-
           <h3>
             Clientes en revisión
           </h3>
@@ -665,12 +595,9 @@ function Clientes() {
           <strong>
             {clientesRevision}
           </strong>
-
         </div>
 
-
         <div className="small-card red">
-
           <h3>
             Clientes con alerta
           </h3>
@@ -678,14 +605,12 @@ function Clientes() {
           <strong>
             {clientesAlerta}
           </strong>
-
         </div>
 
       </section>
 
-
       {/* =====================================================
-          FORMULARIO
+          FORMULARIO / BUSCADOR
       ===================================================== */}
 
       <section className="panel">
@@ -704,37 +629,219 @@ function Clientes() {
             }
           />
 
-
-          <button
-
-            className="btn btn-green"
-
-            type="button"
-
-            onClick={
-              clienteEditandoId
-                ? manejarGuardarCambios
-                : manejarCrearCliente
-            }
-
-          >
-
-            {clienteEditandoId
-              ? "💾 Guardar cambios"
-              : "➕ Crear cliente"}
-
-          </button>
+          {puedeModificar && (
+            <button
+              className="btn btn-green"
+              type="button"
+              onClick={
+                clienteEditandoId
+                  ? manejarGuardarCambios
+                  : manejarCrearCliente
+              }
+            >
+              {clienteEditandoId
+                ? "💾 Guardar cambios"
+                : "➕ Crear cliente"}
+            </button>
+          )}
 
         </div>
 
+        {/* ===================================================
+            FORMULARIO ADMIN / ANALISTA
+        =================================================== */}
 
-        {/* MODO EDICIÓN */}
+        {puedeModificar && (
+          <>
 
-        {clienteEditandoId && (
+            {/* MODO EDICIÓN */}
 
+            {clienteEditandoId && (
+
+              <div
+                style={{
+                  marginBottom: "20px",
+                  padding: "12px 16px",
+                  background: "#f4f8f5",
+                  borderLeft:
+                    "4px solid #009144",
+                  borderRadius: "6px",
+                }}
+              >
+
+                <strong>
+                  ✏️ Editando cliente
+                </strong>
+
+                <button
+                  type="button"
+                  onClick={
+                    limpiarFormulario
+                  }
+                  style={{
+                    marginLeft: "15px",
+                    border: "none",
+                    background:
+                      "transparent",
+                    cursor: "pointer",
+                    textDecoration:
+                      "underline",
+                  }}
+                >
+                  Cancelar edición
+                </button>
+
+              </div>
+
+            )}
+
+            <div className="form-grid four">
+
+              <div className="form-group">
+
+                <label>
+                  Cédula
+                </label>
+
+                <input
+                  type="text"
+                  name="cedula"
+                  value={
+                    formulario.cedula
+                  }
+                  onChange={
+                    manejarCambio
+                  }
+                  placeholder="Ej. 1300000000"
+                />
+
+              </div>
+
+              <div className="form-group">
+
+                <label>
+                  Nombres
+                </label>
+
+                <input
+                  type="text"
+                  name="nombres"
+                  value={
+                    formulario.nombres
+                  }
+                  onChange={
+                    manejarCambio
+                  }
+                  placeholder="Nombres del cliente"
+                />
+
+              </div>
+
+              <div className="form-group">
+
+                <label>
+                  Apellidos
+                </label>
+
+                <input
+                  type="text"
+                  name="apellidos"
+                  value={
+                    formulario.apellidos
+                  }
+                  onChange={
+                    manejarCambio
+                  }
+                  placeholder="Apellidos del cliente"
+                />
+
+              </div>
+
+              <div className="form-group">
+
+                <label>
+                  Correo
+                </label>
+
+                <input
+                  type="email"
+                  name="correo"
+                  value={
+                    formulario.correo
+                  }
+                  onChange={
+                    manejarCambio
+                  }
+                  placeholder="correo@ejemplo.com"
+                />
+
+              </div>
+
+              <div className="form-group">
+
+                <label>
+                  Teléfono
+                </label>
+
+                <input
+                  type="text"
+                  name="telefono"
+                  value={
+                    formulario.telefono
+                  }
+                  onChange={
+                    manejarCambio
+                  }
+                  placeholder="Ej. 0991234567"
+                />
+
+              </div>
+
+              <div className="form-group">
+
+                <label>
+                  Estado
+                </label>
+
+                <select
+                  name="estado"
+                  value={
+                    formulario.estado
+                  }
+                  onChange={
+                    manejarCambio
+                  }
+                >
+
+                  <option value="Activo">
+                    Activo
+                  </option>
+
+                  <option value="En revisión">
+                    En revisión
+                  </option>
+
+                  <option value="Alerta">
+                    Alerta
+                  </option>
+
+                </select>
+
+              </div>
+
+            </div>
+
+          </>
+        )}
+
+        {/* ===================================================
+            MENSAJE GERENCIA
+        =================================================== */}
+
+        {esGerencia && (
           <div
             style={{
-              marginBottom: "20px",
+              marginTop: "15px",
               padding: "12px 16px",
               background: "#f4f8f5",
               borderLeft:
@@ -742,179 +849,18 @@ function Clientes() {
               borderRadius: "6px",
             }}
           >
-
+            👁️{" "}
             <strong>
-              ✏️ Editando cliente
-            </strong>
-
-            <button
-              type="button"
-              onClick={
-                limpiarFormulario
-              }
-              style={{
-                marginLeft: "15px",
-                border: "none",
-                background:
-                  "transparent",
-                cursor: "pointer",
-                textDecoration:
-                  "underline",
-              }}
-            >
-              Cancelar edición
-            </button>
-
+              Modo consulta:
+            </strong>{" "}
+            Gerencia puede visualizar la
+            información de los clientes,
+            pero no puede crear, editar
+            ni eliminar registros.
           </div>
-
         )}
 
-
-        <div className="form-grid four">
-
-
-          <div className="form-group">
-
-            <label>
-              Cédula
-            </label>
-
-            <input
-              type="text"
-              name="cedula"
-              value={
-                formulario.cedula
-              }
-              onChange={
-                manejarCambio
-              }
-              placeholder="Ej. 1300000000"
-            />
-
-          </div>
-
-
-          <div className="form-group">
-
-            <label>
-              Nombres
-            </label>
-
-            <input
-              type="text"
-              name="nombres"
-              value={
-                formulario.nombres
-              }
-              onChange={
-                manejarCambio
-              }
-              placeholder="Nombres del cliente"
-            />
-
-          </div>
-
-
-          <div className="form-group">
-
-            <label>
-              Apellidos
-            </label>
-
-            <input
-              type="text"
-              name="apellidos"
-              value={
-                formulario.apellidos
-              }
-              onChange={
-                manejarCambio
-              }
-              placeholder="Apellidos del cliente"
-            />
-
-          </div>
-
-
-          <div className="form-group">
-
-            <label>
-              Correo
-            </label>
-
-            <input
-              type="email"
-              name="correo"
-              value={
-                formulario.correo
-              }
-              onChange={
-                manejarCambio
-              }
-              placeholder="correo@ejemplo.com"
-            />
-
-          </div>
-
-
-          <div className="form-group">
-
-            <label>
-              Teléfono
-            </label>
-
-            <input
-              type="text"
-              name="telefono"
-              value={
-                formulario.telefono
-              }
-              onChange={
-                manejarCambio
-              }
-              placeholder="Ej. 0991234567"
-            />
-
-          </div>
-
-
-          <div className="form-group">
-
-            <label>
-              Estado
-            </label>
-
-            <select
-              name="estado"
-              value={
-                formulario.estado
-              }
-              onChange={
-                manejarCambio
-              }
-            >
-
-              <option value="Activo">
-                Activo
-              </option>
-
-              <option value="En revisión">
-                En revisión
-              </option>
-
-              <option value="Alerta">
-                Alerta
-              </option>
-
-            </select>
-
-          </div>
-
-
-        </div>
-
       </section>
-
 
       {/* =====================================================
           TABLA
@@ -925,7 +871,6 @@ function Clientes() {
         <h2 className="section-title">
           Tabla de clientes registrados
         </h2>
-
 
         <table className="table">
 
@@ -948,7 +893,6 @@ function Clientes() {
             </tr>
 
           </thead>
-
 
           <tbody>
 
@@ -983,13 +927,10 @@ function Clientes() {
                         )
                       }
                     >
-
                       {cliente.estado}
-
                     </span>
 
                   </td>
-
 
                   <td>
 
@@ -1005,31 +946,35 @@ function Clientes() {
                       Ver
                     </button>
 
+                    {puedeModificar && (
+                      <>
 
-                    <button
-                      className="btn-small btn-yellow"
-                      type="button"
-                      onClick={() =>
-                        manejarEditarCliente(
-                          cliente.id
-                        )
-                      }
-                    >
-                      Editar
-                    </button>
+                        <button
+                          className="btn-small btn-yellow"
+                          type="button"
+                          onClick={() =>
+                            manejarEditarCliente(
+                              cliente.id
+                            )
+                          }
+                        >
+                          Editar
+                        </button>
 
+                        <button
+                          className="btn-small btn-delete"
+                          type="button"
+                          onClick={() =>
+                            manejarSolicitarEliminar(
+                              cliente
+                            )
+                          }
+                        >
+                          Eliminar
+                        </button>
 
-                    <button
-                      className="btn-small btn-delete"
-                      type="button"
-                      onClick={() =>
-                        manejarSolicitarEliminar(
-                          cliente
-                        )
-                      }
-                    >
-                      Eliminar
-                    </button>
+                      </>
+                    )}
 
                   </td>
 
@@ -1042,7 +987,6 @@ function Clientes() {
 
         </table>
 
-
         {clientesFiltrados.length === 0 && (
 
           <p
@@ -1051,17 +995,14 @@ function Clientes() {
               padding: "20px",
             }}
           >
-
             {busqueda
               ? "No se encontraron clientes con esa búsqueda."
               : "No hay clientes registrados."}
-
           </p>
 
         )}
 
       </section>
-
 
       {/* =====================================================
           MODAL VER CLIENTE
@@ -1083,7 +1024,6 @@ function Clientes() {
             }
           >
 
-
             {/* HEADER */}
 
             <div className="cliente-modal-header">
@@ -1101,7 +1041,6 @@ function Clientes() {
 
               </div>
 
-
               <button
                 className="modal-close"
                 type="button"
@@ -1114,11 +1053,9 @@ function Clientes() {
 
             </div>
 
-
             {/* BODY */}
 
             <div className="cliente-modal-scroll">
-
 
               {/* DATOS PERSONALES */}
 
@@ -1127,7 +1064,6 @@ function Clientes() {
                 <h3 className="cliente-history-title">
                   Datos generales
                 </h3>
-
 
                 <div className="cliente-modal-body">
 
@@ -1143,7 +1079,6 @@ function Clientes() {
 
                   </div>
 
-
                   <div className="cliente-info">
 
                     <span>
@@ -1155,7 +1090,6 @@ function Clientes() {
                     </strong>
 
                   </div>
-
 
                   <div className="cliente-info">
 
@@ -1169,7 +1103,6 @@ function Clientes() {
 
                   </div>
 
-
                   <div className="cliente-info">
 
                     <span>
@@ -1182,7 +1115,6 @@ function Clientes() {
 
                   </div>
 
-
                   <div className="cliente-info cliente-info-full">
 
                     <span>
@@ -1194,7 +1126,6 @@ function Clientes() {
                     </strong>
 
                   </div>
-
 
                   <div className="cliente-info cliente-info-full">
 
@@ -1211,9 +1142,7 @@ function Clientes() {
                           )
                         }
                       >
-
                         {clienteSeleccionado.estado}
-
                       </span>
 
                     </div>
@@ -1224,20 +1153,16 @@ function Clientes() {
 
               </div>
 
-
               {/* CARGANDO */}
 
               {cargandoHistorial && (
 
                 <div className="cliente-history-loading">
-
                   ⏳ Cargando historial
                   crediticio...
-
                 </div>
 
               )}
-
 
               {/* HISTORIAL DISPONIBLE */}
 
@@ -1254,9 +1179,7 @@ function Clientes() {
                         Historial crediticio interno
                       </h3>
 
-
                       <div className="cliente-credit-summary">
-
 
                         <div className="cliente-credit-card">
 
@@ -1274,7 +1197,6 @@ function Clientes() {
 
                         </div>
 
-
                         <div className="cliente-credit-card">
 
                           <span>
@@ -1282,11 +1204,9 @@ function Clientes() {
                           </span>
 
                           <strong>
-
                             {ultimaEvaluacion?.scoreIa != null
                               ? `${ultimaEvaluacion.scoreIa}/100`
                               : "-"}
-
                           </strong>
 
                           <small>
@@ -1295,7 +1215,6 @@ function Clientes() {
 
                         </div>
 
-
                         <div className="cliente-credit-card">
 
                           <span>
@@ -1303,12 +1222,10 @@ function Clientes() {
                           </span>
 
                           <strong>
-
                             {formatearPorcentaje(
                               ultimaEvaluacion
                                 ?.probabilidadMora
                             )}
-
                           </strong>
 
                           <small>
@@ -1316,7 +1233,6 @@ function Clientes() {
                           </small>
 
                         </div>
-
 
                         <div className="cliente-credit-card">
 
@@ -1332,11 +1248,9 @@ function Clientes() {
                               )
                             }
                           >
-
                             {ultimaEvaluacion
                               ?.nivelRiesgo ||
                               "-"}
-
                           </strong>
 
                           <small>
@@ -1345,11 +1259,9 @@ function Clientes() {
 
                         </div>
 
-
                       </div>
 
                     </div>
-
 
                     {/* HISTORIAL */}
 
@@ -1358,7 +1270,6 @@ function Clientes() {
                       <h3 className="cliente-history-title">
                         Historial de evaluaciones
                       </h3>
-
 
                       <div className="cliente-evaluation-list">
 
@@ -1370,28 +1281,22 @@ function Clientes() {
                               key={item.id}
                             >
 
-
                               <div className="cliente-evaluation-header">
 
                                 <div>
 
                                   <strong>
-
                                     Solicitud #
                                     {item.solicitud?.id}
-
                                   </strong>
 
                                   <span>
-
                                     {item.solicitud
                                       ?.tipoCredito ||
                                       "Tipo no registrado"}
-
                                   </span>
 
                                 </div>
-
 
                                 <span
                                   className={
@@ -1400,54 +1305,42 @@ function Clientes() {
                                     )
                                   }
                                 >
-
                                   Riesgo{" "}
                                   {item.nivelRiesgo ||
                                     "-"}
-
                                 </span>
 
                               </div>
-
 
                               <div className="cliente-evaluation-credit">
 
                                 <span>
-
                                   Monto solicitado:{" "}
 
                                   <strong>
-
                                     {formatearDinero(
                                       item.solicitud
                                         ?.monto
                                     )}
-
                                   </strong>
 
                                 </span>
 
-
                                 <span>
-
                                   Plazo:{" "}
 
                                   <strong>
-
                                     {item.solicitud
                                       ?.plazoMeses
                                       ? `${item.solicitud.plazoMeses} meses`
                                       : "-"}
-
                                   </strong>
 
                                 </span>
 
                               </div>
 
-
                               <div className="cliente-evaluation-metrics">
-
 
                                 <div>
 
@@ -1456,15 +1349,12 @@ function Clientes() {
                                   </span>
 
                                   <strong>
-
                                     {item.scoreIa != null
                                       ? `${item.scoreIa}/100`
                                       : "-"}
-
                                   </strong>
 
                                 </div>
-
 
                                 <div>
 
@@ -1473,15 +1363,12 @@ function Clientes() {
                                   </span>
 
                                   <strong>
-
                                     {formatearPorcentaje(
                                       item.probabilidadMora
                                     )}
-
                                   </strong>
 
                                 </div>
-
 
                                 <div>
 
@@ -1490,38 +1377,29 @@ function Clientes() {
                                   </span>
 
                                   <strong>
-
                                     {item.nivelRiesgo ||
                                       "-"}
-
                                   </strong>
 
                                 </div>
 
-
                               </div>
-
 
                               <div className="cliente-evaluation-footer">
 
                                 <span>
-
                                   🤖{" "}
                                   {item.modeloUtilizado ||
                                     "Modelo no registrado"}
-
                                 </span>
 
                                 <span>
-
                                   {formatearFecha(
                                     item.fechaEvaluacion
                                   )}
-
                                 </span>
 
                               </div>
-
 
                             </div>
 
@@ -1535,7 +1413,6 @@ function Clientes() {
                   </>
 
                 )}
-
 
               {/* SIN HISTORIAL */}
 
@@ -1565,7 +1442,6 @@ function Clientes() {
 
             </div>
 
-
             {/* FOOTER */}
 
             <div className="cliente-modal-footer">
@@ -1582,19 +1458,17 @@ function Clientes() {
 
             </div>
 
-
           </div>
 
         </div>
 
       )}
 
-
       {/* =====================================================
           MODAL ELIMINAR
       ===================================================== */}
 
-      {clienteAEliminar && (
+      {puedeModificar && clienteAEliminar && (
 
         <div
           className="modal-overlay"
@@ -1624,7 +1498,6 @@ function Clientes() {
 
               </div>
 
-
               <button
                 className="modal-close"
                 type="button"
@@ -1637,7 +1510,6 @@ function Clientes() {
 
             </div>
 
-
             <div
               style={{
                 padding: "30px",
@@ -1649,25 +1521,17 @@ function Clientes() {
                   marginTop: "0",
                 }}
               >
-
                 ¿Estás seguro de eliminar este cliente?
-
               </h3>
 
-
               <p>
-
                 Estás a punto de eliminar a{" "}
 
                 <strong>
-
                   {clienteAEliminar.nombres}{" "}
                   {clienteAEliminar.apellidos}
-
                 </strong>.
-
               </p>
-
 
               <p
                 style={{
@@ -1675,13 +1539,10 @@ function Clientes() {
                   marginBottom: "0",
                 }}
               >
-
                 El registro será eliminado de la base de datos.
-
               </p>
 
             </div>
-
 
             <div className="cliente-modal-footer">
 
@@ -1694,7 +1555,6 @@ function Clientes() {
               >
                 Cancelar
               </button>
-
 
               <button
                 className="btn-small btn-delete"
@@ -1715,10 +1575,7 @@ function Clientes() {
       )}
 
     </Layout>
-
   );
-
 }
-
 
 export default Clientes;

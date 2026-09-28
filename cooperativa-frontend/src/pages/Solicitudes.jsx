@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+
 import Layout from "../components/Layout";
 
 import {
@@ -35,19 +36,75 @@ const initialForm = {
 
 export default function Solicitudes() {
 
-  const [form, setForm] = useState(initialForm);
-  const [clientes, setClientes] = useState([]);
-  const [solicitudes, setSolicitudes] = useState([]);
-  const [guardando, setGuardando] = useState(false);
+  // =========================================================
+  // USUARIO Y PERMISOS
+  // =========================================================
 
-  const [solicitudSeleccionada, setSolicitudSeleccionada] =
-    useState(null);
+  let usuario = null;
 
-  const [modalVer, setModalVer] = useState(false);
-  const [modoEdicion, setModoEdicion] = useState(false);
+  try {
 
-  const [solicitudEditandoId, setSolicitudEditandoId] =
-    useState(null);
+    const usuarioGuardado =
+      sessionStorage.getItem("usuario");
+
+    if (usuarioGuardado) {
+      usuario =
+        JSON.parse(usuarioGuardado);
+    }
+
+  } catch (error) {
+
+    console.error(
+      "Error al obtener usuario:",
+      error
+    );
+
+  }
+
+
+  const puedeModificar =
+    usuario?.rol === "ADMIN" ||
+    usuario?.rol === "ANALISTA";
+
+
+  const esGerencia =
+    usuario?.rol === "GERENCIA";
+
+
+  // =========================================================
+  // ESTADOS
+  // =========================================================
+
+  const [form, setForm] =
+    useState(initialForm);
+
+  const [clientes, setClientes] =
+    useState([]);
+
+  const [solicitudes, setSolicitudes] =
+    useState([]);
+
+  const [guardando, setGuardando] =
+    useState(false);
+
+
+  const [
+    solicitudSeleccionada,
+    setSolicitudSeleccionada
+  ] = useState(null);
+
+
+  const [modalVer, setModalVer] =
+    useState(false);
+
+  const [modoEdicion, setModoEdicion] =
+    useState(false);
+
+
+  const [
+    solicitudEditandoId,
+    setSolicitudEditandoId
+  ] = useState(null);
 
 
   // =========================================================
@@ -55,8 +112,10 @@ export default function Solicitudes() {
   // =========================================================
 
   useEffect(() => {
+
     cargarClientes();
     cargarSolicitudes();
+
   }, []);
 
 
@@ -64,7 +123,9 @@ export default function Solicitudes() {
 
     try {
 
-      const datos = await obtenerClientes();
+      const datos =
+        await obtenerClientes();
+
       setClientes(datos);
 
     } catch (error) {
@@ -77,7 +138,9 @@ export default function Solicitudes() {
       alert(
         "No se pudieron cargar los clientes."
       );
+
     }
+
   };
 
 
@@ -85,7 +148,9 @@ export default function Solicitudes() {
 
     try {
 
-      const datos = await obtenerSolicitudes();
+      const datos =
+        await obtenerSolicitudes();
+
       setSolicitudes(datos);
 
     } catch (error) {
@@ -94,7 +159,9 @@ export default function Solicitudes() {
         "Error al cargar solicitudes:",
         error
       );
+
     }
+
   };
 
 
@@ -106,8 +173,10 @@ export default function Solicitudes() {
 
     setForm({
       ...form,
-      [e.target.name]: e.target.value
+      [e.target.name]:
+        e.target.value
     });
+
   };
 
 
@@ -117,7 +186,9 @@ export default function Solicitudes() {
 
   const seleccionarCliente = (e) => {
 
-    const id = e.target.value;
+    const id =
+      e.target.value;
+
 
     if (!id) {
 
@@ -131,21 +202,29 @@ export default function Solicitudes() {
       });
 
       return;
+
     }
 
-    const cliente = clientes.find(
-      (cliente) =>
-        String(cliente.id) === String(id)
-    );
+
+    const cliente =
+      clientes.find(
+        (cliente) =>
+          String(cliente.id) ===
+          String(id)
+      );
+
 
     if (!cliente) {
       return;
     }
 
+
     setForm((formAnterior) => ({
+
       ...formAnterior,
 
-      clienteId: cliente.id,
+      clienteId:
+        cliente.id,
 
       cedula:
         cliente.cedula || "",
@@ -158,7 +237,9 @@ export default function Solicitudes() {
 
       telefono:
         cliente.telefono || ""
+
     }));
+
   };
 
 
@@ -169,8 +250,11 @@ export default function Solicitudes() {
   const limpiar = () => {
 
     setForm(initialForm);
+
     setModoEdicion(false);
+
     setSolicitudEditandoId(null);
+
   };
 
 
@@ -236,6 +320,7 @@ export default function Solicitudes() {
        * El backend conserva/controla el estado
        * durante las actualizaciones.
        */
+
       estado:
         modoEdicion
           ? form.estado
@@ -243,7 +328,9 @@ export default function Solicitudes() {
 
       destinoCredito:
         form.destino
+
     };
+
   };
 
 
@@ -256,6 +343,17 @@ export default function Solicitudes() {
     e.preventDefault();
 
 
+    if (!puedeModificar) {
+
+      alert(
+        "No tiene permisos para modificar solicitudes."
+      );
+
+      return;
+
+    }
+
+
     if (!form.clienteId) {
 
       alert(
@@ -263,6 +361,7 @@ export default function Solicitudes() {
       );
 
       return;
+
     }
 
 
@@ -273,6 +372,7 @@ export default function Solicitudes() {
       );
 
       return;
+
     }
 
 
@@ -283,6 +383,7 @@ export default function Solicitudes() {
       );
 
       return;
+
     }
 
 
@@ -304,10 +405,12 @@ export default function Solicitudes() {
             solicitud
           );
 
+
         console.log(
           "Solicitud actualizada:",
           solicitudActualizada
         );
+
 
         alert(
           "Solicitud actualizada correctamente."
@@ -321,18 +424,22 @@ export default function Solicitudes() {
             solicitud
           );
 
+
         console.log(
           "Solicitud registrada:",
           nuevaSolicitud
         );
 
+
         alert(
           "Solicitud registrada correctamente."
         );
+
       }
 
 
       await cargarSolicitudes();
+
       limpiar();
 
 
@@ -342,6 +449,7 @@ export default function Solicitudes() {
         "Error al guardar la solicitud:",
         error
       );
+
 
       if (modoEdicion) {
 
@@ -354,12 +462,15 @@ export default function Solicitudes() {
         alert(
           "No se pudo registrar la solicitud."
         );
+
       }
 
     } finally {
 
       setGuardando(false);
+
     }
+
   };
 
 
@@ -374,13 +485,16 @@ export default function Solicitudes() {
     );
 
     setModalVer(true);
+
   };
 
 
   const cerrarModalVer = () => {
 
     setModalVer(false);
+
     setSolicitudSeleccionada(null);
+
   };
 
 
@@ -389,6 +503,11 @@ export default function Solicitudes() {
   // =========================================================
 
   const editarSolicitud = (solicitud) => {
+
+    if (!puedeModificar) {
+      return;
+    }
+
 
     const cliente =
       solicitud.cliente;
@@ -457,6 +576,7 @@ export default function Solicitudes() {
 
       destino:
         solicitud.destinoCredito || ""
+
     });
 
 
@@ -471,6 +591,7 @@ export default function Solicitudes() {
       top: 0,
       behavior: "smooth"
     });
+
   };
 
 
@@ -478,71 +599,81 @@ export default function Solicitudes() {
   // ELIMINAR
   // =========================================================
 
-  const borrarSolicitud = async (solicitud) => {
+  const borrarSolicitud =
+    async (solicitud) => {
 
-    const clienteNombre =
-      solicitud.cliente
-        ? `${solicitud.cliente.nombres || ""} ${solicitud.cliente.apellidos || ""}`.trim()
-        : "este cliente";
-
-
-    const confirmar =
-      window.confirm(
-        `¿Está seguro de eliminar la solicitud #${solicitud.id} de ${clienteNombre}?\n\nEsta acción no se puede deshacer.`
-      );
-
-
-    if (!confirmar) {
-      return;
-    }
-
-
-    try {
-
-      await eliminarSolicitud(
-        solicitud.id
-      );
-
-
-      alert(
-        "Solicitud eliminada correctamente."
-      );
-
-
-      if (
-        solicitudEditandoId ===
-        solicitud.id
-      ) {
-
-        limpiar();
+      if (!puedeModificar) {
+        return;
       }
 
 
-      if (
-        solicitudSeleccionada?.id ===
-        solicitud.id
-      ) {
+      const clienteNombre =
+        solicitud.cliente
+          ? `${solicitud.cliente.nombres || ""} ${solicitud.cliente.apellidos || ""}`.trim()
+          : "este cliente";
 
-        cerrarModalVer();
+
+      const confirmar =
+        window.confirm(
+          `¿Está seguro de eliminar la solicitud #${solicitud.id} de ${clienteNombre}?\n\nEsta acción no se puede deshacer.`
+        );
+
+
+      if (!confirmar) {
+        return;
       }
 
 
-      await cargarSolicitudes();
+      try {
+
+        await eliminarSolicitud(
+          solicitud.id
+        );
 
 
-    } catch (error) {
-
-      console.error(
-        "Error al eliminar solicitud:",
-        error
-      );
+        alert(
+          "Solicitud eliminada correctamente."
+        );
 
 
-      alert(
-        "No se pudo eliminar la solicitud."
-      );
-    }
-  };
+        if (
+          solicitudEditandoId ===
+          solicitud.id
+        ) {
+
+          limpiar();
+
+        }
+
+
+        if (
+          solicitudSeleccionada?.id ===
+          solicitud.id
+        ) {
+
+          cerrarModalVer();
+
+        }
+
+
+        await cargarSolicitudes();
+
+
+      } catch (error) {
+
+        console.error(
+          "Error al eliminar solicitud:",
+          error
+        );
+
+
+        alert(
+          "No se pudo eliminar la solicitud."
+        );
+
+      }
+
+    };
 
 
   // =========================================================
@@ -560,6 +691,7 @@ export default function Solicitudes() {
         maximumFractionDigits: 2
       }
     )}`;
+
   };
 
 
@@ -582,8 +714,13 @@ export default function Solicitudes() {
     }
 
     return "pendiente";
+
   };
 
+
+  // =========================================================
+  // RETURN
+  // =========================================================
 
   return (
 
@@ -645,529 +782,576 @@ export default function Solicitudes() {
 
 
       {/* =====================================================
-          EDICIÓN
+          FORMULARIO ADMIN / ANALISTA
       ===================================================== */}
 
-      {modoEdicion && (
+      {puedeModificar && (
+        <>
 
-        <div className="editing-alert">
+          {/* ===================================================
+              EDICIÓN
+          =================================================== */}
 
-          <div>
+          {modoEdicion && (
 
-            <strong>
-              ✏️ Editando solicitud #{solicitudEditandoId}
-            </strong>
+            <div className="editing-alert">
 
-            <span>
-              Modifique los datos necesarios y presione Actualizar solicitud.
-            </span>
+              <div>
 
-          </div>
+                <strong>
+                  ✏️ Editando solicitud #{solicitudEditandoId}
+                </strong>
+
+                <span>
+                  Modifique los datos necesarios y presione Actualizar solicitud.
+                </span>
+
+              </div>
 
 
-          <button
-            type="button"
-            onClick={limpiar}
-          >
-            Cancelar edición
-          </button>
+              <button
+                type="button"
+                onClick={limpiar}
+              >
+                Cancelar edición
+              </button>
 
-        </div>
+            </div>
+
+          )}
+
+
+          {/* ===================================================
+              FORMULARIO
+          =================================================== */}
+
+          <form onSubmit={guardar}>
+
+
+            {/* DATOS PERSONALES */}
+
+            <section className="panel">
+
+              <h2 className="section-title">
+                Datos personales
+              </h2>
+
+
+              <div className="form-grid">
+
+
+                <div className="form-group">
+
+                  <label>
+                    Seleccionar cliente
+                  </label>
+
+                  <select
+                    name="clienteId"
+                    value={form.clienteId}
+                    onChange={seleccionarCliente}
+                  >
+
+                    <option value="">
+                      Seleccione un cliente
+                    </option>
+
+                    {clientes.map(
+                      (cliente) => (
+
+                        <option
+                          key={cliente.id}
+                          value={cliente.id}
+                        >
+
+                          {cliente.cedula}
+                          {" - "}
+                          {cliente.nombres}
+                          {" "}
+                          {cliente.apellidos}
+
+                        </option>
+
+                      )
+                    )}
+
+                  </select>
+
+                </div>
+
+
+                <div className="form-group">
+
+                  <label>
+                    Cédula
+                  </label>
+
+                  <input
+                    name="cedula"
+                    value={form.cedula}
+                    readOnly
+                    placeholder="Cédula del cliente"
+                  />
+
+                </div>
+
+
+                <div className="form-group">
+
+                  <label>
+                    Nombres completos
+                  </label>
+
+                  <input
+                    name="nombres"
+                    value={form.nombres}
+                    readOnly
+                    placeholder="Nombre del solicitante"
+                  />
+
+                </div>
+
+
+                <div className="form-group">
+
+                  <label>
+                    Correo electrónico
+                  </label>
+
+                  <input
+                    name="correo"
+                    value={form.correo}
+                    readOnly
+                    placeholder="correo@ejemplo.com"
+                  />
+
+                </div>
+
+
+                <div className="form-group">
+
+                  <label>
+                    Teléfono
+                  </label>
+
+                  <input
+                    name="telefono"
+                    value={form.telefono}
+                    readOnly
+                    placeholder="0999999999"
+                  />
+
+                </div>
+
+
+                <div className="form-group">
+
+                  <label>
+                    Estado civil
+                  </label>
+
+                  <select
+                    name="estadoCivil"
+                    value={form.estadoCivil}
+                    onChange={update}
+                  >
+
+                    <option>
+                      Soltero/a
+                    </option>
+
+                    <option>
+                      Casado/a
+                    </option>
+
+                    <option>
+                      Unión libre
+                    </option>
+
+                    <option>
+                      Divorciado/a
+                    </option>
+
+                  </select>
+
+                </div>
+
+
+                <div className="form-group">
+
+                  <label>
+                    Ocupación
+                  </label>
+
+                  <input
+                    name="ocupacion"
+                    value={form.ocupacion}
+                    onChange={update}
+                    placeholder="Ej. Comerciante"
+                  />
+
+                </div>
+
+
+                <div className="form-group full">
+
+                  <label>
+                    Dirección domiciliaria
+                  </label>
+
+                  <input
+                    name="direccion"
+                    value={form.direccion}
+                    onChange={update}
+                    placeholder="Ingrese la dirección del cliente"
+                  />
+
+                </div>
+
+              </div>
+
+            </section>
+
+
+            {/* ===================================================
+                INFORMACIÓN FINANCIERA
+            =================================================== */}
+
+            <section className="panel">
+
+              <h2 className="section-title">
+                Información financiera
+              </h2>
+
+
+              <div className="form-grid">
+
+
+                <div className="form-group">
+
+                  <label>
+                    Ingresos mensuales
+                  </label>
+
+                  <input
+                    name="ingresos"
+                    value={form.ingresos}
+                    onChange={update}
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="Ej. 850.00"
+                  />
+
+                </div>
+
+
+                <div className="form-group">
+
+                  <label>
+                    Egresos mensuales
+                  </label>
+
+                  <input
+                    name="egresos"
+                    value={form.egresos}
+                    onChange={update}
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="Ej. 420.00"
+                  />
+
+                </div>
+
+
+                <div className="form-group">
+
+                  <label>
+                    Nivel de endeudamiento
+                  </label>
+
+                  <input
+                    name="endeudamiento"
+                    value={form.endeudamiento}
+                    onChange={update}
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="Ej. 30"
+                  />
+
+                </div>
+
+
+                <div className="form-group">
+
+                  <label>
+                    Empresa / Actividad
+                  </label>
+
+                  <input
+                    name="empresa"
+                    value={form.empresa}
+                    onChange={update}
+                    placeholder="Lugar de trabajo o actividad"
+                  />
+
+                </div>
+
+
+                <div className="form-group">
+
+                  <label>
+                    Antigüedad laboral
+                  </label>
+
+                  <input
+                    name="antiguedad"
+                    value={form.antiguedad}
+                    onChange={update}
+                    placeholder="Ej. 2 años"
+                  />
+
+                </div>
+
+
+                <div className="form-group">
+
+                  <label>
+                    Capacidad de pago estimada
+                  </label>
+
+                  <input
+                    name="capacidadPago"
+                    value={form.capacidadPago}
+                    onChange={update}
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="Ej. 250.00"
+                  />
+
+                </div>
+
+              </div>
+
+            </section>
+
+
+            {/* ===================================================
+                INFORMACIÓN DEL CRÉDITO
+            =================================================== */}
+
+            <section className="panel">
+
+              <h2 className="section-title">
+                Información del crédito
+              </h2>
+
+
+              <div className="form-grid">
+
+
+                <div className="form-group">
+
+                  <label>
+                    Tipo de crédito
+                  </label>
+
+                  <select
+                    name="tipoCredito"
+                    value={form.tipoCredito}
+                    onChange={update}
+                  >
+
+                    <option>
+                      Consumo
+                    </option>
+
+                    <option>
+                      Microcrédito
+                    </option>
+
+                    <option>
+                      Vivienda
+                    </option>
+
+                    <option>
+                      Comercial
+                    </option>
+
+                  </select>
+
+                </div>
+
+
+                <div className="form-group">
+
+                  <label>
+                    Monto solicitado
+                  </label>
+
+                  <input
+                    name="monto"
+                    value={form.monto}
+                    onChange={update}
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="Ej. 5000.00"
+                  />
+
+                </div>
+
+
+                <div className="form-group">
+
+                  <label>
+                    Plazo
+                  </label>
+
+                  <select
+                    name="plazo"
+                    value={form.plazo}
+                    onChange={update}
+                  >
+
+                    <option>6 meses</option>
+                    <option>12 meses</option>
+                    <option>24 meses</option>
+                    <option>36 meses</option>
+                    <option>48 meses</option>
+
+                  </select>
+
+                </div>
+
+
+                {/* ESTADO AUTOMÁTICO */}
+
+                <div className="form-group">
+
+                  <label>
+                    Estado de la solicitud
+                  </label>
+
+                  <input
+                    type="text"
+                    value={form.estado || "Pendiente"}
+                    readOnly
+                  />
+
+                  <small>
+                    El estado se actualiza automáticamente según el proceso del crédito.
+                  </small>
+
+                </div>
+
+
+                <div className="form-group full">
+
+                  <label>
+                    Destino del crédito
+                  </label>
+
+                  <textarea
+                    name="destino"
+                    value={form.destino}
+                    onChange={update}
+                    placeholder="Describa para qué será utilizado el crédito solicitado..."
+                  />
+
+                </div>
+
+              </div>
+
+
+              <div className="actions">
+
+                <button
+                  type="button"
+                  className="btn btn-cancel"
+                  onClick={limpiar}
+                >
+
+                  {modoEdicion
+                    ? "Cancelar edición"
+                    : "Cancelar"}
+
+                </button>
+
+
+                <button
+                  type="button"
+                  className="btn btn-clean"
+                  onClick={limpiar}
+                >
+                  Limpiar
+                </button>
+
+
+                <button
+                  type="submit"
+                  className="btn btn-save"
+                  disabled={guardando}
+                >
+
+                  {guardando
+
+                    ? modoEdicion
+                      ? "Actualizando..."
+                      : "Guardando..."
+
+                    : modoEdicion
+                      ? "💾 Actualizar solicitud"
+                      : "💾 Guardar solicitud"}
+
+                </button>
+
+              </div>
+
+            </section>
+
+          </form>
+
+        </>
       )}
 
 
       {/* =====================================================
-          FORMULARIO
+          AVISO GERENCIA
       ===================================================== */}
 
-      <form onSubmit={guardar}>
-
-
-        {/* DATOS PERSONALES */}
+      {esGerencia && (
 
         <section className="panel">
 
-          <h2 className="section-title">
-            Datos personales
-          </h2>
+          <div
+            style={{
+              padding: "14px 16px",
+              background: "#f4f8f5",
+              borderLeft: "4px solid #009144",
+              borderRadius: "6px"
+            }}
+          >
 
+            👁️{" "}
 
-          <div className="form-grid">
+            <strong>
+              Modo consulta:
+            </strong>{" "}
 
-
-            <div className="form-group">
-
-              <label>
-                Seleccionar cliente
-              </label>
-
-              <select
-                name="clienteId"
-                value={form.clienteId}
-                onChange={seleccionarCliente}
-              >
-
-                <option value="">
-                  Seleccione un cliente
-                </option>
-
-                {clientes.map(
-                  (cliente) => (
-
-                    <option
-                      key={cliente.id}
-                      value={cliente.id}
-                    >
-
-                      {cliente.cedula}
-                      {" - "}
-                      {cliente.nombres}
-                      {" "}
-                      {cliente.apellidos}
-
-                    </option>
-                  )
-                )}
-
-              </select>
-
-            </div>
-
-
-            <div className="form-group">
-
-              <label>
-                Cédula
-              </label>
-
-              <input
-                name="cedula"
-                value={form.cedula}
-                readOnly
-                placeholder="Cédula del cliente"
-              />
-
-            </div>
-
-
-            <div className="form-group">
-
-              <label>
-                Nombres completos
-              </label>
-
-              <input
-                name="nombres"
-                value={form.nombres}
-                readOnly
-                placeholder="Nombre del solicitante"
-              />
-
-            </div>
-
-
-            <div className="form-group">
-
-              <label>
-                Correo electrónico
-              </label>
-
-              <input
-                name="correo"
-                value={form.correo}
-                readOnly
-                placeholder="correo@ejemplo.com"
-              />
-
-            </div>
-
-
-            <div className="form-group">
-
-              <label>
-                Teléfono
-              </label>
-
-              <input
-                name="telefono"
-                value={form.telefono}
-                readOnly
-                placeholder="0999999999"
-              />
-
-            </div>
-
-
-            <div className="form-group">
-
-              <label>
-                Estado civil
-              </label>
-
-              <select
-                name="estadoCivil"
-                value={form.estadoCivil}
-                onChange={update}
-              >
-
-                <option>
-                  Soltero/a
-                </option>
-
-                <option>
-                  Casado/a
-                </option>
-
-                <option>
-                  Unión libre
-                </option>
-
-                <option>
-                  Divorciado/a
-                </option>
-
-              </select>
-
-            </div>
-
-
-            <div className="form-group">
-
-              <label>
-                Ocupación
-              </label>
-
-              <input
-                name="ocupacion"
-                value={form.ocupacion}
-                onChange={update}
-                placeholder="Ej. Comerciante"
-              />
-
-            </div>
-
-
-            <div className="form-group full">
-
-              <label>
-                Dirección domiciliaria
-              </label>
-
-              <input
-                name="direccion"
-                value={form.direccion}
-                onChange={update}
-                placeholder="Ingrese la dirección del cliente"
-              />
-
-            </div>
+            Gerencia puede consultar las
+            solicitudes registradas y revisar
+            su información, pero no puede crear,
+            editar ni eliminar solicitudes.
 
           </div>
 
         </section>
 
-
-        {/* ===================================================
-            INFORMACIÓN FINANCIERA
-        =================================================== */}
-
-        <section className="panel">
-
-          <h2 className="section-title">
-            Información financiera
-          </h2>
-
-
-          <div className="form-grid">
-
-
-            <div className="form-group">
-
-              <label>
-                Ingresos mensuales
-              </label>
-
-              <input
-                name="ingresos"
-                value={form.ingresos}
-                onChange={update}
-                type="number"
-                min="0"
-                step="0.01"
-                placeholder="Ej. 850.00"
-              />
-
-            </div>
-
-
-            <div className="form-group">
-
-              <label>
-                Egresos mensuales
-              </label>
-
-              <input
-                name="egresos"
-                value={form.egresos}
-                onChange={update}
-                type="number"
-                min="0"
-                step="0.01"
-                placeholder="Ej. 420.00"
-              />
-
-            </div>
-
-
-            <div className="form-group">
-
-              <label>
-                Nivel de endeudamiento
-              </label>
-
-              <input
-                name="endeudamiento"
-                value={form.endeudamiento}
-                onChange={update}
-                type="number"
-                min="0"
-                step="0.01"
-                placeholder="Ej. 30"
-              />
-
-            </div>
-
-
-            <div className="form-group">
-
-              <label>
-                Empresa / Actividad
-              </label>
-
-              <input
-                name="empresa"
-                value={form.empresa}
-                onChange={update}
-                placeholder="Lugar de trabajo o actividad"
-              />
-
-            </div>
-
-
-            <div className="form-group">
-
-              <label>
-                Antigüedad laboral
-              </label>
-
-              <input
-                name="antiguedad"
-                value={form.antiguedad}
-                onChange={update}
-                placeholder="Ej. 2 años"
-              />
-
-            </div>
-
-
-            <div className="form-group">
-
-              <label>
-                Capacidad de pago estimada
-              </label>
-
-              <input
-                name="capacidadPago"
-                value={form.capacidadPago}
-                onChange={update}
-                type="number"
-                min="0"
-                step="0.01"
-                placeholder="Ej. 250.00"
-              />
-
-            </div>
-
-          </div>
-
-        </section>
-
-
-        {/* ===================================================
-            INFORMACIÓN DEL CRÉDITO
-        =================================================== */}
-
-        <section className="panel">
-
-          <h2 className="section-title">
-            Información del crédito
-          </h2>
-
-
-          <div className="form-grid">
-
-
-            <div className="form-group">
-
-              <label>
-                Tipo de crédito
-              </label>
-
-              <select
-                name="tipoCredito"
-                value={form.tipoCredito}
-                onChange={update}
-              >
-
-                <option>
-                  Consumo
-                </option>
-
-                <option>
-                  Microcrédito
-                </option>
-
-                <option>
-                  Vivienda
-                </option>
-
-                <option>
-                  Comercial
-                </option>
-
-              </select>
-
-            </div>
-
-
-            <div className="form-group">
-
-              <label>
-                Monto solicitado
-              </label>
-
-              <input
-                name="monto"
-                value={form.monto}
-                onChange={update}
-                type="number"
-                min="0"
-                step="0.01"
-                placeholder="Ej. 5000.00"
-              />
-
-            </div>
-
-
-            <div className="form-group">
-
-              <label>
-                Plazo
-              </label>
-
-              <select
-                name="plazo"
-                value={form.plazo}
-                onChange={update}
-              >
-
-                <option>6 meses</option>
-                <option>12 meses</option>
-                <option>24 meses</option>
-                <option>36 meses</option>
-                <option>48 meses</option>
-
-              </select>
-
-            </div>
-
-
-            {/* ESTADO AUTOMÁTICO */}
-
-            <div className="form-group">
-
-              <label>
-                Estado de la solicitud
-              </label>
-
-              <input
-                type="text"
-                value={form.estado || "Pendiente"}
-                readOnly
-              />
-
-              <small>
-                El estado se actualiza automáticamente según el proceso del crédito.
-              </small>
-
-            </div>
-
-
-            <div className="form-group full">
-
-              <label>
-                Destino del crédito
-              </label>
-
-              <textarea
-                name="destino"
-                value={form.destino}
-                onChange={update}
-                placeholder="Describa para qué será utilizado el crédito solicitado..."
-              />
-
-            </div>
-
-          </div>
-
-
-          <div className="actions">
-
-            <button
-              type="button"
-              className="btn btn-cancel"
-              onClick={limpiar}
-            >
-
-              {modoEdicion
-                ? "Cancelar edición"
-                : "Cancelar"}
-
-            </button>
-
-
-            <button
-              type="button"
-              className="btn btn-clean"
-              onClick={limpiar}
-            >
-              Limpiar
-            </button>
-
-
-            <button
-              type="submit"
-              className="btn btn-save"
-              disabled={guardando}
-            >
-
-              {guardando
-
-                ? modoEdicion
-                  ? "Actualizando..."
-                  : "Guardando..."
-
-                : modoEdicion
-                  ? "💾 Actualizar solicitud"
-                  : "💾 Guardar solicitud"}
-
-            </button>
-
-          </div>
-
-        </section>
-
-      </form>
+      )}
 
 
       {/* =====================================================
@@ -1343,6 +1527,8 @@ export default function Solicitudes() {
 
                         <div className="table-actions">
 
+                          {/* VER - TODOS LOS ROLES */}
+
                           <button
                             type="button"
                             className="action-btn view"
@@ -1357,38 +1543,47 @@ export default function Solicitudes() {
                           </button>
 
 
-                          <button
-                            type="button"
-                            className="action-btn edit"
-                            title="Editar solicitud"
-                            onClick={() =>
-                              editarSolicitud(
-                                solicitud
-                              )
-                            }
-                          >
-                            ✏️
-                          </button>
+                          {/* EDITAR / ELIMINAR - ADMIN Y ANALISTA */}
+
+                          {puedeModificar && (
+                            <>
+
+                              <button
+                                type="button"
+                                className="action-btn edit"
+                                title="Editar solicitud"
+                                onClick={() =>
+                                  editarSolicitud(
+                                    solicitud
+                                  )
+                                }
+                              >
+                                ✏️
+                              </button>
 
 
-                          <button
-                            type="button"
-                            className="action-btn delete"
-                            title="Eliminar solicitud"
-                            onClick={() =>
-                              borrarSolicitud(
-                                solicitud
-                              )
-                            }
-                          >
-                            🗑️
-                          </button>
+                              <button
+                                type="button"
+                                className="action-btn delete"
+                                title="Eliminar solicitud"
+                                onClick={() =>
+                                  borrarSolicitud(
+                                    solicitud
+                                  )
+                                }
+                              >
+                                🗑️
+                              </button>
+
+                            </>
+                          )}
 
                         </div>
 
                       </td>
 
                     </tr>
+
                   )
                 )}
 
@@ -1397,6 +1592,7 @@ export default function Solicitudes() {
             </table>
 
           </div>
+
         )}
 
       </section>
@@ -1451,6 +1647,8 @@ export default function Solicitudes() {
               <div className="solicitud-modal-body">
 
 
+                {/* CLIENTE */}
+
                 <div className="solicitud-detail-section">
 
                   <h3>
@@ -1481,7 +1679,9 @@ export default function Solicitudes() {
 
                     <div>
 
-                      <span>Cédula</span>
+                      <span>
+                        Cédula
+                      </span>
 
                       <strong>
                         {solicitudSeleccionada
@@ -1494,7 +1694,9 @@ export default function Solicitudes() {
 
                     <div>
 
-                      <span>Correo</span>
+                      <span>
+                        Correo
+                      </span>
 
                       <strong>
                         {solicitudSeleccionada
@@ -1507,7 +1709,9 @@ export default function Solicitudes() {
 
                     <div>
 
-                      <span>Teléfono</span>
+                      <span>
+                        Teléfono
+                      </span>
 
                       <strong>
                         {solicitudSeleccionada
@@ -1563,6 +1767,8 @@ export default function Solicitudes() {
 
                 </div>
 
+
+                {/* INFORMACIÓN FINANCIERA */}
 
                 <div className="solicitud-detail-section">
 
@@ -1667,6 +1873,8 @@ export default function Solicitudes() {
 
                 </div>
 
+
+                {/* INFORMACIÓN DEL CRÉDITO */}
 
                 <div className="solicitud-detail-section">
 
@@ -1803,9 +2011,12 @@ export default function Solicitudes() {
             </div>
 
           </div>
+
         )}
 
 
     </Layout>
+
   );
+
 }

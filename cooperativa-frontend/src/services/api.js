@@ -46,8 +46,7 @@ async function fetchAutenticado(url, opciones = {}) {
   // =======================================================
 
   if (
-    response.status === 401 ||
-    response.status === 403
+    response.status === 401
   ) {
 
     sessionStorage.removeItem("token");
