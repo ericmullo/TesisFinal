@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+
 import Layout from "../components/Layout";
 
 import {
@@ -15,36 +16,100 @@ import {
 export default function EvaluacionRiesgo() {
 
   // =========================================================
+  // USUARIO Y PERMISOS
+  // =========================================================
+
+  let usuario = null;
+
+  try {
+
+    const usuarioGuardado =
+      sessionStorage.getItem("usuario");
+
+    if (usuarioGuardado) {
+      usuario = JSON.parse(usuarioGuardado);
+    }
+
+  } catch (error) {
+
+    console.error(
+      "Error al obtener usuario:",
+      error
+    );
+
+  }
+
+
+  const puedeEvaluar =
+    usuario?.rol === "ADMIN" ||
+    usuario?.rol === "ANALISTA";
+
+
+  const puedeTomarDecision =
+    usuario?.rol === "ADMIN" ||
+    usuario?.rol === "ANALISTA";
+
+
+  const esGerencia =
+    usuario?.rol === "GERENCIA";
+
+
+  // =========================================================
   // ESTADOS
   // =========================================================
 
-  const [solicitudes, setSolicitudes] = useState([]);
+  const [solicitudes, setSolicitudes] =
+    useState([]);
+
 
   const [
     solicitudSeleccionada,
     setSolicitudSeleccionada
   ] = useState(null);
 
-  const [documentos, setDocumentos] = useState([]);
+
+  const [documentos, setDocumentos] =
+    useState([]);
+
 
   const [
     documentacionCompleta,
     setDocumentacionCompleta
   ] = useState(false);
 
-  const [evaluacion, setEvaluacion] = useState(null);
 
-  const [cargando, setCargando] = useState(false);
+  const [evaluacion, setEvaluacion] =
+    useState(null);
 
-  const [generando, setGenerando] = useState(false);
+
+  const [cargando, setCargando] =
+    useState(false);
+
+
+  const [generando, setGenerando] =
+    useState(false);
+
 
   // =========================================================
   // DECISIÓN DEL ANALISTA
   // =========================================================
 
-  const [modalDecision, setModalDecision] = useState(false);
-  const [observacionDecision, setObservacionDecision] = useState("");
-  const [guardandoDecision, setGuardandoDecision] = useState(false);
+  const [
+    modalDecision,
+    setModalDecision
+  ] = useState(false);
+
+
+  const [
+    observacionDecision,
+    setObservacionDecision
+  ] = useState("");
+
+
+  const [
+    guardandoDecision,
+    setGuardandoDecision
+  ] = useState(false);
 
 
   // =========================================================
@@ -63,7 +128,9 @@ export default function EvaluacionRiesgo() {
   // =========================================================
 
   useEffect(() => {
+
     cargarSolicitudes();
+
   }, []);
 
 
@@ -71,7 +138,8 @@ export default function EvaluacionRiesgo() {
 
     try {
 
-      const datos = await obtenerSolicitudes();
+      const datos =
+        await obtenerSolicitudes();
 
       setSolicitudes(datos);
 
@@ -95,118 +163,141 @@ export default function EvaluacionRiesgo() {
   // SELECCIONAR SOLICITUD
   // =========================================================
 
-  const seleccionarSolicitud = async (e) => {
+  const seleccionarSolicitud =
+    async (e) => {
 
-    const id = e.target.value;
+      const id =
+        e.target.value;
 
-    if (!id) {
 
-      setSolicitudSeleccionada(null);
-      setDocumentos([]);
-      setDocumentacionCompleta(false);
-      setEvaluacion(null);
+      if (!id) {
 
-      return;
-    }
+        setSolicitudSeleccionada(null);
 
-    const solicitud = solicitudes.find(
-      (item) =>
-        String(item.id) === String(id)
-    );
+        setDocumentos([]);
 
-    if (!solicitud) {
-      return;
-    }
+        setDocumentacionCompleta(false);
 
-    setSolicitudSeleccionada(solicitud);
+        setEvaluacion(null);
 
-    await cargarInformacionSolicitud(
-      solicitud.id
-    );
+        return;
 
-  };
+      }
+
+
+      const solicitud =
+        solicitudes.find(
+          (item) =>
+            String(item.id) ===
+            String(id)
+        );
+
+
+      if (!solicitud) {
+        return;
+      }
+
+
+      setSolicitudSeleccionada(
+        solicitud
+      );
+
+
+      await cargarInformacionSolicitud(
+        solicitud.id
+      );
+
+    };
 
 
   // =========================================================
   // CARGAR INFORMACIÓN DE LA SOLICITUD
   // =========================================================
 
-  const cargarInformacionSolicitud = async (
-    solicitudId
-  ) => {
+  const cargarInformacionSolicitud =
+    async (solicitudId) => {
 
-    try {
+      try {
 
-      setCargando(true);
+        setCargando(true);
 
-      const [
-        documentosRespuesta,
-        estadoDocumentacion,
-        evaluacionesRespuesta
-      ] = await Promise.all([
 
-        obtenerDocumentosPorSolicitud(
-          solicitudId
-        ),
+        const [
+          documentosRespuesta,
+          estadoDocumentacion,
+          evaluacionesRespuesta
+        ] = await Promise.all([
 
-        verificarDocumentacion(
-          solicitudId
-        ),
+          obtenerDocumentosPorSolicitud(
+            solicitudId
+          ),
 
-        obtenerEvaluacionesPorSolicitud(
-          solicitudId
-        )
+          verificarDocumentacion(
+            solicitudId
+          ),
 
-      ]);
+          obtenerEvaluacionesPorSolicitud(
+            solicitudId
+          )
 
-      setDocumentos(
-        documentosRespuesta
-      );
+        ]);
 
-      setDocumentacionCompleta(
-        estadoDocumentacion.completa
-      );
 
-      /*
-       * Si existen evaluaciones anteriores,
-       * mostramos la más reciente.
-       */
-
-      if (
-        evaluacionesRespuesta &&
-        evaluacionesRespuesta.length > 0
-      ) {
-
-        setEvaluacion(
-          evaluacionesRespuesta[
-            evaluacionesRespuesta.length - 1
-          ]
+        setDocumentos(
+          documentosRespuesta
         );
 
-      } else {
+
+        setDocumentacionCompleta(
+          estadoDocumentacion.completa
+        );
+
+
+        /*
+         * Si existen evaluaciones anteriores,
+         * mostramos la más reciente.
+         */
+
+        if (
+          evaluacionesRespuesta &&
+          evaluacionesRespuesta.length > 0
+        ) {
+
+          setEvaluacion(
+            evaluacionesRespuesta[
+              evaluacionesRespuesta.length - 1
+            ]
+          );
+
+        } else {
+
+          setEvaluacion(null);
+
+        }
+
+
+      } catch (error) {
+
+        console.error(
+          "Error al cargar información:",
+          error
+        );
+
+
+        setDocumentos([]);
+
+        setDocumentacionCompleta(false);
 
         setEvaluacion(null);
 
+
+      } finally {
+
+        setCargando(false);
+
       }
 
-    } catch (error) {
-
-      console.error(
-        "Error al cargar información:",
-        error
-      );
-
-      setDocumentos([]);
-      setDocumentacionCompleta(false);
-      setEvaluacion(null);
-
-    } finally {
-
-      setCargando(false);
-
-    }
-
-  };
+    };
 
 
   // =========================================================
@@ -215,6 +306,25 @@ export default function EvaluacionRiesgo() {
 
   const generarEvaluacion = async () => {
 
+    /*
+     * GERENCIA no puede ejecutar
+     * evaluaciones nuevas.
+     *
+     * Esta validación complementa
+     * la seguridad del backend.
+     */
+
+    if (!puedeEvaluar) {
+
+      alert(
+        "No tiene permisos para ejecutar evaluaciones de riesgo."
+      );
+
+      return;
+
+    }
+
+
     if (!solicitudSeleccionada) {
 
       alert(
@@ -222,7 +332,9 @@ export default function EvaluacionRiesgo() {
       );
 
       return;
+
     }
+
 
     if (!documentacionCompleta) {
 
@@ -231,7 +343,9 @@ export default function EvaluacionRiesgo() {
       );
 
       return;
+
     }
+
 
     /*
      * Evitamos generar otra evaluación
@@ -245,11 +359,14 @@ export default function EvaluacionRiesgo() {
       );
 
       return;
+
     }
+
 
     try {
 
       setGenerando(true);
+
 
       /*
        * Esta llamada ejecuta:
@@ -272,13 +389,60 @@ export default function EvaluacionRiesgo() {
           solicitudSeleccionada.id
         );
 
+
       setEvaluacion(
         nuevaEvaluacion
       );
 
+
+      /*
+       * Actualizamos la información de la
+       * solicitud porque el backend puede
+       * haber cambiado el estado a
+       * "En evaluación".
+       */
+
+      try {
+
+        const solicitudesActualizadas =
+          await obtenerSolicitudes();
+
+
+        setSolicitudes(
+          solicitudesActualizadas
+        );
+
+
+        const solicitudActualizada =
+          solicitudesActualizadas.find(
+            (solicitud) =>
+              solicitud.id ===
+              solicitudSeleccionada.id
+          );
+
+
+        if (solicitudActualizada) {
+
+          setSolicitudSeleccionada(
+            solicitudActualizada
+          );
+
+        }
+
+      } catch (errorActualizacion) {
+
+        console.error(
+          "No se pudo refrescar la solicitud:",
+          errorActualizacion
+        );
+
+      }
+
+
       alert(
         "Evaluación de riesgo completada correctamente."
       );
+
 
     } catch (error) {
 
@@ -287,10 +451,12 @@ export default function EvaluacionRiesgo() {
         error
       );
 
+
       alert(
         error.message ||
         "No se pudo realizar la evaluación de riesgo."
       );
+
 
     } finally {
 
@@ -308,7 +474,10 @@ export default function EvaluacionRiesgo() {
   const tieneDecisionFinal = () => {
 
     const estado =
-      solicitudSeleccionada?.estado?.toLowerCase();
+      solicitudSeleccionada
+        ?.estado
+        ?.toLowerCase();
+
 
     return (
       estado === "aprobado" ||
@@ -320,17 +489,39 @@ export default function EvaluacionRiesgo() {
 
   const abrirModalDecision = () => {
 
-    if (!solicitudSeleccionada || !evaluacion) {
+    /*
+     * GERENCIA no puede aprobar
+     * ni rechazar créditos.
+     */
+
+    if (!puedeTomarDecision) {
+
+      alert(
+        "No tiene permisos para registrar la decisión final del crédito."
+      );
+
+      return;
+
+    }
+
+
+    if (
+      !solicitudSeleccionada ||
+      !evaluacion
+    ) {
 
       alert(
         "La solicitud debe contar con una evaluación de riesgo antes de registrar una decisión."
       );
 
       return;
+
     }
 
+
     if (
-      evaluacion.estado?.toLowerCase() !==
+      evaluacion.estado
+        ?.toLowerCase() !==
       "completada"
     ) {
 
@@ -339,11 +530,26 @@ export default function EvaluacionRiesgo() {
       );
 
       return;
+
     }
 
+
+    if (tieneDecisionFinal()) {
+
+      alert(
+        "Esta solicitud ya cuenta con una decisión final."
+      );
+
+      return;
+
+    }
+
+
     setObservacionDecision(
-      solicitudSeleccionada.observacionDecision || ""
+      solicitudSeleccionada
+        .observacionDecision || ""
     );
+
 
     setModalDecision(true);
 
@@ -356,103 +562,153 @@ export default function EvaluacionRiesgo() {
       return;
     }
 
+
     setModalDecision(false);
+
     setObservacionDecision("");
 
   };
 
 
-  const registrarDecision = async (decision) => {
+  const registrarDecision =
+    async (decision) => {
 
-    if (!solicitudSeleccionada) {
-      return;
-    }
+      /*
+       * Segunda protección en frontend.
+       */
 
-    const observacion =
-      observacionDecision.trim();
+      if (!puedeTomarDecision) {
 
-    if (!observacion) {
+        alert(
+          "No tiene permisos para aprobar o rechazar créditos."
+        );
 
-      alert(
-        "Debe ingresar una observación o justificación para registrar la decisión."
-      );
-
-      return;
-    }
-
-    if (observacion.length < 5) {
-
-      alert(
-        "La observación debe contener al menos 5 caracteres."
-      );
-
-      return;
-    }
-
-    try {
-
-      setGuardandoDecision(true);
-
-      let solicitudActualizada;
-
-      if (decision === "aprobar") {
-
-        solicitudActualizada =
-          await aprobarSolicitud(
-            solicitudSeleccionada.id,
-            observacion
-          );
-
-      } else {
-
-        solicitudActualizada =
-          await rechazarSolicitud(
-            solicitudSeleccionada.id,
-            observacion
-          );
+        return;
 
       }
 
-      setSolicitudSeleccionada(
-        solicitudActualizada
-      );
 
-      setSolicitudes((anteriores) =>
-        anteriores.map((solicitud) =>
-          solicitud.id === solicitudActualizada.id
-            ? solicitudActualizada
-            : solicitud
-        )
-      );
+      if (!solicitudSeleccionada) {
+        return;
+      }
 
-      setModalDecision(false);
-      setObservacionDecision("");
 
-      alert(
-        decision === "aprobar"
-          ? "Crédito aprobado y decisión registrada correctamente."
-          : "Crédito rechazado y decisión registrada correctamente."
-      );
+      if (tieneDecisionFinal()) {
 
-    } catch (error) {
+        alert(
+          "Esta solicitud ya cuenta con una decisión final."
+        );
 
-      console.error(
-        "Error al registrar decisión:",
-        error
-      );
+        setModalDecision(false);
 
-      alert(
-        error.message ||
-        "No se pudo registrar la decisión del analista."
-      );
+        return;
 
-    } finally {
+      }
 
-      setGuardandoDecision(false);
 
-    }
+      const observacion =
+        observacionDecision.trim();
 
-  };
+
+      if (!observacion) {
+
+        alert(
+          "Debe ingresar una observación o justificación para registrar la decisión."
+        );
+
+        return;
+
+      }
+
+
+      if (observacion.length < 5) {
+
+        alert(
+          "La observación debe contener al menos 5 caracteres."
+        );
+
+        return;
+
+      }
+
+
+      try {
+
+        setGuardandoDecision(true);
+
+
+        let solicitudActualizada;
+
+
+        if (decision === "aprobar") {
+
+          solicitudActualizada =
+            await aprobarSolicitud(
+              solicitudSeleccionada.id,
+              observacion
+            );
+
+        } else {
+
+          solicitudActualizada =
+            await rechazarSolicitud(
+              solicitudSeleccionada.id,
+              observacion
+            );
+
+        }
+
+
+        setSolicitudSeleccionada(
+          solicitudActualizada
+        );
+
+
+        setSolicitudes(
+          (anteriores) =>
+            anteriores.map(
+              (solicitud) =>
+                solicitud.id ===
+                solicitudActualizada.id
+                  ? solicitudActualizada
+                  : solicitud
+            )
+        );
+
+
+        setModalDecision(false);
+
+        setObservacionDecision("");
+
+
+        alert(
+          decision === "aprobar"
+            ? "Crédito aprobado y decisión registrada correctamente."
+            : "Crédito rechazado y decisión registrada correctamente."
+        );
+
+
+      } catch (error) {
+
+        console.error(
+          "Error al registrar decisión:",
+          error
+        );
+
+
+        alert(
+          error.message ||
+          "No se pudo registrar la decisión del analista."
+        );
+
+
+      } finally {
+
+        setGuardandoDecision(false);
+
+      }
+
+    };
 
 
   // =========================================================
@@ -487,6 +743,7 @@ export default function EvaluacionRiesgo() {
     const numero =
       Number(valor || 0);
 
+
     return new Intl.NumberFormat(
       "es-EC",
       {
@@ -513,6 +770,7 @@ export default function EvaluacionRiesgo() {
 
     }
 
+
     return `${Number(valor).toLocaleString(
       "es-EC",
       {
@@ -536,6 +794,7 @@ export default function EvaluacionRiesgo() {
 
     }
 
+
     return new Date(
       fecha
     ).toLocaleString(
@@ -554,11 +813,13 @@ export default function EvaluacionRiesgo() {
     const cliente =
       solicitudSeleccionada?.cliente;
 
+
     if (!cliente) {
 
       return "-";
 
     }
+
 
     return `${cliente.nombres || ""} ${
       cliente.apellidos || ""
@@ -602,6 +863,7 @@ export default function EvaluacionRiesgo() {
 
     <Layout title="Evaluación de Riesgo Crediticio">
 
+
       {/* =====================================================
           SELECCIONAR SOLICITUD
       ===================================================== */}
@@ -612,6 +874,7 @@ export default function EvaluacionRiesgo() {
           Seleccionar solicitud
         </h2>
 
+
         <div className="form-grid">
 
           <div className="form-group full">
@@ -620,22 +883,21 @@ export default function EvaluacionRiesgo() {
               Solicitud de crédito
             </label>
 
+
             <select
-
               value={
-                solicitudSeleccionada?.id ||
-                ""
+                solicitudSeleccionada
+                  ?.id || ""
               }
-
               onChange={
                 seleccionarSolicitud
               }
-
             >
 
               <option value="">
                 Seleccione una solicitud
               </option>
+
 
               {solicitudes.map(
                 (solicitud) => (
@@ -675,6 +937,42 @@ export default function EvaluacionRiesgo() {
 
 
       {/* =====================================================
+          AVISO GERENCIA
+      ===================================================== */}
+
+      {esGerencia && (
+
+        <section className="panel">
+
+          <div
+            style={{
+              padding: "14px 16px",
+              background: "#f4f8f5",
+              borderLeft: "4px solid #009144",
+              borderRadius: "6px"
+            }}
+          >
+
+            👁️{" "}
+
+            <strong>
+              Modo consulta:
+            </strong>{" "}
+
+            Gerencia puede consultar la información
+            financiera, documentación, resultados de
+            inteligencia artificial y decisiones finales
+            registradas, pero no puede ejecutar nuevas
+            evaluaciones ni aprobar o rechazar créditos.
+
+          </div>
+
+        </section>
+
+      )}
+
+
+      {/* =====================================================
           SIN SOLICITUD
       ===================================================== */}
 
@@ -688,9 +986,11 @@ export default function EvaluacionRiesgo() {
               🤖
             </div>
 
+
             <h2>
               Seleccione una solicitud
             </h2>
+
 
             <p>
               Seleccione una solicitud de crédito
@@ -720,6 +1020,7 @@ export default function EvaluacionRiesgo() {
                 ⏳
               </div>
 
+
               <h2>
                 Cargando información...
               </h2>
@@ -740,6 +1041,7 @@ export default function EvaluacionRiesgo() {
 
           <>
 
+
             {/* =================================================
                 INFORMACIÓN SOLICITUD
             ================================================= */}
@@ -750,7 +1052,9 @@ export default function EvaluacionRiesgo() {
                 Información de la solicitud
               </h2>
 
+
               <div className="risk-request-header">
+
 
                 <div>
 
@@ -785,8 +1089,8 @@ export default function EvaluacionRiesgo() {
                   </span>
 
                   <strong>
-                    {solicitudSeleccionada.tipoCredito ||
-                      "-"}
+                    {solicitudSeleccionada
+                      .tipoCredito || "-"}
                   </strong>
 
                 </div>
@@ -799,11 +1103,9 @@ export default function EvaluacionRiesgo() {
                   </span>
 
                   <strong>
-
                     {formatearDinero(
                       solicitudSeleccionada.monto
                     )}
-
                   </strong>
 
                 </div>
@@ -862,6 +1164,7 @@ export default function EvaluacionRiesgo() {
                         tipo
                       );
 
+
                     return (
 
                       <div
@@ -877,6 +1180,7 @@ export default function EvaluacionRiesgo() {
                           {existe ? "✓" : "!"}
                         </span>
 
+
                         <div>
 
                           <strong>
@@ -884,11 +1188,9 @@ export default function EvaluacionRiesgo() {
                           </strong>
 
                           <small>
-
                             {existe
                               ? "Documento cargado"
                               : "Documento pendiente"}
-
                           </small>
 
                         </div>
@@ -942,73 +1244,56 @@ export default function EvaluacionRiesgo() {
                 Información financiera
               </h2>
 
+
               <div className="cards four-cards">
 
                 <MetricCard
-
                   title="Ingresos mensuales"
-
                   value={
                     formatearDinero(
                       solicitudSeleccionada
                         .ingresosMensuales
                     )
                   }
-
                   text="Ingresos registrados en la solicitud."
-
                 />
 
 
                 <MetricCard
-
                   title="Egresos mensuales"
-
                   value={
                     formatearDinero(
                       solicitudSeleccionada
                         .egresosMensuales
                     )
                   }
-
                   text="Egresos registrados por el solicitante."
-
                   extra="orange"
-
                 />
 
 
                 <MetricCard
-
                   title="Nivel de endeudamiento"
-
                   value={
                     formatearPorcentaje(
                       solicitudSeleccionada
                         .nivelEndeudamiento
                     )
                   }
-
                   text="Nivel registrado en la solicitud."
-
                   extra="yellow"
-
                 />
 
 
                 <MetricCard
-
                   title="Capacidad de pago"
-
                   value={
                     formatearDinero(
                       solicitudSeleccionada
                         .capacidadPago
                     )
                   }
-
                   text="Capacidad mensual registrada."
-
                 />
 
               </div>
@@ -1058,57 +1343,43 @@ export default function EvaluacionRiesgo() {
               <div className="bureau-grid">
 
                 <InfoItem
-
                   title="Modelo utilizado"
-
                   value={
                     evaluacion?.modeloUtilizado ||
                     "Pendiente"
                   }
-
                 />
 
 
                 <InfoItem
-
                   title="Estado del análisis"
-
                   value={
                     evaluacion?.estado ||
                     "No iniciado"
                   }
-
                   extra="yellow-left"
-
                 />
 
 
                 <InfoItem
-
                   title="Documentación"
-
                   value={
                     documentacionCompleta
                       ? "Validada"
                       : "Incompleta"
                   }
-
                   extra="orange-left"
-
                 />
 
 
                 <InfoItem
-
                   title="Fecha de evaluación"
-
                   value={
                     formatearFecha(
                       evaluacion
                         ?.fechaEvaluacion
                     )
                   }
-
                 />
 
               </div>
@@ -1128,29 +1399,26 @@ export default function EvaluacionRiesgo() {
                   Variables para el análisis
                 </h2>
 
+
                 <div className="history-list">
 
                   <History
                     title="Ingresos mensuales"
                   >
-
                     {formatearDinero(
                       solicitudSeleccionada
                         .ingresosMensuales
                     )}
-
                   </History>
 
 
                   <History
                     title="Egresos mensuales"
                   >
-
                     {formatearDinero(
                       solicitudSeleccionada
                         .egresosMensuales
                     )}
-
                   </History>
 
 
@@ -1158,69 +1426,57 @@ export default function EvaluacionRiesgo() {
                     title="Nivel de endeudamiento"
                     extra="warning"
                   >
-
                     {formatearPorcentaje(
                       solicitudSeleccionada
                         .nivelEndeudamiento
                     )}
-
                   </History>
 
 
                   <History
                     title="Capacidad de pago"
                   >
-
                     {formatearDinero(
                       solicitudSeleccionada
                         .capacidadPago
                     )}
-
                   </History>
 
 
                   <History
                     title="Tipo de crédito"
                   >
-
                     {solicitudSeleccionada
                       .tipoCredito ||
                       "No registrado"}
-
                   </History>
 
 
                   <History
                     title="Monto solicitado"
                   >
-
                     {formatearDinero(
                       solicitudSeleccionada.monto
                     )}
-
                   </History>
 
 
                   <History
                     title="Antigüedad laboral"
                   >
-
                     {solicitudSeleccionada
                       .antiguedadLaboral ||
                       "No registrada"}
-
                   </History>
 
 
                   <History
                     title="Plazo solicitado"
                   >
-
                     {solicitudSeleccionada
                       .plazoMeses
                       ? `${solicitudSeleccionada.plazoMeses} meses`
                       : "No registrado"}
-
                   </History>
 
                 </div>
@@ -1247,14 +1503,18 @@ export default function EvaluacionRiesgo() {
                       🧠
                     </div>
 
+
                     <h3>
                       Aún no existe una evaluación
                     </h3>
 
+
                     <p>
-                      Cuando la documentación esté
-                      completa podrá iniciar el proceso
-                      de evaluación.
+
+                      {puedeEvaluar
+                        ? "Cuando la documentación esté completa podrá iniciar el proceso de evaluación."
+                        : "Todavía no existe una evaluación de riesgo registrada para esta solicitud."}
+
                     </p>
 
                   </div>
@@ -1303,24 +1563,18 @@ export default function EvaluacionRiesgo() {
                     <div className="prediction-grid">
 
                       <Prediction
-
                         value={
                           probabilidadMora
                         }
-
                         text="Probabilidad de mora"
-
                       />
 
 
                       <Prediction
-
                         value={
                           recomendacion
                         }
-
                         text="Recomendación IA"
-
                       />
 
                     </div>
@@ -1364,6 +1618,7 @@ export default function EvaluacionRiesgo() {
               <h2 className="section-title">
                 Variables consideradas para el modelo IA
               </h2>
+
 
               <p>
                 Estas son las variables enviadas al
@@ -1412,6 +1667,7 @@ export default function EvaluacionRiesgo() {
               <h2 className="section-title">
                 Explicación de la evaluación
               </h2>
+
 
               <div className="explain-box">
 
@@ -1464,10 +1720,9 @@ export default function EvaluacionRiesgo() {
 
                   <p>
 
-                    Seleccione una solicitud con
-                    documentación completa y genere
-                    una evaluación para iniciar el
-                    proceso de análisis.
+                    {puedeEvaluar
+                      ? "Seleccione una solicitud con documentación completa y genere una evaluación para iniciar el proceso de análisis."
+                      : "Todavía no existe una evaluación de riesgo registrada para esta solicitud."}
 
                   </p>
 
@@ -1479,7 +1734,7 @@ export default function EvaluacionRiesgo() {
 
 
             {/* =================================================
-                DECISIÓN FINAL DEL ANALISTA
+                DECISIÓN FINAL
             ================================================= */}
 
             {evaluacion && (
@@ -1494,13 +1749,15 @@ export default function EvaluacionRiesgo() {
                       Decisión final del analista
                     </h2>
 
+
                     <p>
                       La evaluación de IA funciona como apoyo.
                       La aprobación o rechazo corresponde al
-                      analista autorizado.
+                      personal autorizado.
                     </p>
 
                   </div>
+
 
                   <span
                     className={`evaluation-state ${
@@ -1509,9 +1766,11 @@ export default function EvaluacionRiesgo() {
                         : "waiting"
                     }`}
                   >
+
                     {tieneDecisionFinal()
                       ? solicitudSeleccionada.estado
                       : "Pendiente de decisión"}
+
                   </span>
 
                 </div>
@@ -1519,23 +1778,41 @@ export default function EvaluacionRiesgo() {
 
                 {tieneDecisionFinal() ? (
 
+                  /*
+                   * TODOS los roles pueden consultar
+                   * una decisión que ya fue registrada.
+                   */
+
                   <div className="explain-box">
 
                     <p>
-                      <strong>Decisión:</strong>{" "}
+                      <strong>
+                        Decisión:
+                      </strong>{" "}
+
                       {solicitudSeleccionada.estado}
                     </p>
 
+
                     <p>
-                      <strong>Justificación del analista:</strong>{" "}
-                      {solicitudSeleccionada.observacionDecision ||
+                      <strong>
+                        Justificación del analista:
+                      </strong>{" "}
+
+                      {solicitudSeleccionada
+                        .observacionDecision ||
                         "Sin observación registrada."}
                     </p>
 
+
                     <p>
-                      <strong>Fecha de decisión:</strong>{" "}
+                      <strong>
+                        Fecha de decisión:
+                      </strong>{" "}
+
                       {formatearFecha(
-                        solicitudSeleccionada.fechaDecision
+                        solicitudSeleccionada
+                          .fechaDecision
                       )}
                     </p>
 
@@ -1556,13 +1833,18 @@ export default function EvaluacionRiesgo() {
                         }
                       />
 
+
                       <InfoItem
                         title="Probabilidad de mora"
-                        value={formatearPorcentaje(
-                          evaluacion.probabilidadMora
-                        )}
+                        value={
+                          formatearPorcentaje(
+                            evaluacion
+                              .probabilidadMora
+                          )
+                        }
                         extra="yellow-left"
                       />
+
 
                       <InfoItem
                         title="Nivel de riesgo"
@@ -1572,6 +1854,7 @@ export default function EvaluacionRiesgo() {
                         }
                         extra="orange-left"
                       />
+
 
                       <InfoItem
                         title="Estado de evaluación"
@@ -1586,42 +1869,82 @@ export default function EvaluacionRiesgo() {
 
                     <div
                       className="explain-box"
-                      style={{ marginTop: "20px" }}
+                      style={{
+                        marginTop: "20px"
+                      }}
                     >
 
                       <p>
-                        <strong>Recomendación de la IA:</strong>{" "}
+
+                        <strong>
+                          Recomendación de la IA:
+                        </strong>{" "}
+
                         {evaluacion.recomendacion ||
                           "Sin recomendación registrada."}
+
                       </p>
+
 
                       <p>
                         La recomendación del modelo no aprueba ni
                         rechaza automáticamente el crédito. La
-                        decisión debe ser registrada por el analista.
+                        decisión debe ser registrada por personal
+                        autorizado.
                       </p>
 
                     </div>
 
 
-                    <div
-                      className="actions"
-                      style={{ marginTop: "20px" }}
-                    >
+                    {/* =========================================
+                        BOTÓN SOLO ADMIN / ANALISTA
+                    ========================================= */}
 
-                      <button
-                        type="button"
-                        className="btn btn-yellow"
-                        onClick={abrirModalDecision}
-                        disabled={
-                          evaluacion.estado?.toLowerCase() !==
-                          "completada"
-                        }
+                    {puedeTomarDecision ? (
+
+                      <div
+                        className="actions"
+                        style={{
+                          marginTop: "20px"
+                        }}
                       >
-                        Revisar y tomar decisión
-                      </button>
 
-                    </div>
+                        <button
+                          type="button"
+                          className="btn btn-yellow"
+                          onClick={
+                            abrirModalDecision
+                          }
+                          disabled={
+                            evaluacion.estado
+                              ?.toLowerCase() !==
+                            "completada"
+                          }
+                        >
+
+                          Revisar y tomar decisión
+
+                        </button>
+
+                      </div>
+
+                    ) : (
+
+                      <div
+                        className="risk-warning-box"
+                        style={{
+                          marginTop: "20px"
+                        }}
+                      >
+
+                        👁️ La decisión final se encuentra
+                        pendiente. Gerencia puede consultar
+                        el resultado de la evaluación, pero
+                        no registrar la aprobación o rechazo.
+
+                      </div>
+
+                    )}
 
                   </>
 
@@ -1642,14 +1965,12 @@ export default function EvaluacionRiesgo() {
                 Acciones de evaluación
               </h2>
 
+
               <div className="actions">
 
                 <button
-
                   type="button"
-
                   className="btn btn-gray"
-
                   onClick={() => {
 
                     setSolicitudSeleccionada(
@@ -1665,7 +1986,6 @@ export default function EvaluacionRiesgo() {
                     );
 
                   }}
-
                 >
 
                   Cancelar
@@ -1673,31 +1993,58 @@ export default function EvaluacionRiesgo() {
                 </button>
 
 
-                <button
+                {/* =============================================
+                    INICIAR IA SOLO ADMIN / ANALISTA
+                ============================================= */}
 
-                  type="button"
+                {puedeEvaluar && (
 
-                  className="btn btn-yellow"
+                  <button
+                    type="button"
+                    className="btn btn-yellow"
+                    disabled={
+                      !documentacionCompleta ||
+                      generando ||
+                      Boolean(evaluacion)
+                    }
+                    onClick={
+                      generarEvaluacion
+                    }
+                  >
 
-                  disabled={
-                    !documentacionCompleta ||
-                    generando ||
-                    Boolean(evaluacion)
-                  }
+                    {generando
+                      ? "🧠 Analizando riesgo..."
+                      : evaluacion
+                        ? "✓ Evaluación completada"
+                        : "🤖 Iniciar evaluación"}
 
-                  onClick={
-                    generarEvaluacion
-                  }
+                  </button>
 
-                >
+                )}
 
-                  {generando
-                    ? "🧠 Analizando riesgo..."
-                    : evaluacion
-                      ? "✓ Evaluación completada"
-                      : "🤖 Iniciar evaluación"}
 
-                </button>
+                {/* =============================================
+                    GERENCIA
+                ============================================= */}
+
+                {esGerencia && (
+
+                  <div
+                    style={{
+                      padding: "10px 14px",
+                      background: "#f4f8f5",
+                      borderRadius: "8px",
+                      fontSize: "14px"
+                    }}
+                  >
+
+                    👁️ Modo consulta — ejecución de IA
+                    disponible únicamente para usuarios
+                    autorizados.
+
+                  </div>
+
+                )}
 
               </div>
 
@@ -1707,11 +2054,14 @@ export default function EvaluacionRiesgo() {
 
         )}
 
+
       {/* =====================================================
           MODAL - DECISIÓN DEL ANALISTA
+          SOLO ADMIN / ANALISTA
       ===================================================== */}
 
       {modalDecision &&
+        puedeTomarDecision &&
         solicitudSeleccionada &&
         evaluacion && (
 
@@ -1719,20 +2069,24 @@ export default function EvaluacionRiesgo() {
             style={{
               position: "fixed",
               inset: 0,
-              background: "rgba(0, 0, 0, 0.45)",
+              background:
+                "rgba(0, 0, 0, 0.45)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               padding: "20px",
               zIndex: 9999
             }}
-            onClick={cerrarModalDecision}
+            onClick={
+              cerrarModalDecision
+            }
           >
 
             <div
               className="panel"
               style={{
-                width: "min(760px, 100%)",
+                width:
+                  "min(760px, 100%)",
                 maxHeight: "90vh",
                 overflowY: "auto",
                 margin: 0
@@ -1747,8 +2101,10 @@ export default function EvaluacionRiesgo() {
                 <div>
 
                   <span>
-                    Solicitud #{solicitudSeleccionada.id}
+                    Solicitud #
+                    {solicitudSeleccionada.id}
                   </span>
+
 
                   <h2 className="section-title">
                     Decisión del analista
@@ -1756,11 +2112,16 @@ export default function EvaluacionRiesgo() {
 
                 </div>
 
+
                 <button
                   type="button"
                   className="btn btn-gray"
-                  onClick={cerrarModalDecision}
-                  disabled={guardandoDecision}
+                  onClick={
+                    cerrarModalDecision
+                  }
+                  disabled={
+                    guardandoDecision
+                  }
                 >
                   Cerrar
                 </button>
@@ -1772,8 +2133,11 @@ export default function EvaluacionRiesgo() {
 
                 <InfoItem
                   title="Cliente"
-                  value={obtenerNombreCliente()}
+                  value={
+                    obtenerNombreCliente()
+                  }
                 />
+
 
                 <InfoItem
                   title="Score IA"
@@ -1784,13 +2148,18 @@ export default function EvaluacionRiesgo() {
                   }
                 />
 
+
                 <InfoItem
                   title="Probabilidad de mora"
-                  value={formatearPorcentaje(
-                    evaluacion.probabilidadMora
-                  )}
+                  value={
+                    formatearPorcentaje(
+                      evaluacion
+                        .probabilidadMora
+                    )
+                  }
                   extra="yellow-left"
                 />
+
 
                 <InfoItem
                   title="Nivel de riesgo"
@@ -1806,13 +2175,20 @@ export default function EvaluacionRiesgo() {
 
               <div
                 className="explain-box"
-                style={{ marginTop: "20px" }}
+                style={{
+                  marginTop: "20px"
+                }}
               >
 
                 <p>
-                  <strong>Recomendación de la IA:</strong>{" "}
+
+                  <strong>
+                    Recomendación de la IA:
+                  </strong>{" "}
+
                   {evaluacion.recomendacion ||
                     "Sin recomendación registrada."}
+
                 </p>
 
               </div>
@@ -1820,37 +2196,48 @@ export default function EvaluacionRiesgo() {
 
               <div
                 className="form-group full"
-                style={{ marginTop: "20px" }}
+                style={{
+                  marginTop: "20px"
+                }}
               >
 
                 <label>
                   Observación / justificación *
                 </label>
 
+
                 <textarea
                   rows="6"
                   maxLength="1500"
-                  value={observacionDecision}
+                  value={
+                    observacionDecision
+                  }
                   onChange={(event) =>
                     setObservacionDecision(
                       event.target.value
                     )
                   }
                   placeholder="Explique los motivos de la decisión del crédito..."
-                  disabled={guardandoDecision}
+                  disabled={
+                    guardandoDecision
+                  }
                   style={{
                     width: "100%",
                     resize: "vertical",
-                    boxSizing: "border-box",
+                    boxSizing:
+                      "border-box",
                     padding: "14px",
                     borderRadius: "10px",
-                    border: "1px solid #d6d6d6",
+                    border:
+                      "1px solid #d6d6d6",
                     font: "inherit"
                   }}
                 />
 
+
                 <small>
-                  {observacionDecision.length}/1500 caracteres
+                  {observacionDecision.length}
+                  /1500 caracteres
                 </small>
 
               </div>
@@ -1858,11 +2245,16 @@ export default function EvaluacionRiesgo() {
 
               <div
                 className="risk-warning-box"
-                style={{ marginTop: "20px" }}
+                style={{
+                  marginTop: "20px"
+                }}
               >
-                La predicción de la IA funciona como apoyo para
-                el análisis. La decisión final registrada
-                corresponde al criterio del analista.
+
+                La predicción de la IA funciona como
+                apoyo para el análisis. La decisión
+                final registrada corresponde al
+                criterio del analista autorizado.
+
               </div>
 
 
@@ -1879,44 +2271,64 @@ export default function EvaluacionRiesgo() {
                 <button
                   type="button"
                   className="btn btn-gray"
-                  onClick={cerrarModalDecision}
-                  disabled={guardandoDecision}
+                  onClick={
+                    cerrarModalDecision
+                  }
+                  disabled={
+                    guardandoDecision
+                  }
                 >
+
                   Cancelar
+
                 </button>
+
 
                 <button
                   type="button"
                   className="btn"
                   onClick={() =>
-                    registrarDecision("rechazar")
+                    registrarDecision(
+                      "rechazar"
+                    )
                   }
-                  disabled={guardandoDecision}
+                  disabled={
+                    guardandoDecision
+                  }
                   style={{
                     background: "#b42318",
                     color: "white"
                   }}
                 >
+
                   {guardandoDecision
                     ? "Guardando..."
                     : "✕ Rechazar crédito"}
+
                 </button>
+
 
                 <button
                   type="button"
                   className="btn"
                   onClick={() =>
-                    registrarDecision("aprobar")
+                    registrarDecision(
+                      "aprobar"
+                    )
                   }
-                  disabled={guardandoDecision}
+                  disabled={
+                    guardandoDecision
+                  }
                   style={{
                     background: "#08783e",
                     color: "white"
                   }}
                 >
+
                   {guardandoDecision
                     ? "Guardando..."
                     : "✓ Aprobar crédito"}
+
                 </button>
 
               </div>
@@ -1926,6 +2338,7 @@ export default function EvaluacionRiesgo() {
           </div>
 
         )}
+
 
     </Layout>
 
