@@ -1,4 +1,8 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+import {
+  Routes,
+  Route,
+  Navigate
+} from "react-router-dom";
 
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
@@ -8,26 +12,126 @@ import Documentos from "./pages/Documentos";
 import EvaluacionRiesgo from "./pages/EvaluacionRiesgo";
 import Reportes from "./pages/Reportes";
 
-function App() {
-  return (
-    <Routes>
-      {/* La página inicial siempre será Login */}
-      <Route path="/" element={<Login />} />
+import RutaProtegida from "./components/RutaProtegida";
 
-      <Route path="/dashboard" element={<Dashboard />} />
-      <Route path="/clientes" element={<Clientes />} />
-      <Route path="/solicitudes" element={<Solicitudes />} />
-      <Route path="/documentos" element={<Documentos />} />
+
+function App() {
+
+  return (
+
+    <Routes>
+
+      {/* ================================================= */}
+      {/* LOGIN - RUTA PÚBLICA */}
+      {/* ================================================= */}
+
+      <Route
+        path="/"
+        element={<Login />}
+      />
+
+
+      {/* ================================================= */}
+      {/* DASHBOARD - PROTEGIDO */}
+      {/* ================================================= */}
+
+      <Route
+        path="/dashboard"
+        element={
+          <RutaProtegida>
+            <Dashboard />
+          </RutaProtegida>
+        }
+      />
+
+
+      {/* ================================================= */}
+      {/* CLIENTES - PROTEGIDO */}
+      {/* ================================================= */}
+
+      <Route
+        path="/clientes"
+        element={
+          <RutaProtegida>
+            <Clientes />
+          </RutaProtegida>
+        }
+      />
+
+
+      {/* ================================================= */}
+      {/* SOLICITUDES - PROTEGIDO */}
+      {/* ================================================= */}
+
+      <Route
+        path="/solicitudes"
+        element={
+          <RutaProtegida>
+            <Solicitudes />
+          </RutaProtegida>
+        }
+      />
+
+
+      {/* ================================================= */}
+      {/* DOCUMENTOS - PROTEGIDO */}
+      {/* ================================================= */}
+
+      <Route
+        path="/documentos"
+        element={
+          <RutaProtegida>
+            <Documentos />
+          </RutaProtegida>
+        }
+      />
+
+
+      {/* ================================================= */}
+      {/* EVALUACIÓN DE RIESGO - PROTEGIDO */}
+      {/* ================================================= */}
+
       <Route
         path="/evaluacion-riesgo"
-        element={<EvaluacionRiesgo />}
+        element={
+          <RutaProtegida>
+            <EvaluacionRiesgo />
+          </RutaProtegida>
+        }
       />
-      <Route path="/reportes" element={<Reportes />} />
 
-      {/* Si escriben una ruta que no existe, vuelve al login */}
-      <Route path="*" element={<Navigate to="/" replace />} />
+
+      {/* ================================================= */}
+      {/* REPORTES - PROTEGIDO */}
+      {/* ================================================= */}
+
+      <Route
+        path="/reportes"
+        element={
+          <RutaProtegida>
+            <Reportes />
+          </RutaProtegida>
+        }
+      />
+
+
+      {/* ================================================= */}
+      {/* RUTA NO EXISTENTE */}
+      {/* ================================================= */}
+
+      <Route
+        path="*"
+        element={
+          <Navigate
+            to="/"
+            replace
+          />
+        }
+      />
+
     </Routes>
   );
 }
+
 
 export default App;

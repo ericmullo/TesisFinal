@@ -71,6 +71,22 @@ public class GlobalExceptionHandler {
                 .body(error);
     }
 
+    @ExceptionHandler(CredencialesInvalidasException.class)
+public ResponseEntity<ErrorResponse> manejarCredencialesInvalidas(
+        CredencialesInvalidasException exception
+) {
+
+    ErrorResponse error = new ErrorResponse(
+            HttpStatus.UNAUTHORIZED.value(),
+            "Unauthorized",
+            exception.getMessage()
+    );
+
+    return ResponseEntity
+            .status(HttpStatus.UNAUTHORIZED)
+            .body(error);
+}
+
 
     // =========================================================
     // ERROR NO CONTROLADO -> 500

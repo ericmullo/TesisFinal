@@ -2,11 +2,93 @@ import { NavLink, useNavigate } from "react-router-dom";
 
 function Layout({
   title,
-  user = "Analista de Crédito",
   children
 }) {
 
   const navigate = useNavigate();
+
+
+  // =========================================================
+  // OBTENER USUARIO DE LA SESIÓN
+  // =========================================================
+
+  let usuario = null;
+
+  try {
+
+    const usuarioGuardado =
+      sessionStorage.getItem("usuario");
+
+    if (usuarioGuardado) {
+      usuario = JSON.parse(usuarioGuardado);
+    }
+
+  } catch (error) {
+
+    console.error(
+      "Error al obtener el usuario de la sesión:",
+      error
+    );
+
+  }
+
+
+  // =========================================================
+  // NOMBRE DEL USUARIO
+  // =========================================================
+
+  const nombreUsuario = usuario
+    ? `${usuario.nombres} ${usuario.apellidos}`
+    : "Usuario";
+
+
+  // =========================================================
+  // ROL DEL USUARIO
+  // =========================================================
+
+  const obtenerNombreRol = (rol) => {
+
+    switch (rol) {
+
+      case "ADMIN":
+        return "Administrador";
+
+      case "ANALISTA":
+        return "Analista de Crédito";
+
+      case "GERENCIA":
+        return "Gerencia";
+
+      default:
+        return "Usuario";
+    }
+
+  };
+
+
+  const nombreRol =
+    obtenerNombreRol(usuario?.rol);
+
+
+  // =========================================================
+  // CERRAR SESIÓN
+  // =========================================================
+
+  const cerrarSesion = () => {
+
+    // Eliminar JWT
+    sessionStorage.removeItem("token");
+
+    // Eliminar información del usuario
+    sessionStorage.removeItem("usuario");
+
+    // Regresar al Login
+    navigate("/", {
+      replace: true
+    });
+
+  };
+
 
   return (
 
@@ -23,9 +105,11 @@ function Layout({
 
         </div>
 
+
         <div className="menu-title">
           MENÚ PRINCIPAL
         </div>
+
 
         <NavLink
           to="/dashboard"
@@ -34,12 +118,14 @@ function Layout({
           📊 Dashboard
         </NavLink>
 
+
         <NavLink
           to="/clientes"
           className="menu-item"
         >
           👥 Clientes
         </NavLink>
+
 
         <NavLink
           to="/solicitudes"
@@ -48,12 +134,14 @@ function Layout({
           📝 Solicitudes
         </NavLink>
 
+
         <NavLink
           to="/documentos"
           className="menu-item"
         >
           📁 Documentos
         </NavLink>
+
 
         <NavLink
           to="/evaluacion-riesgo"
@@ -62,6 +150,7 @@ function Layout({
           ⚖ Evaluación de riesgo
         </NavLink>
 
+
         <NavLink
           to="/reportes"
           className="menu-item"
@@ -69,14 +158,17 @@ function Layout({
           📄 Reportes
         </NavLink>
 
+
         <button
+          type="button"
           className="menu-item logout"
-          onClick={() => navigate("/")}
+          onClick={cerrarSesion}
         >
           🚪 Cerrar sesión
         </button>
 
       </aside>
+
 
       <main className="content">
 
@@ -86,18 +178,31 @@ function Layout({
             {title}
           </h1>
 
+
           <div className="user">
-            👤 {user}
+
+            <span>
+              👤 {nombreUsuario}
+            </span>
+
+            <span>
+              {" · "}
+              {nombreRol}
+            </span>
+
           </div>
 
         </div>
+
 
         {children}
 
       </main>
 
     </div>
+
   );
+
 }
 
 export default Layout;
