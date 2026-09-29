@@ -4343,3 +4343,363 @@ form .form-group textarea:focus {
   }
 
 }
+
+/* =========================================================
+   MODAL - CAMBIAR CONTRASEÑA
+========================================================= */
+
+.password-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 24px;
+
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(3px);
+}
+
+
+.password-modal {
+  width: 100%;
+  max-width: 500px;
+
+  background: #ffffff;
+  border-radius: 18px;
+
+  box-shadow:
+    0 25px 60px rgba(0, 0, 0, 0.22);
+
+  overflow: hidden;
+
+  animation: passwordModalEntrada 0.2s ease-out;
+}
+
+
+@keyframes passwordModalEntrada {
+
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+}
+
+
+/* =========================================================
+   CABECERA
+========================================================= */
+
+.password-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+
+  padding: 24px 26px 20px;
+
+  border-bottom: 1px solid #e5e7eb;
+}
+
+
+.password-modal-header h2 {
+  margin: 0 0 5px;
+
+  font-size: 21px;
+  color: #0f172a;
+}
+
+
+.password-modal-header p {
+  margin: 0;
+
+  font-size: 14px;
+  color: #64748b;
+}
+
+
+.password-modal-close {
+  border: none;
+  background: transparent;
+
+  font-size: 28px;
+  line-height: 1;
+
+  color: #64748b;
+
+  cursor: pointer;
+}
+
+
+.password-modal-close:hover {
+  color: #111827;
+}
+
+
+/* =========================================================
+   USUARIO
+========================================================= */
+
+.password-user-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  margin: 20px 26px 0;
+  padding: 13px 15px;
+
+  background: #f0fdf4;
+
+  border: 1px solid #bbf7d0;
+  border-radius: 10px;
+}
+
+
+.password-user-info strong {
+  color: #14532d;
+}
+
+
+.password-user-info span {
+  font-size: 13px;
+  font-weight: 600;
+
+  color: #15803d;
+}
+
+
+/* =========================================================
+   FORMULARIO
+========================================================= */
+
+.password-form {
+  padding: 22px 26px 26px;
+}
+
+
+.password-field {
+  margin-bottom: 18px;
+}
+
+
+.password-field label {
+  display: block;
+
+  margin-bottom: 7px;
+
+  font-size: 14px;
+  font-weight: 600;
+
+  color: #334155;
+}
+
+
+.password-input-container {
+  position: relative;
+}
+
+
+.password-input-container input {
+  width: 100%;
+  box-sizing: border-box;
+
+  padding: 12px 48px 12px 13px;
+
+  border: 1px solid #cbd5e1;
+  border-radius: 9px;
+
+  font-size: 14px;
+
+  outline: none;
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+
+.password-input-container input:focus {
+  border-color: #15803d;
+
+  box-shadow:
+    0 0 0 3px rgba(21, 128, 61, 0.12);
+}
+
+
+.password-input-container input:disabled {
+  background: #f8fafc;
+  cursor: not-allowed;
+}
+
+
+.password-eye {
+  position: absolute;
+
+  right: 11px;
+  top: 50%;
+
+  transform: translateY(-50%);
+
+  border: none;
+  background: transparent;
+
+  cursor: pointer;
+
+  font-size: 16px;
+}
+
+
+/* =========================================================
+   AYUDA
+========================================================= */
+
+.password-help {
+  margin-top: -5px;
+  margin-bottom: 17px;
+
+  padding: 10px 12px;
+
+  background: #f8fafc;
+
+  border-radius: 8px;
+
+  font-size: 12px;
+  color: #64748b;
+}
+
+
+/* =========================================================
+   MENSAJES
+========================================================= */
+
+.password-message {
+  margin-bottom: 16px;
+  padding: 11px 13px;
+
+  border-radius: 8px;
+
+  font-size: 13px;
+  font-weight: 500;
+}
+
+
+.password-message.error {
+  background: #fef2f2;
+
+  border: 1px solid #fecaca;
+
+  color: #b91c1c;
+}
+
+
+.password-message.success {
+  background: #f0fdf4;
+
+  border: 1px solid #bbf7d0;
+
+  color: #166534;
+}
+
+
+/* =========================================================
+   BOTONES
+========================================================= */
+
+.password-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+
+  margin-top: 22px;
+}
+
+
+.password-btn {
+  padding: 10px 17px;
+
+  border-radius: 8px;
+
+  font-size: 14px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition:
+    transform 0.15s ease,
+    opacity 0.15s ease;
+}
+
+
+.password-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+
+.password-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+
+.password-btn.secondary {
+  background: #ffffff;
+
+  border: 1px solid #cbd5e1;
+
+  color: #475569;
+}
+
+
+.password-btn.primary {
+  background: #007a3d;
+
+  border: 1px solid #007a3d;
+
+  color: #ffffff;
+}
+
+
+.password-btn.primary:hover:not(:disabled) {
+  background: #006532;
+}
+
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media (max-width: 600px) {
+
+  .password-modal-overlay {
+    padding: 14px;
+  }
+
+  .password-modal-header {
+    padding: 20px;
+  }
+
+  .password-user-info {
+    margin: 18px 20px 0;
+  }
+
+  .password-form {
+    padding: 20px;
+  }
+
+  .password-actions {
+    flex-direction: column-reverse;
+  }
+
+  .password-btn {
+    width: 100%;
+  }
+
+}

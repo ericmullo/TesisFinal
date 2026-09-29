@@ -11,6 +11,7 @@ import Solicitudes from "./pages/Solicitudes";
 import Documentos from "./pages/Documentos";
 import EvaluacionRiesgo from "./pages/EvaluacionRiesgo";
 import Reportes from "./pages/Reportes";
+import Usuarios from "./pages/Usuarios";
 
 import RutaProtegida from "./components/RutaProtegida";
 
@@ -21,9 +22,7 @@ function App() {
 
     <Routes>
 
-      {/* ================================================= */}
-      {/* LOGIN - RUTA PÚBLICA */}
-      {/* ================================================= */}
+      {/* LOGIN */}
 
       <Route
         path="/"
@@ -31,9 +30,7 @@ function App() {
       />
 
 
-      {/* ================================================= */}
-      {/* DASHBOARD - PROTEGIDO */}
-      {/* ================================================= */}
+      {/* DASHBOARD */}
 
       <Route
         path="/dashboard"
@@ -45,9 +42,7 @@ function App() {
       />
 
 
-      {/* ================================================= */}
-      {/* CLIENTES - PROTEGIDO */}
-      {/* ================================================= */}
+      {/* CLIENTES */}
 
       <Route
         path="/clientes"
@@ -59,9 +54,7 @@ function App() {
       />
 
 
-      {/* ================================================= */}
-      {/* SOLICITUDES - PROTEGIDO */}
-      {/* ================================================= */}
+      {/* SOLICITUDES */}
 
       <Route
         path="/solicitudes"
@@ -73,9 +66,7 @@ function App() {
       />
 
 
-      {/* ================================================= */}
-      {/* DOCUMENTOS - PROTEGIDO */}
-      {/* ================================================= */}
+      {/* DOCUMENTOS */}
 
       <Route
         path="/documentos"
@@ -87,9 +78,7 @@ function App() {
       />
 
 
-      {/* ================================================= */}
-      {/* EVALUACIÓN DE RIESGO - PROTEGIDO */}
-      {/* ================================================= */}
+      {/* EVALUACIÓN DE RIESGO */}
 
       <Route
         path="/evaluacion-riesgo"
@@ -101,9 +90,7 @@ function App() {
       />
 
 
-      {/* ================================================= */}
-      {/* REPORTES - PROTEGIDO */}
-      {/* ================================================= */}
+      {/* REPORTES */}
 
       <Route
         path="/reportes"
@@ -115,9 +102,22 @@ function App() {
       />
 
 
-      {/* ================================================= */}
+      {/* GESTIÓN DE USUARIOS */}
+
+      <Route
+  path="/usuarios"
+  element={
+    <RutaProtegida
+      rolesPermitidos={["ADMIN"]}
+    >
+      <Usuarios />
+    </RutaProtegida>
+  }
+
+      />
+
+
       {/* RUTA NO EXISTENTE */}
-      {/* ================================================= */}
 
       <Route
         path="*"
@@ -130,7 +130,9 @@ function App() {
       />
 
     </Routes>
+
   );
+
 }
 
 

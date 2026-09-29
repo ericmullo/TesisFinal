@@ -1797,7 +1797,7 @@ export default function Reportes() {
 
       <Layout
         title="Reportes y Dashboard Gerencial"
-        user="Gerencia"
+        
       >
 
         <section className="panel">

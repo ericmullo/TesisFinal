@@ -20,14 +20,11 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
-
     public SecurityConfig(
             JwtAuthenticationFilter jwtAuthenticationFilter
     ) {
-        this.jwtAuthenticationFilter =
-                jwtAuthenticationFilter;
+        this.jwtAuthenticationFilter = jwtAuthenticationFilter;
     }
-
 
     @Bean
     public SecurityFilterChain securityFilterChain(
@@ -36,312 +33,298 @@ public class SecurityConfig {
 
         http
 
-            // =================================================
-            // CORS
-            // =================================================
+                // =================================================
+                // CORS
+                // =================================================
+                .cors(cors -> {})
 
-            .cors(cors -> {})
-
-
-            // =================================================
-            // CSRF
-            // =================================================
-
-            .csrf(csrf ->
-                csrf.disable()
-            )
-
-
-            // =================================================
-            // JWT - SIN SESIONES DE SPRING
-            // =================================================
-
-            .sessionManagement(session ->
-                session.sessionCreationPolicy(
-                    SessionCreationPolicy.STATELESS
-                )
-            )
-
-
-            // =================================================
-            // AUTORIZACIÓN
-            // =================================================
-
-            .authorizeHttpRequests(auth -> auth
-
-
-                // ---------------------------------------------
-                // PREFLIGHT CORS
-                // ---------------------------------------------
-
-                .requestMatchers(
-                    HttpMethod.OPTIONS,
-                    "/**"
-                )
-                .permitAll()
-
-
-                // ---------------------------------------------
-                // LOGIN
-                // ---------------------------------------------
-
-                .requestMatchers(
-                    "/api/auth/login"
-                )
-                .permitAll()
-
-
-                // =============================================
-                // USUARIOS
-                // SOLO ADMIN
-                // =============================================
-
-                .requestMatchers(
-                    "/api/usuarios/**"
-                )
-                .hasRole("ADMIN")
-
-
-                // =============================================
-                // DECISIÓN FINAL
-                // ADMIN + ANALISTA
-                // =============================================
-
-                .requestMatchers(
-                    HttpMethod.PUT,
-                    "/api/solicitudes/*/aprobar",
-                    "/api/solicitudes/*/rechazar"
-                )
-                .hasAnyRole(
-                    "ADMIN",
-                    "ANALISTA"
+                // =================================================
+                // CSRF
+                // =================================================
+                .csrf(csrf ->
+                        csrf.disable()
                 )
 
-
-                // =============================================
-                // CLIENTES
-                // =============================================
-
-                // Crear
-                .requestMatchers(
-                    HttpMethod.POST,
-                    "/api/clientes/**"
-                )
-                .hasAnyRole(
-                    "ADMIN",
-                    "ANALISTA"
+                // =================================================
+                // JWT - SIN SESIONES DE SPRING
+                // =================================================
+                .sessionManagement(session ->
+                        session.sessionCreationPolicy(
+                                SessionCreationPolicy.STATELESS
+                        )
                 )
 
-                // Modificar
-                .requestMatchers(
-                    HttpMethod.PUT,
-                    "/api/clientes/**"
+                // =================================================
+                // AUTORIZACIÓN
+                // =================================================
+                .authorizeHttpRequests(auth -> auth
+
+                        // ---------------------------------------------
+                        // PREFLIGHT CORS
+                        // ---------------------------------------------
+                        .requestMatchers(
+                                HttpMethod.OPTIONS,
+                                "/**"
+                        )
+                        .permitAll()
+
+                        // ---------------------------------------------
+                        // AUTENTICACIÓN
+                        // LOGIN + VERIFICACIÓN 2FA
+                        // ---------------------------------------------
+                        .requestMatchers(
+                                "/api/auth/login",
+                                "/api/auth/verificar-codigo"
+                        )
+                        .permitAll()
+
+                        // ---------------------------------------------
+                        // CAMBIAR MI PROPIA CONTRASEÑA
+                        // ---------------------------------------------
+                        .requestMatchers(
+                                HttpMethod.PUT,
+                                "/api/usuarios/mi-password"
+                        )
+                        .hasAnyRole(
+                                "ADMIN",
+                                "ANALISTA",
+                                "GERENCIA"
+                        )
+
+                        // =============================================
+                        // USUARIOS
+                        // SOLO ADMIN
+                        // =============================================
+                        .requestMatchers(
+                                "/api/usuarios/**"
+                        )
+                        .hasRole("ADMIN")
+
+                        // =============================================
+                        // DECISIÓN FINAL
+                        // ADMIN + ANALISTA
+                        // =============================================
+                        .requestMatchers(
+                                HttpMethod.PUT,
+                                "/api/solicitudes/*/aprobar",
+                                "/api/solicitudes/*/rechazar"
+                        )
+                        .hasAnyRole(
+                                "ADMIN",
+                                "ANALISTA"
+                        )
+
+                        // =============================================
+                        // CLIENTES
+                        // =============================================
+
+                        // Crear
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/api/clientes/**"
+                        )
+                        .hasAnyRole(
+                                "ADMIN",
+                                "ANALISTA"
+                        )
+
+                        // Modificar
+                        .requestMatchers(
+                                HttpMethod.PUT,
+                                "/api/clientes/**"
+                        )
+                        .hasAnyRole(
+                                "ADMIN",
+                                "ANALISTA"
+                        )
+
+                        // Eliminar
+                        .requestMatchers(
+                                HttpMethod.DELETE,
+                                "/api/clientes/**"
+                        )
+                        .hasAnyRole(
+                                "ADMIN",
+                                "ANALISTA"
+                        )
+
+                        // Consultar
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/clientes/**"
+                        )
+                        .hasAnyRole(
+                                "ADMIN",
+                                "ANALISTA",
+                                "GERENCIA"
+                        )
+
+                        // =============================================
+                        // SOLICITUDES
+                        // =============================================
+
+                        // Crear
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/api/solicitudes/**"
+                        )
+                        .hasAnyRole(
+                                "ADMIN",
+                                "ANALISTA"
+                        )
+
+                        // Modificar
+                        .requestMatchers(
+                                HttpMethod.PUT,
+                                "/api/solicitudes/**"
+                        )
+                        .hasAnyRole(
+                                "ADMIN",
+                                "ANALISTA"
+                        )
+
+                        // Eliminar
+                        .requestMatchers(
+                                HttpMethod.DELETE,
+                                "/api/solicitudes/**"
+                        )
+                        .hasAnyRole(
+                                "ADMIN",
+                                "ANALISTA"
+                        )
+
+                        // Consultar
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/solicitudes/**"
+                        )
+                        .hasAnyRole(
+                                "ADMIN",
+                                "ANALISTA",
+                                "GERENCIA"
+                        )
+
+                        // =============================================
+                        // DOCUMENTOS
+                        // =============================================
+
+                        // Subir
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/api/documentos/**"
+                        )
+                        .hasAnyRole(
+                                "ADMIN",
+                                "ANALISTA"
+                        )
+
+                        // Modificar
+                        .requestMatchers(
+                                HttpMethod.PUT,
+                                "/api/documentos/**"
+                        )
+                        .hasAnyRole(
+                                "ADMIN",
+                                "ANALISTA"
+                        )
+
+                        // Eliminar
+                        .requestMatchers(
+                                HttpMethod.DELETE,
+                                "/api/documentos/**"
+                        )
+                        .hasAnyRole(
+                                "ADMIN",
+                                "ANALISTA"
+                        )
+
+                        // Consultar
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/documentos/**"
+                        )
+                        .hasAnyRole(
+                                "ADMIN",
+                                "ANALISTA",
+                                "GERENCIA"
+                        )
+
+                        // =============================================
+                        // EVALUACIONES DE RIESGO
+                        // =============================================
+
+                        // Ejecutar evaluación IA
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/api/evaluaciones/**"
+                        )
+                        .hasAnyRole(
+                                "ADMIN",
+                                "ANALISTA"
+                        )
+
+                        // Modificar
+                        .requestMatchers(
+                                HttpMethod.PUT,
+                                "/api/evaluaciones/**"
+                        )
+                        .hasAnyRole(
+                                "ADMIN",
+                                "ANALISTA"
+                        )
+
+                        // Eliminar
+                        .requestMatchers(
+                                HttpMethod.DELETE,
+                                "/api/evaluaciones/**"
+                        )
+                        .hasAnyRole(
+                                "ADMIN",
+                                "ANALISTA"
+                        )
+
+                        // Consultar
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/evaluaciones/**"
+                        )
+                        .hasAnyRole(
+                                "ADMIN",
+                                "ANALISTA",
+                                "GERENCIA"
+                        )
+
+                        // =============================================
+                        // CUALQUIER OTRA API
+                        // =============================================
+                        .anyRequest()
+                        .authenticated()
                 )
-                .hasAnyRole(
-                    "ADMIN",
-                    "ANALISTA"
+
+                // =================================================
+                // LOGIN TRADICIONAL DESACTIVADO
+                // =================================================
+                .formLogin(form ->
+                        form.disable()
                 )
 
-                // Eliminar
-                .requestMatchers(
-                    HttpMethod.DELETE,
-                    "/api/clientes/**"
-                )
-                .hasAnyRole(
-                    "ADMIN",
-                    "ANALISTA"
+                // =================================================
+                // HTTP BASIC DESACTIVADO
+                // =================================================
+                .httpBasic(basic ->
+                        basic.disable()
                 )
 
-                // Consultar
-                .requestMatchers(
-                    HttpMethod.GET,
-                    "/api/clientes/**"
-                )
-                .hasAnyRole(
-                    "ADMIN",
-                    "ANALISTA",
-                    "GERENCIA"
-                )
-
-
-                // =============================================
-                // SOLICITUDES
-                // =============================================
-
-                // Crear
-                .requestMatchers(
-                    HttpMethod.POST,
-                    "/api/solicitudes/**"
-                )
-                .hasAnyRole(
-                    "ADMIN",
-                    "ANALISTA"
-                )
-
-                // Modificar
-                .requestMatchers(
-                    HttpMethod.PUT,
-                    "/api/solicitudes/**"
-                )
-                .hasAnyRole(
-                    "ADMIN",
-                    "ANALISTA"
-                )
-
-                // Eliminar
-                .requestMatchers(
-                    HttpMethod.DELETE,
-                    "/api/solicitudes/**"
-                )
-                .hasAnyRole(
-                    "ADMIN",
-                    "ANALISTA"
-                )
-
-                // Consultar
-                .requestMatchers(
-                    HttpMethod.GET,
-                    "/api/solicitudes/**"
-                )
-                .hasAnyRole(
-                    "ADMIN",
-                    "ANALISTA",
-                    "GERENCIA"
-                )
-
-
-                // =============================================
-                // DOCUMENTOS
-                // =============================================
-
-                // Subir
-                .requestMatchers(
-                    HttpMethod.POST,
-                    "/api/documentos/**"
-                )
-                .hasAnyRole(
-                    "ADMIN",
-                    "ANALISTA"
-                )
-
-                // Modificar
-                .requestMatchers(
-                    HttpMethod.PUT,
-                    "/api/documentos/**"
-                )
-                .hasAnyRole(
-                    "ADMIN",
-                    "ANALISTA"
-                )
-
-                // Eliminar
-                .requestMatchers(
-                    HttpMethod.DELETE,
-                    "/api/documentos/**"
-                )
-                .hasAnyRole(
-                    "ADMIN",
-                    "ANALISTA"
-                )
-
-                // Consultar
-                .requestMatchers(
-                    HttpMethod.GET,
-                    "/api/documentos/**"
-                )
-                .hasAnyRole(
-                    "ADMIN",
-                    "ANALISTA",
-                    "GERENCIA"
-                )
-
-
-                // =============================================
-                // EVALUACIONES DE RIESGO
-                // =============================================
-
-                // Ejecutar evaluación IA
-                .requestMatchers(
-                    HttpMethod.POST,
-                    "/api/evaluaciones/**"
-                )
-                .hasAnyRole(
-                    "ADMIN",
-                    "ANALISTA"
-                )
-
-                // Modificar
-                .requestMatchers(
-                    HttpMethod.PUT,
-                    "/api/evaluaciones/**"
-                )
-                .hasAnyRole(
-                    "ADMIN",
-                    "ANALISTA"
-                )
-
-                // Eliminar
-                .requestMatchers(
-                    HttpMethod.DELETE,
-                    "/api/evaluaciones/**"
-                )
-                .hasAnyRole(
-                    "ADMIN",
-                    "ANALISTA"
-                )
-
-                // Consultar
-                .requestMatchers(
-                    HttpMethod.GET,
-                    "/api/evaluaciones/**"
-                )
-                .hasAnyRole(
-                    "ADMIN",
-                    "ANALISTA",
-                    "GERENCIA"
-                )
-
-
-                // =============================================
-                // CUALQUIER OTRA API
-                // =============================================
-
-                .anyRequest()
-                .authenticated()
-            )
-
-
-            // =================================================
-            // LOGIN TRADICIONAL DESACTIVADO
-            // =================================================
-
-            .formLogin(form ->
-                form.disable()
-            )
-
-
-            // =================================================
-            // HTTP BASIC DESACTIVADO
-            // =================================================
-
-            .httpBasic(basic ->
-                basic.disable()
-            )
-
-
-            // =================================================
-            // FILTRO JWT
-            // =================================================
-
-            .addFilterBefore(
-                jwtAuthenticationFilter,
-                UsernamePasswordAuthenticationFilter.class
-            );
-
+                // =================================================
+                // FILTRO JWT
+                // =================================================
+                .addFilterBefore(
+                        jwtAuthenticationFilter,
+                        UsernamePasswordAuthenticationFilter.class
+                );
 
         return http.build();
     }
-
 
     // =========================================================
     // PASSWORD ENCODER
@@ -349,10 +332,8 @@ public class SecurityConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-
         return new BCryptPasswordEncoder();
     }
-
 
     // =========================================================
     // CORS
@@ -364,40 +345,34 @@ public class SecurityConfig {
         CorsConfiguration config =
                 new CorsConfiguration();
 
-
         config.setAllowedOrigins(
-            List.of(
-                "http://localhost:5173"
-            )
+                List.of(
+                        "http://localhost:5173"
+                )
         );
-
 
         config.setAllowedMethods(
-            List.of(
-                "GET",
-                "POST",
-                "PUT",
-                "DELETE",
-                "PATCH",
-                "OPTIONS"
-            )
+                List.of(
+                        "GET",
+                        "POST",
+                        "PUT",
+                        "DELETE",
+                        "PATCH",
+                        "OPTIONS"
+                )
         );
-
 
         config.setAllowedHeaders(
-            List.of("*")
+                List.of("*")
         );
-
 
         UrlBasedCorsConfigurationSource source =
                 new UrlBasedCorsConfigurationSource();
 
-
         source.registerCorsConfiguration(
-            "/**",
-            config
+                "/**",
+                config
         );
-
 
         return source;
     }

@@ -19,6 +19,11 @@ function Dashboard() {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
 
+  // =========================================================
+  // AÑO ACTUAL
+  // =========================================================
+
+  const anioActual = new Date().getFullYear();
 
   // =========================================================
   // CARGAR INFORMACIÓN DEL DASHBOARD
@@ -27,7 +32,6 @@ function Dashboard() {
   useEffect(() => {
     cargarDashboard();
   }, []);
-
 
   const cargarDashboard = async () => {
     try {
@@ -47,7 +51,6 @@ function Dashboard() {
       setClientes(datosClientes || []);
       setSolicitudes(datosSolicitudes || []);
       setEvaluaciones(datosEvaluaciones || []);
-
     } catch (error) {
       console.error(
         "ERROR AL CARGAR DASHBOARD:",
@@ -57,23 +60,18 @@ function Dashboard() {
       setError(
         "No se pudo cargar la información del dashboard."
       );
-
     } finally {
       setCargando(false);
     }
   };
-
 
   // =========================================================
   // CONTADORES GENERALES
   // =========================================================
 
   const totalClientes = clientes.length;
-
   const totalSolicitudes = solicitudes.length;
-
   const totalEvaluaciones = evaluaciones.length;
-
 
   // =========================================================
   // DISTRIBUCIÓN DE RIESGO
@@ -85,20 +83,17 @@ function Dashboard() {
         .toLowerCase() === "alto"
   ).length;
 
-
   const riesgoMedio = evaluaciones.filter(
     (evaluacion) =>
       String(evaluacion.nivelRiesgo || "")
         .toLowerCase() === "medio"
   ).length;
 
-
   const riesgoBajo = evaluaciones.filter(
     (evaluacion) =>
       String(evaluacion.nivelRiesgo || "")
         .toLowerCase() === "bajo"
   ).length;
-
 
   // =========================================================
   // DECISIONES FORMALES DEL ANALISTA
@@ -126,7 +121,6 @@ function Dashboard() {
     }
   );
 
-
   const solicitudesAprobadas =
     decisionesFormales.filter(
       (solicitud) => {
@@ -140,7 +134,6 @@ function Dashboard() {
         );
       }
     ).length;
-
 
   const solicitudesRechazadas =
     decisionesFormales.filter(
@@ -156,10 +149,8 @@ function Dashboard() {
       }
     ).length;
 
-
   const totalDecisionesFormales =
     decisionesFormales.length;
-
 
   // =========================================================
   // SOLICITUDES SIN DECISIÓN FORMAL
@@ -170,9 +161,8 @@ function Dashboard() {
       !solicitud.fechaDecision
   ).length;
 
-
   // =========================================================
-  // SOLICITUDES POR MES
+  // SOLICITUDES POR MES - AÑO ACTUAL
   // =========================================================
 
   const obtenerSolicitudesPorMes = () => {
@@ -206,6 +196,11 @@ function Dashboard() {
         return;
       }
 
+      // Solo contabilizar solicitudes del año actual
+      if (fecha.getFullYear() !== anioActual) {
+        return;
+      }
+
       const mes = fecha.getMonth();
 
       conteo[mes] += 1;
@@ -217,10 +212,8 @@ function Dashboard() {
     }));
   };
 
-
   const solicitudesPorMes =
     obtenerSolicitudesPorMes();
-
 
   // =========================================================
   // ALTURA DE LAS BARRAS
@@ -232,7 +225,6 @@ function Dashboard() {
     ),
     1
   );
-
 
   const calcularAlturaBarra = (cantidad) => {
     if (cantidad === 0) {
@@ -251,7 +243,6 @@ function Dashboard() {
       alturaMinima
     )}px`;
   };
-
 
   // =========================================================
   // ÚLTIMAS EVALUACIONES
@@ -272,7 +263,6 @@ function Dashboard() {
       return fechaB - fechaA;
     })
     .slice(0, 5);
-
 
   // =========================================================
   // FORMATEAR PORCENTAJE
@@ -295,7 +285,6 @@ function Dashboard() {
     )}%`;
   };
 
-
   // =========================================================
   // FORMATEAR FECHA
   // =========================================================
@@ -314,7 +303,6 @@ function Dashboard() {
       }
     );
   };
-
 
   // =========================================================
   // CLASE DEL BADGE DE RIESGO
@@ -340,7 +328,6 @@ function Dashboard() {
     return "badge";
   };
 
-
   // =========================================================
   // ESTADO VISUAL DE LA EVALUACIÓN
   // =========================================================
@@ -353,7 +340,6 @@ function Dashboard() {
     return "Evaluada";
   };
 
-
   // =========================================================
   // CARGANDO
   // =========================================================
@@ -361,9 +347,7 @@ function Dashboard() {
   if (cargando) {
     return (
       <Layout title="Dashboard Principal">
-
         <section className="panel">
-
           <p
             style={{
               textAlign: "center",
@@ -372,13 +356,10 @@ function Dashboard() {
           >
             ⏳ Cargando información del dashboard...
           </p>
-
         </section>
-
       </Layout>
     );
   }
-
 
   // =========================================================
   // RETURN
@@ -405,7 +386,6 @@ function Dashboard() {
         </section>
       )}
 
-
       {/* =====================================================
           TARJETAS PRINCIPALES
       ===================================================== */}
@@ -415,7 +395,6 @@ function Dashboard() {
         {/* CLIENTES */}
 
         <div className="card">
-
           <h3>
             Total clientes
           </h3>
@@ -427,14 +406,11 @@ function Dashboard() {
           <p>
             Clientes registrados
           </p>
-
         </div>
-
 
         {/* SOLICITUDES */}
 
         <div className="card">
-
           <h3>
             Total solicitudes
           </h3>
@@ -446,14 +422,11 @@ function Dashboard() {
           <p>
             Solicitudes registradas
           </p>
-
         </div>
-
 
         {/* RIESGO ALTO */}
 
         <div className="card red">
-
           <h3>
             Riesgo alto
           </h3>
@@ -465,14 +438,11 @@ function Dashboard() {
           <p>
             Evaluaciones de riesgo alto
           </p>
-
         </div>
-
 
         {/* RIESGO MEDIO */}
 
         <div className="card orange">
-
           <h3>
             Riesgo medio
           </h3>
@@ -484,14 +454,11 @@ function Dashboard() {
           <p>
             Evaluaciones de riesgo medio
           </p>
-
         </div>
-
 
         {/* RIESGO BAJO */}
 
         <div className="card yellow">
-
           <h3>
             Riesgo bajo
           </h3>
@@ -503,11 +470,9 @@ function Dashboard() {
           <p>
             Evaluaciones de riesgo bajo
           </p>
-
         </div>
 
       </section>
-
 
       {/* =====================================================
           SEGUNDA FILA DE INDICADORES
@@ -521,7 +486,6 @@ function Dashboard() {
       >
 
         <div className="small-card">
-
           <h3>
             Evaluaciones IA
           </h3>
@@ -539,12 +503,9 @@ function Dashboard() {
           >
             Decisiones formales: {totalDecisionesFormales}
           </small>
-
         </div>
 
-
         <div className="small-card yellow">
-
           <h3>
             Sin decisión formal
           </h3>
@@ -552,12 +513,9 @@ function Dashboard() {
           <strong>
             {solicitudesPendientes}
           </strong>
-
         </div>
 
-
         <div className="small-card">
-
           <h3>
             Aprobadas por analista
           </h3>
@@ -565,12 +523,9 @@ function Dashboard() {
           <strong>
             {solicitudesAprobadas}
           </strong>
-
         </div>
 
-
         <div className="small-card red">
-
           <h3>
             Rechazadas por analista
           </h3>
@@ -578,11 +533,9 @@ function Dashboard() {
           <strong>
             {solicitudesRechazadas}
           </strong>
-
         </div>
 
       </section>
-
 
       {/* =====================================================
           GRÁFICO + RESUMEN DE RIESGO
@@ -593,9 +546,8 @@ function Dashboard() {
         {/* SOLICITUDES POR MES */}
 
         <div className="panel">
-
           <h2>
-            Solicitudes por mes
+            Solicitudes por mes - {anioActual}
           </h2>
 
           <p
@@ -605,15 +557,12 @@ function Dashboard() {
               marginBottom: "25px",
             }}
           >
-            Distribución mensual de solicitudes registradas
+            Distribución mensual de solicitudes registradas durante {anioActual}
           </p>
 
-
           <div className="bar-chart">
-
             {solicitudesPorMes.map(
               (item) => (
-
                 <div
                   className="bar"
                   style={{
@@ -625,7 +574,6 @@ function Dashboard() {
                   key={item.mes}
                   title={`${item.mes}: ${item.cantidad} solicitudes`}
                 >
-
                   <small>
                     {item.cantidad}
                   </small>
@@ -633,21 +581,15 @@ function Dashboard() {
                   <span>
                     {item.mes}
                   </span>
-
                 </div>
-
               )
             )}
-
           </div>
-
         </div>
-
 
         {/* RESUMEN DE RIESGO */}
 
         <div className="panel">
-
           <h2>
             Resumen de riesgo
           </h2>
@@ -662,47 +604,36 @@ function Dashboard() {
             Clasificación de las evaluaciones realizadas
           </p>
 
-
           <div className="risk-list">
 
             <div className="risk-item high">
-
               <strong>
                 Riesgo alto ({riesgoAlto})
               </strong>
 
               Requiere revisión detallada del analista.
-
             </div>
 
-
             <div className="risk-item medium">
-
               <strong>
                 Riesgo medio ({riesgoMedio})
               </strong>
 
               Solicitudes que requieren revisión adicional.
-
             </div>
 
-
             <div className="risk-item low">
-
               <strong>
                 Riesgo bajo ({riesgoBajo})
               </strong>
 
               Solicitudes con menor riesgo estimado por el modelo.
-
             </div>
 
           </div>
-
         </div>
 
       </section>
-
 
       {/* =====================================================
           ÚLTIMAS EVALUACIONES
@@ -719,9 +650,7 @@ function Dashboard() {
             marginBottom: "20px",
           }}
         >
-
           <div>
-
             <h2
               style={{
                 marginBottom: "5px",
@@ -738,9 +667,7 @@ function Dashboard() {
             >
               Resultados más recientes generados por el modelo de IA
             </p>
-
           </div>
-
 
           <span
             style={{
@@ -751,16 +678,11 @@ function Dashboard() {
             Mostrando las últimas{" "}
             {evaluacionesRecientes.length}
           </span>
-
         </div>
 
-
         <table className="table">
-
           <thead>
-
             <tr>
-
               <th>
                 Solicitud
               </th>
@@ -792,17 +714,12 @@ function Dashboard() {
               <th>
                 Fecha
               </th>
-
             </tr>
-
           </thead>
 
-
           <tbody>
-
             {evaluacionesRecientes.map(
               (evaluacion) => {
-
                 const solicitud =
                   evaluacion.solicitud;
 
@@ -810,55 +727,37 @@ function Dashboard() {
                   solicitud?.cliente;
 
                 return (
-
                   <tr key={evaluacion.id}>
-
                     <td>
                       #{solicitud?.id || "-"}
                     </td>
 
-
                     <td>
-
                       {cliente
                         ? `${cliente.nombres || ""} ${cliente.apellidos || ""}`
                         : "-"}
-
                     </td>
 
-
                     <td>
-
                       {solicitud?.tipoCredito ||
                         "-"}
-
                     </td>
 
-
                     <td>
-
                       <strong>
-
                         {evaluacion.scoreIa != null
                           ? `${evaluacion.scoreIa}/100`
                           : "-"}
-
                       </strong>
-
                     </td>
 
-
                     <td>
-
                       {formatearPorcentaje(
                         evaluacion.probabilidadMora
                       )}
-
                     </td>
 
-
                     <td>
-
                       <span
                         className={
                           obtenerClaseRiesgo(
@@ -866,46 +765,30 @@ function Dashboard() {
                           )
                         }
                       >
-
                         {evaluacion.nivelRiesgo ||
                           "-"}
-
                       </span>
-
                     </td>
 
-
                     <td>
-
                       {obtenerTextoEstado(
                         evaluacion
                       )}
-
                     </td>
 
-
                     <td>
-
                       {formatearFecha(
                         evaluacion.fechaEvaluacion
                       )}
-
                     </td>
-
                   </tr>
-
                 );
-
               }
             )}
-
           </tbody>
-
         </table>
 
-
         {evaluacionesRecientes.length === 0 && (
-
           <div
             style={{
               padding: "35px",
@@ -913,7 +796,6 @@ function Dashboard() {
               color: "#777",
             }}
           >
-
             <div
               style={{
                 fontSize: "32px",
@@ -931,9 +813,7 @@ function Dashboard() {
               Cuando una solicitud sea evaluada mediante
               el modelo de IA, aparecerá aquí.
             </p>
-
           </div>
-
         )}
 
       </section>
