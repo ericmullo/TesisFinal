@@ -18,23 +18,32 @@ public class AuthService {
     private final JwtService jwtService;
     private final CodigoVerificacionService codigoVerificacionService;
 
+
+    // =========================================================
+    // CONSTRUCTOR
+    // =========================================================
+
     public AuthService(
             UsuarioRepository usuarioRepository,
             PasswordEncoder passwordEncoder,
             JwtService jwtService,
             CodigoVerificacionService codigoVerificacionService
     ) {
+
         this.usuarioRepository = usuarioRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.codigoVerificacionService = codigoVerificacionService;
     }
 
+
     // =========================================================
     // PASO 1 - LOGIN USUARIO + CONTRASEÑA
     // =========================================================
 
-    public LoginResponse login(LoginRequest request) {
+    public LoginResponse login(
+            LoginRequest request
+    ) {
 
         // -----------------------------------------------------
         // VALIDAR DATOS
@@ -51,15 +60,19 @@ public class AuthService {
                         ||
                 request.getPassword().isBlank()
         ) {
+
             throw new CredencialesInvalidasException(
                     "Usuario o contraseña incorrectos."
             );
         }
 
+
         String username =
-                request.getUsername()
+                request
+                        .getUsername()
                         .trim()
                         .toLowerCase();
+
 
         // -----------------------------------------------------
         // BUSCAR USUARIO
@@ -68,11 +81,13 @@ public class AuthService {
         Usuario usuario =
                 usuarioRepository
                         .findByUsername(username)
-                        .orElseThrow(() ->
-                                new CredencialesInvalidasException(
-                                        "Usuario o contraseña incorrectos."
-                                )
+                        .orElseThrow(
+                                () ->
+                                        new CredencialesInvalidasException(
+                                                "Usuario o contraseña incorrectos."
+                                        )
                         );
+
 
         // -----------------------------------------------------
         // COMPROBAR USUARIO ACTIVO
@@ -83,10 +98,12 @@ public class AuthService {
                         ||
                 !usuario.getActivo()
         ) {
+
             throw new CredencialesInvalidasException(
                     "Usuario o contraseña incorrectos."
             );
         }
+
 
         // -----------------------------------------------------
         // COMPROBAR CONTRASEÑA
@@ -98,11 +115,14 @@ public class AuthService {
                         usuario.getPassword()
                 );
 
+
         if (!passwordCorrecto) {
+
             throw new CredencialesInvalidasException(
                     "Usuario o contraseña incorrectos."
             );
         }
+
 
         // -----------------------------------------------------
         // COMPROBAR QUE TENGA CORREO
@@ -113,17 +133,22 @@ public class AuthService {
                         ||
                 usuario.getCorreo().isBlank()
         ) {
+
             throw new CredencialesInvalidasException(
                     "El usuario no tiene un correo registrado. Contacte al administrador."
             );
         }
+
 
         // -----------------------------------------------------
         // GENERAR Y ENVIAR CÓDIGO 2FA
         // -----------------------------------------------------
 
         codigoVerificacionService
-                .generarYEnviarCodigo(usuario);
+                .generarYEnviarCodigo(
+                        usuario
+                );
+
 
         // -----------------------------------------------------
         // IMPORTANTE:
@@ -141,6 +166,7 @@ public class AuthService {
                 "Código de verificación enviado al correo registrado."
         );
     }
+
 
     // =========================================================
     // PASO 2 - VERIFICAR CÓDIGO 2FA
@@ -165,15 +191,19 @@ public class AuthService {
                         ||
                 request.getCodigo().isBlank()
         ) {
+
             throw new CredencialesInvalidasException(
                     "Código de verificación inválido."
             );
         }
 
+
         String username =
-                request.getUsername()
+                request
+                        .getUsername()
                         .trim()
                         .toLowerCase();
+
 
         // -----------------------------------------------------
         // BUSCAR USUARIO
@@ -182,11 +212,13 @@ public class AuthService {
         Usuario usuario =
                 usuarioRepository
                         .findByUsername(username)
-                        .orElseThrow(() ->
-                                new CredencialesInvalidasException(
-                                        "Código de verificación inválido."
-                                )
+                        .orElseThrow(
+                                () ->
+                                        new CredencialesInvalidasException(
+                                                "Código de verificación inválido."
+                                        )
                         );
+
 
         // -----------------------------------------------------
         // COMPROBAR USUARIO ACTIVO
@@ -197,10 +229,12 @@ public class AuthService {
                         ||
                 !usuario.getActivo()
         ) {
+
             throw new CredencialesInvalidasException(
                     "Código de verificación inválido."
             );
         }
+
 
         // -----------------------------------------------------
         // VERIFICAR CÓDIGO
@@ -210,21 +244,29 @@ public class AuthService {
                 codigoVerificacionService
                         .verificarCodigo(
                                 usuario,
-                                request.getCodigo().trim()
+                                request
+                                        .getCodigo()
+                                        .trim()
                         );
 
+
         if (!codigoCorrecto) {
+
             throw new CredencialesInvalidasException(
                     "Código incorrecto, expirado o sin intentos disponibles."
             );
         }
+
 
         // -----------------------------------------------------
         // RECIÉN AQUÍ GENERAMOS EL JWT
         // -----------------------------------------------------
 
         String token =
-                jwtService.generarToken(usuario);
+                jwtService.generarToken(
+                        usuario
+                );
+
 
         // -----------------------------------------------------
         // RESPUESTA FINAL
@@ -239,6 +281,113 @@ public class AuthService {
                 token,
                 "Bearer",
                 "Inicio de sesión correcto."
+        );
+    }
+
+
+    // =========================================================
+    // REENVIAR CÓDIGO 2FA
+    // =========================================================
+
+    public LoginResponse reenviarCodigo(
+            String username
+    ) {
+
+        // -----------------------------------------------------
+        // VALIDAR USERNAME
+        // -----------------------------------------------------
+
+        if (
+                username == null
+                        ||
+                username.isBlank()
+        ) {
+
+            throw new CredencialesInvalidasException(
+                    "No se pudo reenviar el código de verificación."
+            );
+        }
+
+
+        String usernameNormalizado =
+                username
+                        .trim()
+                        .toLowerCase();
+
+
+        // -----------------------------------------------------
+        // BUSCAR USUARIO
+        // -----------------------------------------------------
+
+        Usuario usuario =
+                usuarioRepository
+                        .findByUsername(
+                                usernameNormalizado
+                        )
+                        .orElseThrow(
+                                () ->
+                                        new CredencialesInvalidasException(
+                                                "No se pudo reenviar el código de verificación."
+                                        )
+                        );
+
+
+        // -----------------------------------------------------
+        // COMPROBAR USUARIO ACTIVO
+        // -----------------------------------------------------
+
+        if (
+                usuario.getActivo() == null
+                        ||
+                !usuario.getActivo()
+        ) {
+
+            throw new CredencialesInvalidasException(
+                    "No se pudo reenviar el código de verificación."
+            );
+        }
+
+
+        // -----------------------------------------------------
+        // COMPROBAR CORREO
+        // -----------------------------------------------------
+
+        if (
+                usuario.getCorreo() == null
+                        ||
+                usuario.getCorreo().isBlank()
+        ) {
+
+            throw new CredencialesInvalidasException(
+                    "El usuario no tiene un correo registrado. Contacte al administrador."
+            );
+        }
+
+
+        // -----------------------------------------------------
+        // REENVIAR CÓDIGO
+        // EL SERVICE CONTROLA LOS 60 SEGUNDOS
+        // -----------------------------------------------------
+
+        codigoVerificacionService
+                .reenviarCodigo(
+                        usuario
+                );
+
+
+        // -----------------------------------------------------
+        // TODAVÍA NO GENERAMOS JWT
+        // -----------------------------------------------------
+
+        return new LoginResponse(
+                usuario.getId(),
+                usuario.getUsername(),
+                usuario.getNombres(),
+                usuario.getApellidos(),
+                usuario.getRol(),
+                null,
+                null,
+                "Se envió un nuevo código de verificación."
         );
     }
 }

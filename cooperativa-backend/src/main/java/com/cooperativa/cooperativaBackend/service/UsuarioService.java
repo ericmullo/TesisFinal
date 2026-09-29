@@ -12,13 +12,22 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-
+import java.util.regex.Pattern;
 
 @Service
 public class UsuarioService {
 
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
+
+    // =========================================================
+    // EXPRESIÓN REGULAR PARA VALIDAR CORREO
+    // =========================================================
+
+    private static final Pattern PATRON_CORREO =
+            Pattern.compile(
+                    "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$"
+            );
 
 
     // =========================================================
@@ -98,6 +107,17 @@ public class UsuarioService {
 
 
         // -----------------------------------------------------
+        // NORMALIZAR CORREO
+        // -----------------------------------------------------
+
+        String correo =
+                usuario
+                        .getCorreo()
+                        .trim()
+                        .toLowerCase();
+
+
+        // -----------------------------------------------------
         // VALIDAR USERNAME DUPLICADO
         // -----------------------------------------------------
 
@@ -118,12 +138,8 @@ public class UsuarioService {
         // -----------------------------------------------------
 
         if (
-                usuario.getCorreo() != null
-                        &&
-                !usuario.getCorreo().isBlank()
-                        &&
                 usuarioRepository.existsByCorreo(
-                        usuario.getCorreo().trim()
+                        correo
                 )
         ) {
 
@@ -143,13 +159,11 @@ public class UsuarioService {
                 username
         );
 
-
         usuario.setNombres(
                 usuario
                         .getNombres()
                         .trim()
         );
-
 
         usuario.setApellidos(
                 usuario
@@ -157,23 +171,9 @@ public class UsuarioService {
                         .trim()
         );
 
-
-        if (
-                usuario.getCorreo() != null
-                        &&
-                !usuario.getCorreo().isBlank()
-        ) {
-
-            usuario.setCorreo(
-                    usuario
-                            .getCorreo()
-                            .trim()
-            );
-
-        } else {
-
-            usuario.setCorreo(null);
-        }
+        usuario.setCorreo(
+                correo
+        );
 
 
         // -----------------------------------------------------
@@ -247,6 +247,22 @@ public class UsuarioService {
 
 
         // -----------------------------------------------------
+        // VALIDAR CORREO OBLIGATORIO
+        // -----------------------------------------------------
+
+        validarCorreo(
+                datosActualizados.getCorreo()
+        );
+
+
+        String correoNuevo =
+                datosActualizados
+                        .getCorreo()
+                        .trim()
+                        .toLowerCase();
+
+
+        // -----------------------------------------------------
         // VALIDAR ROL
         // -----------------------------------------------------
 
@@ -309,46 +325,30 @@ public class UsuarioService {
 
 
         // -----------------------------------------------------
-        // NORMALIZAR CORREO
+        // VALIDAR CORREO DUPLICADO
         // -----------------------------------------------------
 
-        String correoNuevo = null;
+        boolean correoCambio =
+                usuario.getCorreo() == null
+                        ||
+                !usuario
+                        .getCorreo()
+                        .equalsIgnoreCase(
+                                correoNuevo
+                        );
 
 
         if (
-                datosActualizados.getCorreo() != null
+                correoCambio
                         &&
-                !datosActualizados.getCorreo().isBlank()
+                usuarioRepository.existsByCorreo(
+                        correoNuevo
+                )
         ) {
 
-            correoNuevo =
-                    datosActualizados
-                            .getCorreo()
-                            .trim();
-
-
-            boolean correoCambio =
-                    usuario.getCorreo() == null
-                            ||
-                    !usuario
-                            .getCorreo()
-                            .equalsIgnoreCase(
-                                    correoNuevo
-                            );
-
-
-            if (
-                    correoCambio
-                            &&
-                    usuarioRepository.existsByCorreo(
-                            correoNuevo
-                    )
-            ) {
-
-                throw new ReglaNegocioException(
-                        "El correo ya se encuentra registrado."
-                );
-            }
+            throw new ReglaNegocioException(
+                    "El correo ya se encuentra registrado."
+            );
         }
 
 
@@ -362,18 +362,15 @@ public class UsuarioService {
                         .trim()
         );
 
-
         usuario.setApellidos(
                 datosActualizados
                         .getApellidos()
                         .trim()
         );
 
-
         usuario.setCorreo(
                 correoNuevo
         );
-
 
         usuario.setRol(
                 datosActualizados.getRol()
@@ -793,6 +790,15 @@ public class UsuarioService {
 
 
         // -----------------------------------------------------
+        // CORREO OBLIGATORIO PARA 2FA
+        // -----------------------------------------------------
+
+        validarCorreo(
+                usuario.getCorreo()
+        );
+
+
+        // -----------------------------------------------------
         // ROL
         // -----------------------------------------------------
 
@@ -818,6 +824,43 @@ public class UsuarioService {
 
             throw new ValidacionException(
                     "El rol seleccionado no es válido."
+            );
+        }
+    }
+
+
+    // =========================================================
+    // VALIDAR CORREO
+    // =========================================================
+
+    private void validarCorreo(
+            String correo
+    ) {
+
+        if (
+                correo == null
+                        ||
+                correo.isBlank()
+        ) {
+
+            throw new ValidacionException(
+                    "El correo electrónico es obligatorio para la verificación en dos pasos."
+            );
+        }
+
+
+        String correoNormalizado =
+                correo.trim();
+
+
+        if (
+                !PATRON_CORREO
+                        .matcher(correoNormalizado)
+                        .matches()
+        ) {
+
+            throw new ValidacionException(
+                    "Ingresa un correo electrónico válido."
             );
         }
     }

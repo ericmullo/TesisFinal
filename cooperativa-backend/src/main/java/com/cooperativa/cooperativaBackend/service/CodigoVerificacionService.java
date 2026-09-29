@@ -1,12 +1,15 @@
 package com.cooperativa.cooperativaBackend.service;
 
+import com.cooperativa.cooperativaBackend.exception.ReglaNegocioException;
 import com.cooperativa.cooperativaBackend.model.CodigoVerificacion;
 import com.cooperativa.cooperativaBackend.model.Usuario;
 import com.cooperativa.cooperativaBackend.repository.CodigoVerificacionRepository;
+
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
@@ -15,78 +18,183 @@ public class CodigoVerificacionService {
 
     private static final int MINUTOS_EXPIRACION = 5;
     private static final int MAX_INTENTOS = 5;
+    private static final int SEGUNDOS_REENVIO = 60;
 
     private final CodigoVerificacionRepository codigoRepository;
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
 
-    private final SecureRandom secureRandom = new SecureRandom();
+    private final SecureRandom secureRandom =
+            new SecureRandom();
+
 
     public CodigoVerificacionService(
             CodigoVerificacionRepository codigoRepository,
             PasswordEncoder passwordEncoder,
             EmailService emailService
     ) {
+
         this.codigoRepository = codigoRepository;
         this.passwordEncoder = passwordEncoder;
         this.emailService = emailService;
     }
 
+
     // =========================================================
-    // GENERAR Y ENVIAR CÓDIGO
+    // GENERAR CÓDIGO INICIAL
     // =========================================================
 
-    public void generarYEnviarCodigo(Usuario usuario) {
+    public void generarYEnviarCodigo(
+            Usuario usuario
+    ) {
 
-        if (usuario.getCorreo() == null ||
-                usuario.getCorreo().isBlank()) {
+        validarCorreoUsuario(usuario);
 
-            throw new IllegalArgumentException(
-                    "El usuario no tiene un correo registrado."
-            );
-        }
+        invalidarCodigoAnterior(usuario);
 
-        // Invalidar código anterior si todavía existe
-        Optional<CodigoVerificacion> codigoAnterior =
+        crearYEnviarCodigo(usuario);
+    }
+
+
+    // =========================================================
+    // REENVIAR CÓDIGO
+    // =========================================================
+
+    public void reenviarCodigo(
+            Usuario usuario
+    ) {
+
+        validarCorreoUsuario(usuario);
+
+
+        Optional<CodigoVerificacion> ultimoCodigo =
                 codigoRepository
                         .findFirstByUsuarioIdAndUtilizadoFalseOrderByFechaCreacionDesc(
                                 usuario.getId()
                         );
 
-        codigoAnterior.ifPresent(codigo -> {
-            codigo.setUtilizado(true);
-            codigoRepository.save(codigo);
-        });
 
-        // Código entre 000000 y 999999
-        int numero = secureRandom.nextInt(1_000_000);
+        // -----------------------------------------------------
+        // COOLDOWN DE 60 SEGUNDOS
+        // -----------------------------------------------------
 
-        String codigo = String.format("%06d", numero);
+        if (ultimoCodigo.isPresent()) {
 
-        // Guardamos solamente el hash
+            CodigoVerificacion codigoAnterior =
+                    ultimoCodigo.get();
+
+
+            long segundosTranscurridos =
+                    Duration.between(
+                            codigoAnterior.getFechaCreacion(),
+                            LocalDateTime.now()
+                    ).getSeconds();
+
+
+            if (
+                    segundosTranscurridos
+                            < SEGUNDOS_REENVIO
+            ) {
+
+                long segundosRestantes =
+                        SEGUNDOS_REENVIO
+                                - segundosTranscurridos;
+
+
+                throw new ReglaNegocioException(
+                        "Espera "
+                                + segundosRestantes
+                                + " segundos antes de solicitar otro código."
+                );
+            }
+
+
+            // El código anterior deja de ser válido.
+
+            codigoAnterior.setUtilizado(true);
+
+            codigoRepository.save(
+                    codigoAnterior
+            );
+        }
+
+
+        crearYEnviarCodigo(usuario);
+    }
+
+
+    // =========================================================
+    // CREAR Y ENVIAR CÓDIGO
+    // =========================================================
+
+    private void crearYEnviarCodigo(
+            Usuario usuario
+    ) {
+
+        // -----------------------------------------------------
+        // GENERAR CÓDIGO DE 6 DÍGITOS
+        // -----------------------------------------------------
+
+        int numero =
+                secureRandom.nextInt(
+                        1_000_000
+                );
+
+
+        String codigo =
+                String.format(
+                        "%06d",
+                        numero
+                );
+
+
+        // -----------------------------------------------------
+        // GUARDAR HASH DEL CÓDIGO
+        // -----------------------------------------------------
+
         CodigoVerificacion verificacion =
                 new CodigoVerificacion();
 
-        verificacion.setUsuario(usuario);
-        verificacion.setCodigoHash(
-                passwordEncoder.encode(codigo)
+
+        verificacion.setUsuario(
+                usuario
         );
+
+
+        verificacion.setCodigoHash(
+                passwordEncoder.encode(
+                        codigo
+                )
+        );
+
 
         verificacion.setFechaCreacion(
                 LocalDateTime.now()
         );
 
+
         verificacion.setFechaExpiracion(
                 LocalDateTime.now()
-                        .plusMinutes(MINUTOS_EXPIRACION)
+                        .plusMinutes(
+                                MINUTOS_EXPIRACION
+                        )
         );
 
+
         verificacion.setIntentos(0);
+
         verificacion.setUtilizado(false);
 
-        codigoRepository.save(verificacion);
 
-        // El código real únicamente viaja por correo
+        codigoRepository.save(
+                verificacion
+        );
+
+
+        // -----------------------------------------------------
+        // PREPARAR CORREO
+        // -----------------------------------------------------
+
         String mensaje =
                 """
                 Hola %s,
@@ -112,15 +220,64 @@ public class CodigoVerificacionService {
                         MINUTOS_EXPIRACION
                 );
 
-        emailService.enviarCorreo(
-                usuario.getCorreo(),
-                "Código de verificación - Sistema de Riesgo Crediticio",
-                mensaje
+
+        try {
+
+            emailService.enviarCorreo(
+                    usuario.getCorreo(),
+                    "Código de verificación - Sistema de Riesgo Crediticio",
+                    mensaje
+            );
+
+        } catch (Exception exception) {
+
+            // Si el correo no pudo enviarse,
+            // invalidamos el código que acabamos de guardar.
+
+            verificacion.setUtilizado(true);
+
+            codigoRepository.save(
+                    verificacion
+            );
+
+
+            throw new ReglaNegocioException(
+                    "No se pudo enviar el código de verificación. Intenta nuevamente."
+            );
+        }
+    }
+
+
+    // =========================================================
+    // INVALIDAR CÓDIGO ANTERIOR
+    // =========================================================
+
+    private void invalidarCodigoAnterior(
+            Usuario usuario
+    ) {
+
+        Optional<CodigoVerificacion> codigoAnterior =
+                codigoRepository
+                        .findFirstByUsuarioIdAndUtilizadoFalseOrderByFechaCreacionDesc(
+                                usuario.getId()
+                        );
+
+
+        codigoAnterior.ifPresent(
+                codigo -> {
+
+                    codigo.setUtilizado(true);
+
+                    codigoRepository.save(
+                            codigo
+                    );
+                }
         );
     }
 
+
     // =========================================================
-    // VERIFICAR CÓDIGO
+    // VALIDAR CÓDIGO
     // =========================================================
 
     public boolean verificarCodigo(
@@ -128,11 +285,15 @@ public class CodigoVerificacionService {
             String codigoIngresado
     ) {
 
-        if (codigoIngresado == null ||
-                !codigoIngresado.matches("\\d{6}")) {
+        if (
+                codigoIngresado == null
+                        ||
+                !codigoIngresado.matches("\\d{6}")
+        ) {
 
             return false;
         }
+
 
         Optional<CodigoVerificacion> resultado =
                 codigoRepository
@@ -140,45 +301,85 @@ public class CodigoVerificacionService {
                                 usuario.getId()
                         );
 
+
         if (resultado.isEmpty()) {
+
             return false;
         }
+
 
         CodigoVerificacion verificacion =
                 resultado.get();
 
-        // Ya fue utilizado
-        if (Boolean.TRUE.equals(
-                verificacion.getUtilizado()
-        )) {
+
+        // -----------------------------------------------------
+        // YA UTILIZADO
+        // -----------------------------------------------------
+
+        if (
+                Boolean.TRUE.equals(
+                        verificacion.getUtilizado()
+                )
+        ) {
+
             return false;
         }
 
-        // Código expirado
-        if (LocalDateTime.now()
-                .isAfter(verificacion.getFechaExpiracion())) {
+
+        // -----------------------------------------------------
+        // EXPIRADO
+        // -----------------------------------------------------
+
+        if (
+                LocalDateTime.now()
+                        .isAfter(
+                                verificacion.getFechaExpiracion()
+                        )
+        ) {
 
             verificacion.setUtilizado(true);
-            codigoRepository.save(verificacion);
+
+            codigoRepository.save(
+                    verificacion
+            );
 
             return false;
         }
 
-        // Demasiados intentos
-        if (verificacion.getIntentos() >= MAX_INTENTOS) {
+
+        // -----------------------------------------------------
+        // MÁXIMO DE INTENTOS
+        // -----------------------------------------------------
+
+        if (
+                verificacion.getIntentos()
+                        >= MAX_INTENTOS
+        ) {
 
             verificacion.setUtilizado(true);
-            codigoRepository.save(verificacion);
+
+            codigoRepository.save(
+                    verificacion
+            );
 
             return false;
         }
 
-        // Verificar BCrypt
+
+        // -----------------------------------------------------
+        // COMPROBAR HASH
+        // -----------------------------------------------------
+
         boolean correcto =
                 passwordEncoder.matches(
                         codigoIngresado,
                         verificacion.getCodigoHash()
                 );
+
+
+        // -----------------------------------------------------
+        // CÓDIGO INCORRECTO
+        // -----------------------------------------------------
 
         if (!correcto) {
 
@@ -186,20 +387,59 @@ public class CodigoVerificacionService {
                     verificacion.getIntentos() + 1
             );
 
-            if (verificacion.getIntentos() >= MAX_INTENTOS) {
+
+            if (
+                    verificacion.getIntentos()
+                            >= MAX_INTENTOS
+            ) {
+
                 verificacion.setUtilizado(true);
             }
 
-            codigoRepository.save(verificacion);
+
+            codigoRepository.save(
+                    verificacion
+            );
+
 
             return false;
         }
 
-        // Código correcto: queda inutilizable
+
+        // -----------------------------------------------------
+        // CÓDIGO CORRECTO
+        // -----------------------------------------------------
+
         verificacion.setUtilizado(true);
 
-        codigoRepository.save(verificacion);
+        codigoRepository.save(
+                verificacion
+        );
+
 
         return true;
+    }
+
+
+    // =========================================================
+    // VALIDAR CORREO
+    // =========================================================
+
+    private void validarCorreoUsuario(
+            Usuario usuario
+    ) {
+
+        if (
+                usuario == null
+                        ||
+                usuario.getCorreo() == null
+                        ||
+                usuario.getCorreo().isBlank()
+        ) {
+
+            throw new ReglaNegocioException(
+                    "El usuario no tiene un correo electrónico registrado."
+            );
+        }
     }
 }

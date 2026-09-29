@@ -20,11 +20,23 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
+
+    // =========================================================
+    // CONSTRUCTOR
+    // =========================================================
+
     public SecurityConfig(
             JwtAuthenticationFilter jwtAuthenticationFilter
     ) {
-        this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+
+        this.jwtAuthenticationFilter =
+                jwtAuthenticationFilter;
     }
+
+
+    // =========================================================
+    // SECURITY FILTER CHAIN
+    // =========================================================
 
     @Bean
     public SecurityFilterChain securityFilterChain(
@@ -36,51 +48,65 @@ public class SecurityConfig {
                 // =================================================
                 // CORS
                 // =================================================
+
                 .cors(cors -> {})
+
 
                 // =================================================
                 // CSRF
                 // =================================================
+
                 .csrf(csrf ->
                         csrf.disable()
                 )
 
+
                 // =================================================
                 // JWT - SIN SESIONES DE SPRING
                 // =================================================
+
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(
                                 SessionCreationPolicy.STATELESS
                         )
                 )
 
+
                 // =================================================
                 // AUTORIZACIÓN
                 // =================================================
+
                 .authorizeHttpRequests(auth -> auth
+
 
                         // ---------------------------------------------
                         // PREFLIGHT CORS
                         // ---------------------------------------------
+
                         .requestMatchers(
                                 HttpMethod.OPTIONS,
                                 "/**"
                         )
                         .permitAll()
 
+
                         // ---------------------------------------------
                         // AUTENTICACIÓN
-                        // LOGIN + VERIFICACIÓN 2FA
+                        // LOGIN + VERIFICACIÓN 2FA + REENVÍO
                         // ---------------------------------------------
+
                         .requestMatchers(
                                 "/api/auth/login",
-                                "/api/auth/verificar-codigo"
+                                "/api/auth/verificar-codigo",
+                                "/api/auth/reenviar-codigo"
                         )
                         .permitAll()
+
 
                         // ---------------------------------------------
                         // CAMBIAR MI PROPIA CONTRASEÑA
                         // ---------------------------------------------
+
                         .requestMatchers(
                                 HttpMethod.PUT,
                                 "/api/usuarios/mi-password"
@@ -91,19 +117,23 @@ public class SecurityConfig {
                                 "GERENCIA"
                         )
 
+
                         // =============================================
                         // USUARIOS
                         // SOLO ADMIN
                         // =============================================
+
                         .requestMatchers(
                                 "/api/usuarios/**"
                         )
                         .hasRole("ADMIN")
 
+
                         // =============================================
                         // DECISIÓN FINAL
                         // ADMIN + ANALISTA
                         // =============================================
+
                         .requestMatchers(
                                 HttpMethod.PUT,
                                 "/api/solicitudes/*/aprobar",
@@ -113,6 +143,7 @@ public class SecurityConfig {
                                 "ADMIN",
                                 "ANALISTA"
                         )
+
 
                         // =============================================
                         // CLIENTES
@@ -128,6 +159,7 @@ public class SecurityConfig {
                                 "ANALISTA"
                         )
 
+
                         // Modificar
                         .requestMatchers(
                                 HttpMethod.PUT,
@@ -137,6 +169,7 @@ public class SecurityConfig {
                                 "ADMIN",
                                 "ANALISTA"
                         )
+
 
                         // Eliminar
                         .requestMatchers(
@@ -148,6 +181,7 @@ public class SecurityConfig {
                                 "ANALISTA"
                         )
 
+
                         // Consultar
                         .requestMatchers(
                                 HttpMethod.GET,
@@ -158,6 +192,7 @@ public class SecurityConfig {
                                 "ANALISTA",
                                 "GERENCIA"
                         )
+
 
                         // =============================================
                         // SOLICITUDES
@@ -173,6 +208,7 @@ public class SecurityConfig {
                                 "ANALISTA"
                         )
 
+
                         // Modificar
                         .requestMatchers(
                                 HttpMethod.PUT,
@@ -182,6 +218,7 @@ public class SecurityConfig {
                                 "ADMIN",
                                 "ANALISTA"
                         )
+
 
                         // Eliminar
                         .requestMatchers(
@@ -193,6 +230,7 @@ public class SecurityConfig {
                                 "ANALISTA"
                         )
 
+
                         // Consultar
                         .requestMatchers(
                                 HttpMethod.GET,
@@ -203,6 +241,7 @@ public class SecurityConfig {
                                 "ANALISTA",
                                 "GERENCIA"
                         )
+
 
                         // =============================================
                         // DOCUMENTOS
@@ -218,6 +257,7 @@ public class SecurityConfig {
                                 "ANALISTA"
                         )
 
+
                         // Modificar
                         .requestMatchers(
                                 HttpMethod.PUT,
@@ -227,6 +267,7 @@ public class SecurityConfig {
                                 "ADMIN",
                                 "ANALISTA"
                         )
+
 
                         // Eliminar
                         .requestMatchers(
@@ -238,6 +279,7 @@ public class SecurityConfig {
                                 "ANALISTA"
                         )
 
+
                         // Consultar
                         .requestMatchers(
                                 HttpMethod.GET,
@@ -248,6 +290,7 @@ public class SecurityConfig {
                                 "ANALISTA",
                                 "GERENCIA"
                         )
+
 
                         // =============================================
                         // EVALUACIONES DE RIESGO
@@ -263,6 +306,7 @@ public class SecurityConfig {
                                 "ANALISTA"
                         )
 
+
                         // Modificar
                         .requestMatchers(
                                 HttpMethod.PUT,
@@ -273,6 +317,7 @@ public class SecurityConfig {
                                 "ANALISTA"
                         )
 
+
                         // Eliminar
                         .requestMatchers(
                                 HttpMethod.DELETE,
@@ -282,6 +327,7 @@ public class SecurityConfig {
                                 "ADMIN",
                                 "ANALISTA"
                         )
+
 
                         // Consultar
                         .requestMatchers(
@@ -294,37 +340,47 @@ public class SecurityConfig {
                                 "GERENCIA"
                         )
 
+
                         // =============================================
                         // CUALQUIER OTRA API
                         // =============================================
+
                         .anyRequest()
                         .authenticated()
                 )
 
+
                 // =================================================
                 // LOGIN TRADICIONAL DESACTIVADO
                 // =================================================
+
                 .formLogin(form ->
                         form.disable()
                 )
 
+
                 // =================================================
                 // HTTP BASIC DESACTIVADO
                 // =================================================
+
                 .httpBasic(basic ->
                         basic.disable()
                 )
 
+
                 // =================================================
                 // FILTRO JWT
                 // =================================================
+
                 .addFilterBefore(
                         jwtAuthenticationFilter,
                         UsernamePasswordAuthenticationFilter.class
                 );
 
+
         return http.build();
     }
+
 
     // =========================================================
     // PASSWORD ENCODER
@@ -332,8 +388,10 @@ public class SecurityConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
+
         return new BCryptPasswordEncoder();
     }
+
 
     // =========================================================
     // CORS
@@ -345,11 +403,13 @@ public class SecurityConfig {
         CorsConfiguration config =
                 new CorsConfiguration();
 
+
         config.setAllowedOrigins(
                 List.of(
                         "http://localhost:5173"
                 )
         );
+
 
         config.setAllowedMethods(
                 List.of(
@@ -362,17 +422,21 @@ public class SecurityConfig {
                 )
         );
 
+
         config.setAllowedHeaders(
                 List.of("*")
         );
 
+
         UrlBasedCorsConfigurationSource source =
                 new UrlBasedCorsConfigurationSource();
+
 
         source.registerCorsConfiguration(
                 "/**",
                 config
         );
+
 
         return source;
     }

@@ -8,17 +8,26 @@ import com.cooperativa.cooperativaBackend.service.AuthService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
 
     private final AuthService authService;
 
+
+    // =========================================================
+    // CONSTRUCTOR
+    // =========================================================
+
     public AuthController(
             AuthService authService
     ) {
+
         this.authService = authService;
     }
+
 
     // =========================================================
     // PASO 1
@@ -31,10 +40,16 @@ public class AuthController {
     ) {
 
         LoginResponse response =
-                authService.login(request);
+                authService.login(
+                        request
+                );
 
-        return ResponseEntity.ok(response);
+
+        return ResponseEntity.ok(
+                response
+        );
     }
+
 
     // =========================================================
     // PASO 2
@@ -47,8 +62,40 @@ public class AuthController {
     ) {
 
         LoginResponse response =
-                authService.verificarCodigo(request);
+                authService.verificarCodigo(
+                        request
+                );
 
-        return ResponseEntity.ok(response);
+
+        return ResponseEntity.ok(
+                response
+        );
+    }
+
+
+    // =========================================================
+    // REENVIAR CÓDIGO 2FA
+    // =========================================================
+
+    @PostMapping("/reenviar-codigo")
+    public ResponseEntity<LoginResponse> reenviarCodigo(
+            @RequestBody Map<String, String> request
+    ) {
+
+        String username =
+                request.get(
+                        "username"
+                );
+
+
+        LoginResponse response =
+                authService.reenviarCodigo(
+                        username
+                );
+
+
+        return ResponseEntity.ok(
+                response
+        );
     }
 }

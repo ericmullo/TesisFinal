@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+
 
 function Login() {
 
   const navigate = useNavigate();
+
 
   // =========================================================
   // DATOS LOGIN
@@ -12,12 +14,17 @@ function Login() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
 
+
   // =========================================================
   // DATOS 2FA
   // =========================================================
 
   const [codigo, setCodigo] = useState("");
   const [esperandoCodigo, setEsperandoCodigo] = useState(false);
+
+  const [segundosReenvio, setSegundosReenvio] = useState(60);
+  const [reenviando, setReenviando] = useState(false);
+
 
   // =========================================================
   // ESTADO GENERAL
@@ -27,6 +34,53 @@ function Login() {
   const [mensaje, setMensaje] = useState("");
   const [cargando, setCargando] = useState(false);
   const [mostrarPassword, setMostrarPassword] = useState(false);
+
+
+  // =========================================================
+  // CONTADOR PARA REENVIAR CÓDIGO
+  // =========================================================
+
+  useEffect(() => {
+
+    if (!esperandoCodigo) {
+      return;
+    }
+
+
+    if (segundosReenvio <= 0) {
+      return;
+    }
+
+
+    const temporizador = setInterval(() => {
+
+      setSegundosReenvio(
+        (segundosActuales) => {
+
+          if (segundosActuales <= 1) {
+
+            clearInterval(temporizador);
+
+            return 0;
+          }
+
+          return segundosActuales - 1;
+        }
+      );
+
+    }, 1000);
+
+
+    return () => {
+
+      clearInterval(temporizador);
+
+    };
+
+  }, [
+    esperandoCodigo,
+    segundosReenvio,
+  ]);
 
 
   // =========================================================
@@ -42,8 +96,11 @@ function Login() {
 
       const errorData = await response.json();
 
+
       if (errorData?.mensaje) {
+
         return errorData.mensaje;
+
       }
 
     } catch {
@@ -52,6 +109,7 @@ function Login() {
       // usamos el mensaje por defecto.
 
     }
+
 
     return mensajePorDefecto;
   };
@@ -90,6 +148,7 @@ function Login() {
       const response = await fetch(
         "http://localhost:8080/api/auth/login",
         {
+
           method: "POST",
 
           headers: {
@@ -97,9 +156,12 @@ function Login() {
           },
 
           body: JSON.stringify({
+
             username: username.trim(),
             password: password,
+
           }),
+
         }
       );
 
@@ -115,6 +177,7 @@ function Login() {
             response,
             "No se pudo iniciar sesión."
           );
+
 
         setError(mensajeError);
 
@@ -146,6 +209,8 @@ function Login() {
 
       setCodigo("");
 
+      setSegundosReenvio(60);
+
       setMensaje(
         respuesta?.mensaje ||
         "Código de verificación enviado al correo registrado."
@@ -158,6 +223,7 @@ function Login() {
         "Error al iniciar sesión:",
         error
       );
+
 
       setError(
         "No se pudo conectar con el servidor."
@@ -216,6 +282,7 @@ function Login() {
       const response = await fetch(
         "http://localhost:8080/api/auth/verificar-codigo",
         {
+
           method: "POST",
 
           headers: {
@@ -223,9 +290,12 @@ function Login() {
           },
 
           body: JSON.stringify({
+
             username: username.trim(),
             codigo: codigo.trim(),
+
           }),
+
         }
       );
 
@@ -241,6 +311,7 @@ function Login() {
             response,
             "Código de verificación incorrecto o expirado."
           );
+
 
         setError(mensajeError);
 
@@ -286,11 +357,13 @@ function Login() {
       sessionStorage.setItem(
         "usuario",
         JSON.stringify({
+
           id: usuario.id,
           username: usuario.username,
           nombres: usuario.nombres,
           apellidos: usuario.apellidos,
           rol: usuario.rol,
+
         })
       );
 
@@ -314,6 +387,7 @@ function Login() {
         error
       );
 
+
       setError(
         "No se pudo conectar con el servidor."
       );
@@ -329,14 +403,129 @@ function Login() {
 
 
   // =========================================================
+  // REENVIAR CÓDIGO
+  // =========================================================
+
+  const reenviarCodigo = async () => {
+
+    if (
+      segundosReenvio > 0 ||
+      reenviando ||
+      cargando
+    ) {
+
+      return;
+    }
+
+
+    setError("");
+    setMensaje("");
+
+
+    try {
+
+      setReenviando(true);
+
+
+      const response = await fetch(
+        "http://localhost:8080/api/auth/reenviar-codigo",
+        {
+
+          method: "POST",
+
+          headers: {
+            "Content-Type": "application/json",
+          },
+
+          body: JSON.stringify({
+
+            username: username.trim(),
+
+          }),
+
+        }
+      );
+
+
+      // -------------------------------------------------------
+      // ERROR AL REENVIAR
+      // -------------------------------------------------------
+
+      if (!response.ok) {
+
+        const mensajeError =
+          await obtenerMensajeError(
+            response,
+            "No se pudo reenviar el código."
+          );
+
+
+        setError(mensajeError);
+
+        return;
+      }
+
+
+      // -------------------------------------------------------
+      // CÓDIGO REENVIADO
+      // -------------------------------------------------------
+
+      const respuesta = await response.json();
+
+
+      // Borramos cualquier código que el usuario
+      // hubiera escrito anteriormente.
+
+      setCodigo("");
+
+
+      // Reiniciamos el contador.
+
+      setSegundosReenvio(60);
+
+
+      setMensaje(
+        respuesta?.mensaje ||
+        "Se envió un nuevo código de verificación."
+      );
+
+
+    } catch (error) {
+
+      console.error(
+        "Error al reenviar código:",
+        error
+      );
+
+
+      setError(
+        "No se pudo conectar con el servidor."
+      );
+
+
+    } finally {
+
+      setReenviando(false);
+
+    }
+
+  };
+
+
+  // =========================================================
   // VOLVER AL LOGIN
   // =========================================================
 
   const volverLogin = () => {
 
-    if (cargando) {
+    if (
+      cargando ||
+      reenviando
+    ) {
+
       return;
     }
+
 
     setEsperandoCodigo(false);
 
@@ -348,6 +537,8 @@ function Login() {
 
     setMensaje("");
 
+    setSegundosReenvio(60);
+
   };
 
 
@@ -358,11 +549,19 @@ function Login() {
   const manejarTecla = (event) => {
 
     if (event.key !== "Enter") {
+
       return;
+
     }
 
-    if (cargando) {
+
+    if (
+      cargando ||
+      reenviando
+    ) {
+
       return;
+
     }
 
 
@@ -391,6 +590,7 @@ function Login() {
         .replace(/\D/g, "")
         .slice(0, 6);
 
+
     setCodigo(valor);
 
   };
@@ -416,6 +616,7 @@ function Login() {
   return (
 
     <div className="login-page">
+
 
       <div className="login-logo-top">
 
@@ -618,6 +819,7 @@ function Login() {
                     🔐
                   </div>
 
+
                   <h3
                     style={{
                       margin: "0 0 7px 0",
@@ -626,6 +828,7 @@ function Login() {
                   >
                     Verificación de seguridad
                   </h3>
+
 
                   <p
                     style={{
@@ -653,7 +856,10 @@ function Login() {
                     onKeyDown={manejarTecla}
                     autoComplete="one-time-code"
                     maxLength={6}
-                    disabled={cargando}
+                    disabled={
+                      cargando ||
+                      reenviando
+                    }
                     autoFocus
                     style={{
                       letterSpacing: "4px",
@@ -665,6 +871,70 @@ function Login() {
                   <span>
                     🔑
                   </span>
+
+                </div>
+
+
+                {/* =============================================
+                    REENVÍO DEL CÓDIGO
+                ============================================= */}
+
+                <div
+                  style={{
+                    textAlign: "center",
+                    marginTop: "-2px",
+                    marginBottom: "16px",
+                    fontSize: "13px",
+                  }}
+                >
+
+                  {segundosReenvio > 0 ? (
+
+                    <span
+                      style={{
+                        color: "#667085",
+                      }}
+                    >
+                      Podrás reenviar el código en{" "}
+
+                      <strong>
+                        {segundosReenvio} s
+                      </strong>
+
+                    </span>
+
+                  ) : (
+
+                    <button
+                      type="button"
+                      onClick={reenviarCodigo}
+                      disabled={
+                        reenviando ||
+                        cargando
+                      }
+                      style={{
+                        border: "none",
+                        background: "transparent",
+                        color: "#027a48",
+                        cursor:
+                          reenviando ||
+                          cargando
+                            ? "default"
+                            : "pointer",
+                        fontWeight: "600",
+                        fontSize: "13px",
+                        padding: "4px 8px",
+                        textDecoration: "underline",
+                      }}
+                    >
+
+                      {reenviando
+                        ? "Reenviando..."
+                        : "📩 Reenviar código"}
+
+                    </button>
+
+                  )}
 
                 </div>
 
@@ -750,6 +1020,7 @@ function Login() {
                 onClick={verificarCodigo}
                 disabled={
                   cargando ||
+                  reenviando ||
                   codigo.length !== 6
                 }
               >
@@ -775,9 +1046,7 @@ function Login() {
                   href="#"
                   onClick={recuperarPassword}
                 >
-
                   ¿Olvidaste tu contraseña?
-
                 </a>
 
               </div>
@@ -801,20 +1070,16 @@ function Login() {
 
                   }}
                 >
-
                   ← Volver al inicio de sesión
-
                 </a>
 
               </div>
 
             )}
 
-
           </div>
 
         </section>
-
 
       </main>
 
@@ -823,5 +1088,6 @@ function Login() {
   );
 
 }
+
 
 export default Login;
