@@ -1,16 +1,48 @@
 package com.cooperativa.cooperativaBackend.repository;
 
+import com.cooperativa.cooperativaBackend.model.Rol;
 import com.cooperativa.cooperativaBackend.model.Usuario;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface UsuarioRepository
         extends JpaRepository<Usuario, Long> {
 
-    Optional<Usuario> findByUsername(String username);
+    // =========================================================
+    // BUSCAR POR USERNAME
+    // =========================================================
 
-    boolean existsByUsername(String username);
+    Optional<Usuario> findByUsername(
+            String username
+    );
 
-    boolean existsByCorreo(String correo);
+
+    // =========================================================
+    // VALIDAR USERNAME EXISTENTE
+    // =========================================================
+
+    boolean existsByUsername(
+            String username
+    );
+
+
+    // =========================================================
+    // VALIDAR CORREO EXISTENTE
+    // =========================================================
+
+    boolean existsByCorreo(
+            String correo
+    );
+
+
+    // =========================================================
+    // BUSCAR USUARIOS ACTIVOS POR ROL
+    // =========================================================
+
+    List<Usuario> findByRolAndActivoTrue(
+            Rol rol
+    );
 }

@@ -3,13 +3,20 @@ package com.cooperativa.cooperativaBackend.service;
 import com.cooperativa.cooperativaBackend.exception.RecursoNoEncontradoException;
 import com.cooperativa.cooperativaBackend.exception.ReglaNegocioException;
 import com.cooperativa.cooperativaBackend.exception.ValidacionException;
+
 import com.cooperativa.cooperativaBackend.model.Cliente;
 import com.cooperativa.cooperativaBackend.model.EvaluacionRiesgo;
+import com.cooperativa.cooperativaBackend.model.Rol;
 import com.cooperativa.cooperativaBackend.model.Solicitud;
+import com.cooperativa.cooperativaBackend.model.Usuario;
+
 import com.cooperativa.cooperativaBackend.repository.ClienteRepository;
 import com.cooperativa.cooperativaBackend.repository.EvaluacionRiesgoRepository;
 import com.cooperativa.cooperativaBackend.repository.SolicitudRepository;
+import com.cooperativa.cooperativaBackend.repository.UsuarioRepository;
+
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -18,17 +25,42 @@ import java.util.List;
 public class SolicitudService {
 
     private final SolicitudRepository solicitudRepository;
+
     private final ClienteRepository clienteRepository;
+
     private final EvaluacionRiesgoRepository evaluacionRiesgoRepository;
+
+    private final UsuarioRepository usuarioRepository;
+
+    private final NotificacionService notificacionService;
+
+
+    // =========================================================
+    // CONSTRUCTOR
+    // =========================================================
 
     public SolicitudService(
             SolicitudRepository solicitudRepository,
             ClienteRepository clienteRepository,
-            EvaluacionRiesgoRepository evaluacionRiesgoRepository
+            EvaluacionRiesgoRepository evaluacionRiesgoRepository,
+            UsuarioRepository usuarioRepository,
+            NotificacionService notificacionService
     ) {
-        this.solicitudRepository = solicitudRepository;
-        this.clienteRepository = clienteRepository;
-        this.evaluacionRiesgoRepository = evaluacionRiesgoRepository;
+
+        this.solicitudRepository =
+                solicitudRepository;
+
+        this.clienteRepository =
+                clienteRepository;
+
+        this.evaluacionRiesgoRepository =
+                evaluacionRiesgoRepository;
+
+        this.usuarioRepository =
+                usuarioRepository;
+
+        this.notificacionService =
+                notificacionService;
     }
 
 
@@ -37,6 +69,7 @@ public class SolicitudService {
     // =========================================================
 
     public List<Solicitud> obtenerSolicitudes() {
+
         return solicitudRepository.findAll();
     }
 
@@ -45,9 +78,12 @@ public class SolicitudService {
     // OBTENER POR ID
     // =========================================================
 
-    public Solicitud obtenerSolicitudPorId(Long id) {
+    public Solicitud obtenerSolicitudPorId(
+            Long id
+    ) {
 
-        return solicitudRepository.findById(id)
+        return solicitudRepository
+                .findById(id)
                 .orElseThrow(() ->
                         new RecursoNoEncontradoException(
                                 "Solicitud no encontrada con ID: " + id
@@ -60,17 +96,22 @@ public class SolicitudService {
     // CREAR
     // =========================================================
 
+    @Transactional
     public Solicitud crearSolicitud(
             Long clienteId,
             Solicitud solicitud
     ) {
 
-        Cliente cliente = clienteRepository.findById(clienteId)
-                .orElseThrow(() ->
-                        new RecursoNoEncontradoException(
-                                "Cliente no encontrado con ID: " + clienteId
-                        )
-                );
+        Cliente cliente =
+                clienteRepository
+                        .findById(clienteId)
+                        .orElseThrow(() ->
+                                new RecursoNoEncontradoException(
+                                        "Cliente no encontrado con ID: "
+                                                + clienteId
+                                )
+                        );
+
 
         /*
          * Una solicitud nueva:
@@ -85,14 +126,45 @@ public class SolicitudService {
          */
 
         solicitud.setId(null);
-        solicitud.setCliente(cliente);
 
-        solicitud.setEstado("Pendiente");
+        solicitud.setCliente(
+                cliente
+        );
 
-        solicitud.setObservacionDecision(null);
-        solicitud.setFechaDecision(null);
+        solicitud.setEstado(
+                "Pendiente"
+        );
 
-        return solicitudRepository.save(solicitud);
+        solicitud.setObservacionDecision(
+                null
+        );
+
+        solicitud.setFechaDecision(
+                null
+        );
+
+
+        // =====================================================
+        // GUARDAR SOLICITUD
+        // =====================================================
+
+        Solicitud solicitudGuardada =
+                solicitudRepository.save(
+                        solicitud
+                );
+
+
+        // =====================================================
+        // NOTIFICAR NUEVA SOLICITUD
+        // ADMIN + ANALISTA
+        // =====================================================
+
+        notificarNuevaSolicitud(
+                solicitudGuardada
+        );
+
+
+        return solicitudGuardada;
     }
 
 
@@ -106,19 +178,26 @@ public class SolicitudService {
             Solicitud datosActualizados
     ) {
 
-        Solicitud solicitud = solicitudRepository.findById(id)
-                .orElseThrow(() ->
-                        new RecursoNoEncontradoException(
-                                "Solicitud no encontrada con ID: " + id
-                        )
-                );
+        Solicitud solicitud =
+                solicitudRepository
+                        .findById(id)
+                        .orElseThrow(() ->
+                                new RecursoNoEncontradoException(
+                                        "Solicitud no encontrada con ID: "
+                                                + id
+                                )
+                        );
 
-        Cliente cliente = clienteRepository.findById(clienteId)
-                .orElseThrow(() ->
-                        new RecursoNoEncontradoException(
-                                "Cliente no encontrado con ID: " + clienteId
-                        )
-                );
+
+        Cliente cliente =
+                clienteRepository
+                        .findById(clienteId)
+                        .orElseThrow(() ->
+                                new RecursoNoEncontradoException(
+                                        "Cliente no encontrado con ID: "
+                                                + clienteId
+                                )
+                        );
 
 
         // =====================================================
@@ -208,9 +287,14 @@ public class SolicitudService {
          */
 
 
-        solicitud.setCliente(cliente);
+        solicitud.setCliente(
+                cliente
+        );
 
-        return solicitudRepository.save(solicitud);
+
+        return solicitudRepository.save(
+                solicitud
+        );
     }
 
 
@@ -218,26 +302,42 @@ public class SolicitudService {
     // APROBAR SOLICITUD
     // =========================================================
 
+    @Transactional
     public Solicitud aprobarSolicitud(
             Long id,
             String observacion
     ) {
 
         Solicitud solicitud =
-                obtenerSolicitudPorId(id);
+                obtenerSolicitudPorId(
+                        id
+                );
 
 
         // Debe existir evaluación IA completada
-        verificarEvaluacionCompletada(id);
+
+        verificarEvaluacionCompletada(
+                id
+        );
 
 
         // Debe existir una observación válida
-        validarObservacion(observacion);
+
+        validarObservacion(
+                observacion
+        );
 
 
         // No puede existir una decisión anterior
-        verificarSinDecisionFinal(solicitud);
 
+        verificarSinDecisionFinal(
+                solicitud
+        );
+
+
+        // =====================================================
+        // REGISTRAR DECISIÓN
+        // =====================================================
 
         solicitud.setEstado(
                 "Aprobado"
@@ -254,9 +354,24 @@ public class SolicitudService {
         );
 
 
-        return solicitudRepository.save(
-                solicitud
+        Solicitud solicitudGuardada =
+                solicitudRepository.save(
+                        solicitud
+                );
+
+
+        // =====================================================
+        // NOTIFICAR DECISIÓN
+        // ADMIN + ANALISTA + GERENCIA
+        // =====================================================
+
+        notificarDecisionSolicitud(
+                solicitudGuardada,
+                "APROBADA"
         );
+
+
+        return solicitudGuardada;
     }
 
 
@@ -264,26 +379,42 @@ public class SolicitudService {
     // RECHAZAR SOLICITUD
     // =========================================================
 
+    @Transactional
     public Solicitud rechazarSolicitud(
             Long id,
             String observacion
     ) {
 
         Solicitud solicitud =
-                obtenerSolicitudPorId(id);
+                obtenerSolicitudPorId(
+                        id
+                );
 
 
         // Debe existir evaluación IA completada
-        verificarEvaluacionCompletada(id);
+
+        verificarEvaluacionCompletada(
+                id
+        );
 
 
         // Debe existir una observación válida
-        validarObservacion(observacion);
+
+        validarObservacion(
+                observacion
+        );
 
 
         // No puede existir una decisión anterior
-        verificarSinDecisionFinal(solicitud);
 
+        verificarSinDecisionFinal(
+                solicitud
+        );
+
+
+        // =====================================================
+        // REGISTRAR DECISIÓN
+        // =====================================================
 
         solicitud.setEstado(
                 "Rechazado"
@@ -300,9 +431,299 @@ public class SolicitudService {
         );
 
 
-        return solicitudRepository.save(
-                solicitud
+        Solicitud solicitudGuardada =
+                solicitudRepository.save(
+                        solicitud
+                );
+
+
+        // =====================================================
+        // NOTIFICAR DECISIÓN
+        // ADMIN + ANALISTA + GERENCIA
+        // =====================================================
+
+        notificarDecisionSolicitud(
+                solicitudGuardada,
+                "RECHAZADA"
         );
+
+
+        return solicitudGuardada;
+    }
+
+
+    // =========================================================
+    // NOTIFICAR NUEVA SOLICITUD
+    // =========================================================
+
+    private void notificarNuevaSolicitud(
+            Solicitud solicitud
+    ) {
+
+        String nombreCliente =
+                obtenerNombreCliente(
+                        solicitud
+                );
+
+
+        String mensaje =
+                "Se registró la solicitud #"
+                        + solicitud.getId()
+                        + " del cliente "
+                        + nombreCliente
+                        + ".";
+
+
+        // =====================================================
+        // ADMIN
+        // =====================================================
+
+        List<Usuario> administradores =
+                usuarioRepository
+                        .findByRolAndActivoTrue(
+                                Rol.ADMIN
+                        );
+
+
+        for (
+                Usuario usuario
+                :
+                administradores
+        ) {
+
+            notificacionService
+                    .crearNotificacion(
+                            usuario.getId(),
+                            "Nueva solicitud registrada",
+                            mensaje,
+                            "SOLICITUD",
+                            "SOLICITUD",
+                            solicitud.getId(),
+                            "/solicitudes"
+                    );
+        }
+
+
+        // =====================================================
+        // ANALISTAS
+        // =====================================================
+
+        List<Usuario> analistas =
+                usuarioRepository
+                        .findByRolAndActivoTrue(
+                                Rol.ANALISTA
+                        );
+
+
+        for (
+                Usuario usuario
+                :
+                analistas
+        ) {
+
+            notificacionService
+                    .crearNotificacion(
+                            usuario.getId(),
+                            "Nueva solicitud registrada",
+                            mensaje,
+                            "SOLICITUD",
+                            "SOLICITUD",
+                            solicitud.getId(),
+                            "/solicitudes"
+                    );
+        }
+    }
+
+
+    // =========================================================
+    // NOTIFICAR DECISIÓN FINAL
+    // =========================================================
+
+    private void notificarDecisionSolicitud(
+            Solicitud solicitud,
+            String decision
+    ) {
+
+        String nombreCliente =
+                obtenerNombreCliente(
+                        solicitud
+                );
+
+
+        String titulo;
+
+        String mensaje;
+
+
+        if (
+                "APROBADA".equalsIgnoreCase(
+                        decision
+                )
+        ) {
+
+            titulo =
+                    "Solicitud aprobada";
+
+            mensaje =
+                    "La solicitud #"
+                            + solicitud.getId()
+                            + " del cliente "
+                            + nombreCliente
+                            + " fue aprobada.";
+
+        } else {
+
+            titulo =
+                    "Solicitud rechazada";
+
+            mensaje =
+                    "La solicitud #"
+                            + solicitud.getId()
+                            + " del cliente "
+                            + nombreCliente
+                            + " fue rechazada.";
+        }
+
+
+        // =====================================================
+        // ADMIN
+        // =====================================================
+
+        List<Usuario> administradores =
+                usuarioRepository
+                        .findByRolAndActivoTrue(
+                                Rol.ADMIN
+                        );
+
+
+        for (
+                Usuario usuario
+                :
+                administradores
+        ) {
+
+            notificacionService
+                    .crearNotificacion(
+                            usuario.getId(),
+                            titulo,
+                            mensaje,
+                            "DECISION",
+                            "SOLICITUD",
+                            solicitud.getId(),
+                            "/evaluacion-riesgo"
+                    );
+        }
+
+
+        // =====================================================
+        // ANALISTAS
+        // =====================================================
+
+        List<Usuario> analistas =
+                usuarioRepository
+                        .findByRolAndActivoTrue(
+                                Rol.ANALISTA
+                        );
+
+
+        for (
+                Usuario usuario
+                :
+                analistas
+        ) {
+
+            notificacionService
+                    .crearNotificacion(
+                            usuario.getId(),
+                            titulo,
+                            mensaje,
+                            "DECISION",
+                            "SOLICITUD",
+                            solicitud.getId(),
+                            "/evaluacion-riesgo"
+                    );
+        }
+
+
+        // =====================================================
+        // GERENCIA
+        // =====================================================
+
+        List<Usuario> gerencia =
+                usuarioRepository
+                        .findByRolAndActivoTrue(
+                                Rol.GERENCIA
+                        );
+
+
+        for (
+                Usuario usuario
+                :
+                gerencia
+        ) {
+
+            notificacionService
+                    .crearNotificacion(
+                            usuario.getId(),
+                            titulo,
+                            mensaje,
+                            "DECISION",
+                            "SOLICITUD",
+                            solicitud.getId(),
+                            "/evaluacion-riesgo"
+                    );
+        }
+    }
+
+
+    // =========================================================
+    // OBTENER NOMBRE DEL CLIENTE
+    // =========================================================
+
+    private String obtenerNombreCliente(
+            Solicitud solicitud
+    ) {
+
+        if (
+                solicitud == null
+                        ||
+                solicitud.getCliente() == null
+        ) {
+
+            return "Cliente";
+        }
+
+
+        Cliente cliente =
+                solicitud.getCliente();
+
+
+        String nombres =
+                cliente.getNombres() == null
+                        ? ""
+                        : cliente.getNombres().trim();
+
+
+        String apellidos =
+                cliente.getApellidos() == null
+                        ? ""
+                        : cliente.getApellidos().trim();
+
+
+        String nombreCompleto =
+                (nombres + " " + apellidos)
+                        .trim();
+
+
+        if (
+                nombreCompleto.isBlank()
+        ) {
+
+            return "Cliente";
+        }
+
+
+        return nombreCompleto;
     }
 
 
@@ -327,7 +748,9 @@ public class SolicitudService {
 
 
         if (
-                observacion.trim().length() < 5
+                observacion
+                        .trim()
+                        .length() < 5
         ) {
 
             throw new ValidacionException(
@@ -397,7 +820,8 @@ public class SolicitudService {
 
 
         boolean completada =
-                evaluaciones.stream()
+                evaluaciones
+                        .stream()
                         .anyMatch(
                                 evaluacion ->
                                         evaluacion.getEstado() != null
@@ -430,7 +854,10 @@ public class SolicitudService {
     ) {
 
         Solicitud solicitud =
-                obtenerSolicitudPorId(id);
+                obtenerSolicitudPorId(
+                        id
+                );
+
 
         solicitudRepository.delete(
                 solicitud

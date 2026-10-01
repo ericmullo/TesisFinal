@@ -1,5 +1,14 @@
-import { useState } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import {
+  useEffect,
+  useRef,
+  useState
+} from "react";
+
+import {
+  NavLink,
+  useNavigate
+} from "react-router-dom";
+
 
 function Layout({
   title,
@@ -45,6 +54,26 @@ function Layout({
 
 
   // =========================================================
+  // ESTADOS - NOTIFICACIONES
+  // =========================================================
+
+  const [notificaciones, setNotificaciones] =
+    useState([]);
+
+  const [contadorNoLeidas, setContadorNoLeidas] =
+    useState(0);
+
+  const [mostrarNotificaciones, setMostrarNotificaciones] =
+    useState(false);
+
+  const [cargandoNotificaciones, setCargandoNotificaciones] =
+    useState(false);
+
+  const notificacionesRef =
+    useRef(null);
+
+
+  // =========================================================
   // OBTENER USUARIO DE LA SESIÓN
   // =========================================================
 
@@ -56,7 +85,8 @@ function Layout({
       sessionStorage.getItem("usuario");
 
     if (usuarioGuardado) {
-      usuario = JSON.parse(usuarioGuardado);
+      usuario =
+        JSON.parse(usuarioGuardado);
     }
 
   } catch (error) {
@@ -65,7 +95,6 @@ function Layout({
       "Error al obtener el usuario de la sesión:",
       error
     );
-
   }
 
 
@@ -98,7 +127,6 @@ function Layout({
       default:
         return "Usuario";
     }
-
   };
 
 
@@ -126,45 +154,472 @@ function Layout({
     navigate("/", {
       replace: true
     });
-
   };
+
+
+  // =========================================================
+  // NOTIFICACIONES - CONTADOR
+  // =========================================================
+
+  const cargarContadorNotificaciones =
+    async () => {
+
+      const token =
+        sessionStorage.getItem("token");
+
+      if (!token) {
+        return;
+      }
+
+      try {
+
+        const response = await fetch(
+          "http://localhost:8080/api/notificaciones/contador",
+          {
+            headers: {
+              Authorization:
+                `Bearer ${token}`
+            }
+          }
+        );
+
+
+        if (response.status === 401) {
+
+          cerrarSesion();
+
+          return;
+        }
+
+
+        if (!response.ok) {
+          return;
+        }
+
+
+        const datos =
+          await response.json();
+
+
+        setContadorNoLeidas(
+          Number(datos.noLeidas) || 0
+        );
+
+      } catch (error) {
+
+        console.error(
+          "Error al obtener contador de notificaciones:",
+          error
+        );
+      }
+    };
+
+
+  // =========================================================
+  // CARGAR NOTIFICACIONES
+  // =========================================================
+
+  const cargarNotificaciones =
+    async () => {
+
+      const token =
+        sessionStorage.getItem("token");
+
+      if (!token) {
+        return;
+      }
+
+
+      try {
+
+        setCargandoNotificaciones(
+          true
+        );
+
+
+        const response = await fetch(
+          "http://localhost:8080/api/notificaciones",
+          {
+            headers: {
+              Authorization:
+                `Bearer ${token}`
+            }
+          }
+        );
+
+
+        if (response.status === 401) {
+
+          cerrarSesion();
+
+          return;
+        }
+
+
+        if (!response.ok) {
+
+          throw new Error(
+            "No se pudieron obtener las notificaciones."
+          );
+        }
+
+
+        const datos =
+          await response.json();
+
+
+        setNotificaciones(
+          Array.isArray(datos)
+            ? datos
+            : []
+        );
+
+      } catch (error) {
+
+        console.error(
+          "Error al cargar notificaciones:",
+          error
+        );
+
+      } finally {
+
+        setCargandoNotificaciones(
+          false
+        );
+      }
+    };
+
+
+  // =========================================================
+  // ABRIR / CERRAR CAMPANA
+  // =========================================================
+
+  const alternarNotificaciones =
+    async () => {
+
+      const nuevoEstado =
+        !mostrarNotificaciones;
+
+
+      setMostrarNotificaciones(
+        nuevoEstado
+      );
+
+
+      if (nuevoEstado) {
+
+        await cargarNotificaciones();
+
+        await cargarContadorNotificaciones();
+      }
+    };
+
+
+  // =========================================================
+  // MARCAR UNA NOTIFICACIÓN COMO LEÍDA
+  // =========================================================
+
+  const abrirNotificacion =
+    async (notificacion) => {
+
+      const token =
+        sessionStorage.getItem("token");
+
+
+      if (!token) {
+
+        cerrarSesion();
+
+        return;
+      }
+
+
+      try {
+
+        if (!notificacion.leida) {
+
+          const response = await fetch(
+            `http://localhost:8080/api/notificaciones/${notificacion.id}/leer`,
+            {
+              method: "PUT",
+
+              headers: {
+                Authorization:
+                  `Bearer ${token}`
+              }
+            }
+          );
+
+
+          if (response.status === 401) {
+
+            cerrarSesion();
+
+            return;
+          }
+
+
+          if (!response.ok) {
+
+            throw new Error(
+              "No se pudo marcar la notificación como leída."
+            );
+          }
+
+
+          setNotificaciones(
+            (anteriores) =>
+              anteriores.map(
+                (item) =>
+                  item.id ===
+                  notificacion.id
+                    ? {
+                        ...item,
+                        leida: true
+                      }
+                    : item
+              )
+          );
+
+
+          setContadorNoLeidas(
+            (anterior) =>
+              Math.max(
+                0,
+                anterior - 1
+              )
+          );
+        }
+
+
+        setMostrarNotificaciones(
+          false
+        );
+
+
+        if (notificacion.ruta) {
+
+          navigate(
+            notificacion.ruta
+          );
+        }
+
+      } catch (error) {
+
+        console.error(
+          "Error al abrir la notificación:",
+          error
+        );
+      }
+    };
+
+
+  // =========================================================
+  // MARCAR TODAS COMO LEÍDAS
+  // =========================================================
+
+  const marcarTodasComoLeidas =
+    async () => {
+
+      const token =
+        sessionStorage.getItem("token");
+
+
+      if (!token) {
+
+        cerrarSesion();
+
+        return;
+      }
+
+
+      try {
+
+        const response = await fetch(
+          "http://localhost:8080/api/notificaciones/leer-todas",
+          {
+            method: "PUT",
+
+            headers: {
+              Authorization:
+                `Bearer ${token}`
+            }
+          }
+        );
+
+
+        if (response.status === 401) {
+
+          cerrarSesion();
+
+          return;
+        }
+
+
+        if (!response.ok) {
+
+          throw new Error(
+            "No se pudieron marcar todas las notificaciones."
+          );
+        }
+
+
+        setNotificaciones(
+          (anteriores) =>
+            anteriores.map(
+              (item) => ({
+                ...item,
+                leida: true
+              })
+            )
+        );
+
+
+        setContadorNoLeidas(0);
+
+      } catch (error) {
+
+        console.error(
+          "Error al marcar todas como leídas:",
+          error
+        );
+      }
+    };
+
+
+  // =========================================================
+  // FORMATEAR FECHA DE NOTIFICACIÓN
+  // =========================================================
+
+  const formatearFechaNotificacion =
+    (fecha) => {
+
+      if (!fecha) {
+        return "";
+      }
+
+
+      try {
+
+        return new Date(fecha)
+          .toLocaleString(
+            "es-EC",
+            {
+              dateStyle: "short",
+              timeStyle: "short"
+            }
+          );
+
+      } catch {
+
+        return fecha;
+      }
+    };
+
+
+  // =========================================================
+  // CARGAR CONTADOR AUTOMÁTICAMENTE
+  // =========================================================
+
+  useEffect(() => {
+
+    cargarContadorNotificaciones();
+
+
+    const intervalo =
+      setInterval(
+        cargarContadorNotificaciones,
+        30000
+      );
+
+
+    return () => {
+
+      clearInterval(
+        intervalo
+      );
+    };
+
+  }, []);
+
+
+  // =========================================================
+  // CERRAR NOTIFICACIONES AL HACER CLIC FUERA
+  // =========================================================
+
+  useEffect(() => {
+
+    const cerrarAlHacerClickFuera =
+      (event) => {
+
+        if (
+          notificacionesRef.current
+          &&
+          !notificacionesRef.current.contains(
+            event.target
+          )
+        ) {
+
+          setMostrarNotificaciones(
+            false
+          );
+        }
+      };
+
+
+    document.addEventListener(
+      "mousedown",
+      cerrarAlHacerClickFuera
+    );
+
+
+    return () => {
+
+      document.removeEventListener(
+        "mousedown",
+        cerrarAlHacerClickFuera
+      );
+    };
+
+  }, []);
 
 
   // =========================================================
   // LIMPIAR FORMULARIO DE CONTRASEÑA
   // =========================================================
 
-  const limpiarFormularioPassword = () => {
+  const limpiarFormularioPassword =
+    () => {
 
-    setPasswordActual("");
-    setNuevaPassword("");
-    setConfirmarPassword("");
+      setPasswordActual("");
+      setNuevaPassword("");
+      setConfirmarPassword("");
 
-    setMostrarPasswordActual(false);
-    setMostrarNuevaPassword(false);
-    setMostrarConfirmacion(false);
+      setMostrarPasswordActual(false);
+      setMostrarNuevaPassword(false);
+      setMostrarConfirmacion(false);
 
-    setErrorPassword("");
-    setMensajePassword("");
-
-  };
+      setErrorPassword("");
+      setMensajePassword("");
+    };
 
 
   // =========================================================
-  // ABRIR MODAL
+  // ABRIR MODAL CONTRASEÑA
   // =========================================================
 
   const abrirCambioPassword = () => {
 
     limpiarFormularioPassword();
 
-    setMostrarCambioPassword(true);
-
+    setMostrarCambioPassword(
+      true
+    );
   };
 
 
   // =========================================================
-  // CERRAR MODAL
+  // CERRAR MODAL CONTRASEÑA
   // =========================================================
 
   const cerrarCambioPassword = () => {
@@ -173,10 +628,13 @@ function Layout({
       return;
     }
 
-    setMostrarCambioPassword(false);
+
+    setMostrarCambioPassword(
+      false
+    );
+
 
     limpiarFormularioPassword();
-
   };
 
 
@@ -184,195 +642,23 @@ function Layout({
   // CAMBIAR CONTRASEÑA
   // =========================================================
 
-  const cambiarPassword = async (event) => {
+  const cambiarPassword =
+    async (event) => {
 
-    event.preventDefault();
+      event.preventDefault();
 
-    setErrorPassword("");
-    setMensajePassword("");
-
-
-    // ---------------------------------------------------------
-    // VALIDAR CONTRASEÑA ACTUAL
-    // ---------------------------------------------------------
-
-    if (!passwordActual.trim()) {
-
-      setErrorPassword(
-        "Ingresa tu contraseña actual."
-      );
-
-      return;
-    }
-
-
-    // ---------------------------------------------------------
-    // VALIDAR NUEVA CONTRASEÑA
-    // ---------------------------------------------------------
-
-    if (!nuevaPassword) {
-
-      setErrorPassword(
-        "Ingresa una nueva contraseña."
-      );
-
-      return;
-    }
-
-
-    if (nuevaPassword.length < 8) {
-
-      setErrorPassword(
-        "La nueva contraseña debe contener al menos 8 caracteres."
-      );
-
-      return;
-    }
-
-
-    // ---------------------------------------------------------
-    // EVITAR MISMA CONTRASEÑA
-    // ---------------------------------------------------------
-
-    if (passwordActual === nuevaPassword) {
-
-      setErrorPassword(
-        "La nueva contraseña debe ser diferente a la contraseña actual."
-      );
-
-      return;
-    }
-
-
-    // ---------------------------------------------------------
-    // VALIDAR CONFIRMACIÓN
-    // ---------------------------------------------------------
-
-    if (!confirmarPassword) {
-
-      setErrorPassword(
-        "Confirma la nueva contraseña."
-      );
-
-      return;
-    }
-
-
-    if (nuevaPassword !== confirmarPassword) {
-
-      setErrorPassword(
-        "Las nuevas contraseñas no coinciden."
-      );
-
-      return;
-    }
-
-
-    // ---------------------------------------------------------
-    // OBTENER TOKEN
-    // ---------------------------------------------------------
-
-    const token =
-      sessionStorage.getItem("token");
-
-
-    if (!token) {
-
-      cerrarSesion();
-
-      return;
-    }
-
-
-    try {
-
-      setCambiandoPassword(true);
-
-
-      const response = await fetch(
-        "http://localhost:8080/api/usuarios/mi-password",
-        {
-          method: "PUT",
-
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`
-          },
-
-          body: JSON.stringify({
-            passwordActual,
-            nuevaPassword
-          })
-        }
-      );
+      setErrorPassword("");
+      setMensajePassword("");
 
 
       // -------------------------------------------------------
-      // SESIÓN EXPIRADA
+      // CONTRASEÑA ACTUAL
       // -------------------------------------------------------
 
-      if (response.status === 401) {
-
-        let datosError = null;
-
-        try {
-          datosError = await response.json();
-        } catch {
-          datosError = null;
-        }
-
-
-        /*
-         * Si el backend específicamente nos dice que la
-         * contraseña actual es incorrecta, NO cerramos sesión.
-         *
-         * El mismo código HTTP 401 también puede representar
-         * un JWT inválido/expirado.
-         */
-
-        if (
-          datosError?.mensaje
-            ?.toLowerCase()
-            .includes("contraseña actual")
-        ) {
-
-          setErrorPassword(
-            datosError.mensaje
-          );
-
-          return;
-        }
-
-
-        sessionStorage.removeItem("token");
-        sessionStorage.removeItem("usuario");
-
-        navigate("/", {
-          replace: true
-        });
-
-        return;
-      }
-
-
-      // -------------------------------------------------------
-      // OTROS ERRORES
-      // -------------------------------------------------------
-
-      if (!response.ok) {
-
-        let datosError = null;
-
-        try {
-          datosError = await response.json();
-        } catch {
-          datosError = null;
-        }
-
+      if (!passwordActual.trim()) {
 
         setErrorPassword(
-          datosError?.mensaje ||
-          "No se pudo cambiar la contraseña."
+          "Ingresa tu contraseña actual."
         );
 
         return;
@@ -380,47 +666,247 @@ function Layout({
 
 
       // -------------------------------------------------------
-      // CAMBIO CORRECTO
+      // NUEVA CONTRASEÑA
       // -------------------------------------------------------
 
-      setMensajePassword(
-        "Contraseña actualizada correctamente."
-      );
+      if (!nuevaPassword) {
+
+        setErrorPassword(
+          "Ingresa una nueva contraseña."
+        );
+
+        return;
+      }
 
 
-      setPasswordActual("");
-      setNuevaPassword("");
-      setConfirmarPassword("");
+      if (nuevaPassword.length < 8) {
+
+        setErrorPassword(
+          "La nueva contraseña debe contener al menos 8 caracteres."
+        );
+
+        return;
+      }
 
 
-      /*
-       * No cerramos sesión automáticamente.
-       *
-       * El JWT actual sigue representando al mismo usuario.
-       * La próxima vez que inicie sesión deberá utilizar
-       * la nueva contraseña.
-       */
+      // -------------------------------------------------------
+      // EVITAR MISMA CONTRASEÑA
+      // -------------------------------------------------------
 
-    } catch (error) {
+      if (
+        passwordActual ===
+        nuevaPassword
+      ) {
 
-      console.error(
-        "Error al cambiar la contraseña:",
-        error
-      );
+        setErrorPassword(
+          "La nueva contraseña debe ser diferente a la contraseña actual."
+        );
+
+        return;
+      }
 
 
-      setErrorPassword(
-        "No fue posible conectar con el servidor."
-      );
+      // -------------------------------------------------------
+      // CONFIRMACIÓN
+      // -------------------------------------------------------
 
-    } finally {
+      if (!confirmarPassword) {
 
-      setCambiandoPassword(false);
+        setErrorPassword(
+          "Confirma la nueva contraseña."
+        );
 
-    }
+        return;
+      }
 
-  };
 
+      if (
+        nuevaPassword !==
+        confirmarPassword
+      ) {
+
+        setErrorPassword(
+          "Las nuevas contraseñas no coinciden."
+        );
+
+        return;
+      }
+
+
+      // -------------------------------------------------------
+      // TOKEN
+      // -------------------------------------------------------
+
+      const token =
+        sessionStorage.getItem(
+          "token"
+        );
+
+
+      if (!token) {
+
+        cerrarSesion();
+
+        return;
+      }
+
+
+      try {
+
+        setCambiandoPassword(
+          true
+        );
+
+
+        const response =
+          await fetch(
+            "http://localhost:8080/api/usuarios/mi-password",
+            {
+              method: "PUT",
+
+              headers: {
+
+                "Content-Type":
+                  "application/json",
+
+                Authorization:
+                  `Bearer ${token}`
+              },
+
+              body: JSON.stringify({
+                passwordActual,
+                nuevaPassword
+              })
+            }
+          );
+
+
+        // -----------------------------------------------------
+        // 401
+        // -----------------------------------------------------
+
+        if (
+          response.status === 401
+        ) {
+
+          let datosError = null;
+
+
+          try {
+
+            datosError =
+              await response.json();
+
+          } catch {
+
+            datosError = null;
+          }
+
+
+          if (
+            datosError?.mensaje
+              ?.toLowerCase()
+              .includes(
+                "contraseña actual"
+              )
+          ) {
+
+            setErrorPassword(
+              datosError.mensaje
+            );
+
+            return;
+          }
+
+
+          sessionStorage.removeItem(
+            "token"
+          );
+
+          sessionStorage.removeItem(
+            "usuario"
+          );
+
+
+          navigate(
+            "/",
+            {
+              replace: true
+            }
+          );
+
+
+          return;
+        }
+
+
+        // -----------------------------------------------------
+        // OTROS ERRORES
+        // -----------------------------------------------------
+
+        if (!response.ok) {
+
+          let datosError = null;
+
+
+          try {
+
+            datosError =
+              await response.json();
+
+          } catch {
+
+            datosError = null;
+          }
+
+
+          setErrorPassword(
+            datosError?.mensaje ||
+            "No se pudo cambiar la contraseña."
+          );
+
+
+          return;
+        }
+
+
+        // -----------------------------------------------------
+        // CORRECTO
+        // -----------------------------------------------------
+
+        setMensajePassword(
+          "Contraseña actualizada correctamente."
+        );
+
+
+        setPasswordActual("");
+        setNuevaPassword("");
+        setConfirmarPassword("");
+
+      } catch (error) {
+
+        console.error(
+          "Error al cambiar la contraseña:",
+          error
+        );
+
+
+        setErrorPassword(
+          "No fue posible conectar con el servidor."
+        );
+
+      } finally {
+
+        setCambiandoPassword(
+          false
+        );
+      }
+    };
+
+
+  // =========================================================
+  // RENDER
+  // =========================================================
 
   return (
 
@@ -495,9 +981,7 @@ function Layout({
         </NavLink>
 
 
-        {/* =====================================================
-            SOLO ADMINISTRADOR
-        ===================================================== */}
+        {/* SOLO ADMIN */}
 
         {esAdmin && (
 
@@ -511,14 +995,14 @@ function Layout({
         )}
 
 
-        {/* =====================================================
-            TODOS LOS USUARIOS AUTENTICADOS
-        ===================================================== */}
+        {/* TODOS LOS USUARIOS */}
 
         <button
           type="button"
           className="menu-item"
-          onClick={abrirCambioPassword}
+          onClick={
+            abrirCambioPassword
+          }
         >
           🔐 Cambiar contraseña
         </button>
@@ -541,6 +1025,10 @@ function Layout({
 
       <main className="content">
 
+        {/* ===================================================
+            TOPBAR
+        =================================================== */}
+
         <div className="topbar">
 
           <h1>
@@ -548,21 +1036,244 @@ function Layout({
           </h1>
 
 
-          <div className="user">
+          <div className="topbar-right">
 
-            <span>
-              👤 {nombreUsuario}
-            </span>
+            {/* ===============================================
+                CAMPANA
+            =============================================== */}
 
-            <span>
-              {" · "}
-              {nombreRol}
-            </span>
+            <div
+              className="notifications-wrapper"
+              ref={notificacionesRef}
+            >
+
+              <button
+                type="button"
+                className="notification-bell"
+                onClick={
+                  alternarNotificaciones
+                }
+                aria-label="Notificaciones"
+                title="Notificaciones"
+              >
+
+                <span className="notification-bell-icon">
+                  🔔
+                </span>
+
+
+                {contadorNoLeidas > 0 && (
+
+                  <span className="notification-count">
+
+                    {contadorNoLeidas > 99
+                      ? "99+"
+                      : contadorNoLeidas}
+
+                  </span>
+
+                )}
+
+              </button>
+
+
+              {/* =============================================
+                  PANEL DE NOTIFICACIONES
+              ============================================= */}
+
+              {mostrarNotificaciones && (
+
+                <div className="notifications-panel">
+
+                  {/* CABECERA */}
+
+                  <div className="notifications-header">
+
+                    <div>
+
+                      <h3>
+                        Notificaciones
+                      </h3>
+
+                      <span>
+                        {contadorNoLeidas} sin leer
+                      </span>
+
+                    </div>
+
+
+                    {contadorNoLeidas > 0 && (
+
+                      <button
+                        type="button"
+                        className="notifications-read-all"
+                        onClick={
+                          marcarTodasComoLeidas
+                        }
+                      >
+                        Marcar todas como leídas
+                      </button>
+
+                    )}
+
+                  </div>
+
+
+                  {/* LISTADO */}
+
+                  <div className="notifications-list">
+
+                    {cargandoNotificaciones ? (
+
+                      <div className="notifications-empty">
+
+                        Cargando notificaciones...
+
+                      </div>
+
+                    ) : notificaciones.length === 0 ? (
+
+                      <div className="notifications-empty">
+
+                        <span>
+                          🔔
+                        </span>
+
+                        <strong>
+                          Sin notificaciones
+                        </strong>
+
+                        <p>
+                          No tienes notificaciones
+                          por el momento.
+                        </p>
+
+                      </div>
+
+                    ) : (
+
+                      notificaciones.map(
+                        (notificacion) => (
+
+                          <button
+                            type="button"
+                            key={
+                              notificacion.id
+                            }
+                            className={
+                              `notification-item ${
+                                notificacion.leida
+                                  ? "read"
+                                  : "unread"
+                              }`
+                            }
+                            onClick={() =>
+                              abrirNotificacion(
+                                notificacion
+                              )
+                            }
+                          >
+
+                            {/* ICONO */}
+
+                            <div className="notification-item-icon">
+
+                              {
+                                notificacion.tipo ===
+                                "DECISION"
+                                  ? "⚖️"
+                                  :
+                                notificacion.tipo ===
+                                "EVALUACION"
+                                  ? "📊"
+                                  : "📝"
+                              }
+
+                            </div>
+
+
+                            {/* TEXTO */}
+
+                            <div className="notification-item-content">
+
+                              <div className="notification-item-title">
+
+                                <strong>
+                                  {
+                                    notificacion.titulo
+                                  }
+                                </strong>
+
+
+                                {!notificacion.leida && (
+
+                                  <span
+                                    className="notification-unread-dot"
+                                  />
+
+                                )}
+
+                              </div>
+
+
+                              <p>
+                                {
+                                  notificacion.mensaje
+                                }
+                              </p>
+
+
+                              <small>
+
+                                {
+                                  formatearFechaNotificacion(
+                                    notificacion.fechaCreacion
+                                  )
+                                }
+
+                              </small>
+
+                            </div>
+
+                          </button>
+
+                        )
+                      )
+
+                    )}
+
+                  </div>
+
+                </div>
+
+              )}
+
+            </div>
+
+
+            {/* ===============================================
+                USUARIO
+            =============================================== */}
+
+            <div className="user">
+
+              <span>
+                👤 {nombreUsuario}
+              </span>
+
+              <span>
+                {" · "}
+                {nombreRol}
+              </span>
+
+            </div>
 
           </div>
 
         </div>
 
+
+        {/* CONTENIDO DE CADA PÁGINA */}
 
         {children}
 
@@ -580,11 +1291,11 @@ function Layout({
           onMouseDown={(event) => {
 
             if (
-              event.target === event.currentTarget
+              event.target ===
+              event.currentTarget
             ) {
 
               cerrarCambioPassword();
-
             }
 
           }}
@@ -612,8 +1323,12 @@ function Layout({
               <button
                 type="button"
                 className="password-modal-close"
-                onClick={cerrarCambioPassword}
-                disabled={cambiandoPassword}
+                onClick={
+                  cerrarCambioPassword
+                }
+                disabled={
+                  cambiandoPassword
+                }
               >
                 ×
               </button>
@@ -621,7 +1336,7 @@ function Layout({
             </div>
 
 
-            {/* INFORMACIÓN DEL USUARIO */}
+            {/* INFORMACIÓN USUARIO */}
 
             <div className="password-user-info">
 
@@ -660,7 +1375,9 @@ function Layout({
                         ? "text"
                         : "password"
                     }
-                    value={passwordActual}
+                    value={
+                      passwordActual
+                    }
                     onChange={(event) =>
                       setPasswordActual(
                         event.target.value
@@ -668,7 +1385,9 @@ function Layout({
                     }
                     placeholder="Ingresa tu contraseña actual"
                     autoComplete="current-password"
-                    disabled={cambiandoPassword}
+                    disabled={
+                      cambiandoPassword
+                    }
                   />
 
 
@@ -682,9 +1401,13 @@ function Layout({
                     }
                     tabIndex="-1"
                   >
-                    {mostrarPasswordActual
-                      ? "🙈"
-                      : "👁"}
+
+                    {
+                      mostrarPasswordActual
+                        ? "🙈"
+                        : "👁"
+                    }
+
                   </button>
 
                 </div>
@@ -709,7 +1432,9 @@ function Layout({
                         ? "text"
                         : "password"
                     }
-                    value={nuevaPassword}
+                    value={
+                      nuevaPassword
+                    }
                     onChange={(event) =>
                       setNuevaPassword(
                         event.target.value
@@ -717,7 +1442,9 @@ function Layout({
                     }
                     placeholder="Mínimo 8 caracteres"
                     autoComplete="new-password"
-                    disabled={cambiandoPassword}
+                    disabled={
+                      cambiandoPassword
+                    }
                   />
 
 
@@ -731,9 +1458,13 @@ function Layout({
                     }
                     tabIndex="-1"
                   >
-                    {mostrarNuevaPassword
-                      ? "🙈"
-                      : "👁"}
+
+                    {
+                      mostrarNuevaPassword
+                        ? "🙈"
+                        : "👁"
+                    }
+
                   </button>
 
                 </div>
@@ -741,7 +1472,7 @@ function Layout({
               </div>
 
 
-              {/* CONFIRMAR */}
+              {/* CONFIRMAR CONTRASEÑA */}
 
               <div className="password-field">
 
@@ -758,7 +1489,9 @@ function Layout({
                         ? "text"
                         : "password"
                     }
-                    value={confirmarPassword}
+                    value={
+                      confirmarPassword
+                    }
                     onChange={(event) =>
                       setConfirmarPassword(
                         event.target.value
@@ -766,7 +1499,9 @@ function Layout({
                     }
                     placeholder="Repite la nueva contraseña"
                     autoComplete="new-password"
-                    disabled={cambiandoPassword}
+                    disabled={
+                      cambiandoPassword
+                    }
                   />
 
 
@@ -780,9 +1515,13 @@ function Layout({
                     }
                     tabIndex="-1"
                   >
-                    {mostrarConfirmacion
-                      ? "🙈"
-                      : "👁"}
+
+                    {
+                      mostrarConfirmacion
+                        ? "🙈"
+                        : "👁"
+                    }
+
                   </button>
 
                 </div>
@@ -805,7 +1544,9 @@ function Layout({
               {errorPassword && (
 
                 <div className="password-message error">
+
                   ⚠️ {errorPassword}
+
                 </div>
 
               )}
@@ -816,7 +1557,9 @@ function Layout({
               {mensajePassword && (
 
                 <div className="password-message success">
+
                   ✅ {mensajePassword}
+
                 </div>
 
               )}
@@ -829,8 +1572,12 @@ function Layout({
                 <button
                   type="button"
                   className="password-btn secondary"
-                  onClick={cerrarCambioPassword}
-                  disabled={cambiandoPassword}
+                  onClick={
+                    cerrarCambioPassword
+                  }
+                  disabled={
+                    cambiandoPassword
+                  }
                 >
                   Cancelar
                 </button>
@@ -839,12 +1586,16 @@ function Layout({
                 <button
                   type="submit"
                   className="password-btn primary"
-                  disabled={cambiandoPassword}
+                  disabled={
+                    cambiandoPassword
+                  }
                 >
 
-                  {cambiandoPassword
-                    ? "Actualizando..."
-                    : "Cambiar contraseña"}
+                  {
+                    cambiandoPassword
+                      ? "Actualizando..."
+                      : "Cambiar contraseña"
+                  }
 
                 </button>
 
@@ -859,9 +1610,8 @@ function Layout({
       )}
 
     </div>
-
   );
-
 }
+
 
 export default Layout;
