@@ -25,15 +25,10 @@ import java.util.List;
 public class SolicitudService {
 
     private final SolicitudRepository solicitudRepository;
-
     private final ClienteRepository clienteRepository;
-
     private final EvaluacionRiesgoRepository evaluacionRiesgoRepository;
-
     private final UsuarioRepository usuarioRepository;
-
     private final NotificacionService notificacionService;
-
 
     // =========================================================
     // CONSTRUCTOR
@@ -46,7 +41,6 @@ public class SolicitudService {
             UsuarioRepository usuarioRepository,
             NotificacionService notificacionService
     ) {
-
         this.solicitudRepository =
                 solicitudRepository;
 
@@ -63,16 +57,13 @@ public class SolicitudService {
                 notificacionService;
     }
 
-
     // =========================================================
     // OBTENER TODAS
     // =========================================================
 
     public List<Solicitud> obtenerSolicitudes() {
-
         return solicitudRepository.findAll();
     }
-
 
     // =========================================================
     // OBTENER POR ID
@@ -81,7 +72,6 @@ public class SolicitudService {
     public Solicitud obtenerSolicitudPorId(
             Long id
     ) {
-
         return solicitudRepository
                 .findById(id)
                 .orElseThrow(() ->
@@ -90,7 +80,6 @@ public class SolicitudService {
                         )
                 );
     }
-
 
     // =========================================================
     // CREAR
@@ -101,7 +90,6 @@ public class SolicitudService {
             Long clienteId,
             Solicitud solicitud
     ) {
-
         Cliente cliente =
                 clienteRepository
                         .findById(clienteId)
@@ -111,7 +99,6 @@ public class SolicitudService {
                                                 + clienteId
                                 )
                         );
-
 
         /*
          * Una solicitud nueva:
@@ -143,7 +130,6 @@ public class SolicitudService {
                 null
         );
 
-
         // =====================================================
         // GUARDAR SOLICITUD
         // =====================================================
@@ -152,7 +138,6 @@ public class SolicitudService {
                 solicitudRepository.save(
                         solicitud
                 );
-
 
         // =====================================================
         // NOTIFICAR NUEVA SOLICITUD
@@ -163,10 +148,8 @@ public class SolicitudService {
                 solicitudGuardada
         );
 
-
         return solicitudGuardada;
     }
-
 
     // =========================================================
     // ACTUALIZAR
@@ -177,7 +160,6 @@ public class SolicitudService {
             Long clienteId,
             Solicitud datosActualizados
     ) {
-
         Solicitud solicitud =
                 solicitudRepository
                         .findById(id)
@@ -188,7 +170,6 @@ public class SolicitudService {
                                 )
                         );
 
-
         Cliente cliente =
                 clienteRepository
                         .findById(clienteId)
@@ -198,7 +179,6 @@ public class SolicitudService {
                                                 + clienteId
                                 )
                         );
-
 
         // =====================================================
         // DATOS PERSONALES COMPLEMENTARIOS
@@ -215,7 +195,6 @@ public class SolicitudService {
         solicitud.setDireccion(
                 datosActualizados.getDireccion()
         );
-
 
         // =====================================================
         // INFORMACIÓN FINANCIERA
@@ -245,7 +224,6 @@ public class SolicitudService {
                 datosActualizados.getCapacidadPago()
         );
 
-
         // =====================================================
         // INFORMACIÓN DEL CRÉDITO
         // =====================================================
@@ -266,7 +244,6 @@ public class SolicitudService {
                 datosActualizados.getDestinoCredito()
         );
 
-
         /*
          * MUY IMPORTANTE:
          *
@@ -286,17 +263,14 @@ public class SolicitudService {
          * mediante aprobarSolicitud() o rechazarSolicitud().
          */
 
-
         solicitud.setCliente(
                 cliente
         );
-
 
         return solicitudRepository.save(
                 solicitud
         );
     }
-
 
     // =========================================================
     // APROBAR SOLICITUD
@@ -307,12 +281,10 @@ public class SolicitudService {
             Long id,
             String observacion
     ) {
-
         Solicitud solicitud =
                 obtenerSolicitudPorId(
                         id
                 );
-
 
         // Debe existir evaluación IA completada
 
@@ -320,20 +292,17 @@ public class SolicitudService {
                 id
         );
 
-
         // Debe existir una observación válida
 
         validarObservacion(
                 observacion
         );
 
-
         // No puede existir una decisión anterior
 
         verificarSinDecisionFinal(
                 solicitud
         );
-
 
         // =====================================================
         // REGISTRAR DECISIÓN
@@ -343,22 +312,18 @@ public class SolicitudService {
                 "Aprobado"
         );
 
-
         solicitud.setObservacionDecision(
                 observacion.trim()
         );
-
 
         solicitud.setFechaDecision(
                 LocalDateTime.now()
         );
 
-
         Solicitud solicitudGuardada =
                 solicitudRepository.save(
                         solicitud
                 );
-
 
         // =====================================================
         // NOTIFICAR DECISIÓN
@@ -370,10 +335,8 @@ public class SolicitudService {
                 "APROBADA"
         );
 
-
         return solicitudGuardada;
     }
-
 
     // =========================================================
     // RECHAZAR SOLICITUD
@@ -384,12 +347,10 @@ public class SolicitudService {
             Long id,
             String observacion
     ) {
-
         Solicitud solicitud =
                 obtenerSolicitudPorId(
                         id
                 );
-
 
         // Debe existir evaluación IA completada
 
@@ -397,20 +358,17 @@ public class SolicitudService {
                 id
         );
 
-
         // Debe existir una observación válida
 
         validarObservacion(
                 observacion
         );
 
-
         // No puede existir una decisión anterior
 
         verificarSinDecisionFinal(
                 solicitud
         );
-
 
         // =====================================================
         // REGISTRAR DECISIÓN
@@ -420,22 +378,18 @@ public class SolicitudService {
                 "Rechazado"
         );
 
-
         solicitud.setObservacionDecision(
                 observacion.trim()
         );
-
 
         solicitud.setFechaDecision(
                 LocalDateTime.now()
         );
 
-
         Solicitud solicitudGuardada =
                 solicitudRepository.save(
                         solicitud
                 );
-
 
         // =====================================================
         // NOTIFICAR DECISIÓN
@@ -447,10 +401,8 @@ public class SolicitudService {
                 "RECHAZADA"
         );
 
-
         return solicitudGuardada;
     }
-
 
     // =========================================================
     // NOTIFICAR NUEVA SOLICITUD
@@ -459,20 +411,24 @@ public class SolicitudService {
     private void notificarNuevaSolicitud(
             Solicitud solicitud
     ) {
-
         String nombreCliente =
                 obtenerNombreCliente(
                         solicitud
                 );
 
+        /*
+         * El ID técnico de la solicitud no se muestra
+         * al usuario.
+         *
+         * El ID continúa guardándose internamente en
+         * entidadId para relacionar la notificación
+         * con la solicitud correspondiente.
+         */
 
         String mensaje =
-                "Se registró la solicitud #"
-                        + solicitud.getId()
-                        + " del cliente "
+                "Se registró una nueva solicitud del cliente "
                         + nombreCliente
                         + ".";
-
 
         // =====================================================
         // ADMIN
@@ -484,13 +440,11 @@ public class SolicitudService {
                                 Rol.ADMIN
                         );
 
-
         for (
                 Usuario usuario
                 :
                 administradores
         ) {
-
             notificacionService
                     .crearNotificacion(
                             usuario.getId(),
@@ -503,7 +457,6 @@ public class SolicitudService {
                     );
         }
 
-
         // =====================================================
         // ANALISTAS
         // =====================================================
@@ -514,13 +467,11 @@ public class SolicitudService {
                                 Rol.ANALISTA
                         );
 
-
         for (
                 Usuario usuario
                 :
                 analistas
         ) {
-
             notificacionService
                     .crearNotificacion(
                             usuario.getId(),
@@ -533,7 +484,6 @@ public class SolicitudService {
                     );
         }
     }
-
 
     // =========================================================
     // NOTIFICAR DECISIÓN FINAL
@@ -543,47 +493,36 @@ public class SolicitudService {
             Solicitud solicitud,
             String decision
     ) {
-
         String nombreCliente =
                 obtenerNombreCliente(
                         solicitud
                 );
 
-
         String titulo;
-
         String mensaje;
-
 
         if (
                 "APROBADA".equalsIgnoreCase(
                         decision
                 )
         ) {
-
             titulo =
                     "Solicitud aprobada";
 
             mensaje =
-                    "La solicitud #"
-                            + solicitud.getId()
-                            + " del cliente "
+                    "La solicitud del cliente "
                             + nombreCliente
                             + " fue aprobada.";
 
         } else {
-
             titulo =
                     "Solicitud rechazada";
 
             mensaje =
-                    "La solicitud #"
-                            + solicitud.getId()
-                            + " del cliente "
+                    "La solicitud del cliente "
                             + nombreCliente
                             + " fue rechazada.";
         }
-
 
         // =====================================================
         // ADMIN
@@ -595,13 +534,11 @@ public class SolicitudService {
                                 Rol.ADMIN
                         );
 
-
         for (
                 Usuario usuario
                 :
                 administradores
         ) {
-
             notificacionService
                     .crearNotificacion(
                             usuario.getId(),
@@ -613,7 +550,6 @@ public class SolicitudService {
                             "/evaluacion-riesgo"
                     );
         }
-
 
         // =====================================================
         // ANALISTAS
@@ -625,13 +561,11 @@ public class SolicitudService {
                                 Rol.ANALISTA
                         );
 
-
         for (
                 Usuario usuario
                 :
                 analistas
         ) {
-
             notificacionService
                     .crearNotificacion(
                             usuario.getId(),
@@ -643,7 +577,6 @@ public class SolicitudService {
                             "/evaluacion-riesgo"
                     );
         }
-
 
         // =====================================================
         // GERENCIA
@@ -655,13 +588,11 @@ public class SolicitudService {
                                 Rol.GERENCIA
                         );
 
-
         for (
                 Usuario usuario
                 :
                 gerencia
         ) {
-
             notificacionService
                     .crearNotificacion(
                             usuario.getId(),
@@ -675,7 +606,6 @@ public class SolicitudService {
         }
     }
 
-
     // =========================================================
     // OBTENER NOMBRE DEL CLIENTE
     // =========================================================
@@ -683,49 +613,39 @@ public class SolicitudService {
     private String obtenerNombreCliente(
             Solicitud solicitud
     ) {
-
         if (
                 solicitud == null
                         ||
                 solicitud.getCliente() == null
         ) {
-
             return "Cliente";
         }
 
-
         Cliente cliente =
                 solicitud.getCliente();
-
 
         String nombres =
                 cliente.getNombres() == null
                         ? ""
                         : cliente.getNombres().trim();
 
-
         String apellidos =
                 cliente.getApellidos() == null
                         ? ""
                         : cliente.getApellidos().trim();
 
-
         String nombreCompleto =
                 (nombres + " " + apellidos)
                         .trim();
 
-
         if (
                 nombreCompleto.isBlank()
         ) {
-
             return "Cliente";
         }
 
-
         return nombreCompleto;
     }
-
 
     // =========================================================
     // VALIDAR OBSERVACIÓN
@@ -734,31 +654,26 @@ public class SolicitudService {
     private void validarObservacion(
             String observacion
     ) {
-
         if (
                 observacion == null
                         ||
                 observacion.isBlank()
         ) {
-
             throw new ValidacionException(
                     "Debe ingresar una observación para registrar la decisión."
             );
         }
-
 
         if (
                 observacion
                         .trim()
                         .length() < 5
         ) {
-
             throw new ValidacionException(
                     "La observación debe contener al menos 5 caracteres."
             );
         }
     }
-
 
     // =========================================================
     // VERIFICAR QUE NO EXISTA DECISIÓN FINAL
@@ -767,7 +682,6 @@ public class SolicitudService {
     private void verificarSinDecisionFinal(
             Solicitud solicitud
     ) {
-
         /*
          * Usamos fechaDecision como parte fundamental
          * para identificar una decisión formal.
@@ -786,13 +700,11 @@ public class SolicitudService {
                         )
                 )
         ) {
-
             throw new ReglaNegocioException(
                     "Esta solicitud ya tiene una decisión final registrada."
             );
         }
     }
-
 
     // =========================================================
     // VERIFICAR EVALUACIÓN IA COMPLETADA
@@ -801,23 +713,19 @@ public class SolicitudService {
     private void verificarEvaluacionCompletada(
             Long solicitudId
     ) {
-
         List<EvaluacionRiesgo> evaluaciones =
                 evaluacionRiesgoRepository
                         .findBySolicitudId(
                                 solicitudId
                         );
 
-
         if (
                 evaluaciones.isEmpty()
         ) {
-
             throw new ValidacionException(
                     "La solicitud todavía no tiene una evaluación de riesgo."
             );
         }
-
 
         boolean completada =
                 evaluaciones
@@ -833,17 +741,14 @@ public class SolicitudService {
                                                 )
                         );
 
-
         if (
                 !completada
         ) {
-
             throw new ValidacionException(
                     "La evaluación de riesgo todavía no ha sido completada."
             );
         }
     }
-
 
     // =========================================================
     // ELIMINAR
@@ -852,12 +757,10 @@ public class SolicitudService {
     public void eliminarSolicitud(
             Long id
     ) {
-
         Solicitud solicitud =
                 obtenerSolicitudPorId(
                         id
                 );
-
 
         solicitudRepository.delete(
                 solicitud

@@ -2,23 +2,23 @@ package com.cooperativa.cooperativaBackend.service;
 
 import com.cooperativa.cooperativaBackend.dto.PrediccionRiesgoRequest;
 import com.cooperativa.cooperativaBackend.dto.PrediccionRiesgoResponse;
-
 import com.cooperativa.cooperativaBackend.exception.RecursoNoEncontradoException;
 import com.cooperativa.cooperativaBackend.exception.ReglaNegocioException;
 import com.cooperativa.cooperativaBackend.exception.ValidacionException;
-
+import com.cooperativa.cooperativaBackend.model.Cliente;
 import com.cooperativa.cooperativaBackend.model.Documento;
 import com.cooperativa.cooperativaBackend.model.EvaluacionRiesgo;
+import com.cooperativa.cooperativaBackend.model.Rol;
 import com.cooperativa.cooperativaBackend.model.Solicitud;
-
+import com.cooperativa.cooperativaBackend.model.Usuario;
 import com.cooperativa.cooperativaBackend.repository.DocumentoRepository;
 import com.cooperativa.cooperativaBackend.repository.EvaluacionRiesgoRepository;
 import com.cooperativa.cooperativaBackend.repository.SolicitudRepository;
-
+import com.cooperativa.cooperativaBackend.repository.UsuarioRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-
 
 @Service
 public class EvaluacionRiesgoService {
@@ -27,38 +27,42 @@ public class EvaluacionRiesgoService {
     private final SolicitudRepository solicitudRepository;
     private final DocumentoRepository documentoRepository;
     private final IaRiesgoService iaRiesgoService;
+    private final UsuarioRepository usuarioRepository;
+    private final NotificacionService notificacionService;
 
+    // =========================================================
+    // CONSTRUCTOR
+    // =========================================================
 
     public EvaluacionRiesgoService(
             EvaluacionRiesgoRepository evaluacionRiesgoRepository,
             SolicitudRepository solicitudRepository,
             DocumentoRepository documentoRepository,
-            IaRiesgoService iaRiesgoService
+            IaRiesgoService iaRiesgoService,
+            UsuarioRepository usuarioRepository,
+            NotificacionService notificacionService
     ) {
-
         this.evaluacionRiesgoRepository = evaluacionRiesgoRepository;
         this.solicitudRepository = solicitudRepository;
         this.documentoRepository = documentoRepository;
         this.iaRiesgoService = iaRiesgoService;
+        this.usuarioRepository = usuarioRepository;
+        this.notificacionService = notificacionService;
     }
-
 
     // =========================================================
     // OBTENER TODAS LAS EVALUACIONES
     // =========================================================
 
     public List<EvaluacionRiesgo> obtenerEvaluaciones() {
-
         return evaluacionRiesgoRepository.findAll();
     }
-
 
     // =========================================================
     // OBTENER EVALUACIÓN POR ID
     // =========================================================
 
     public EvaluacionRiesgo obtenerEvaluacionPorId(Long id) {
-
         return evaluacionRiesgoRepository
                 .findById(id)
                 .orElseThrow(() ->
@@ -68,7 +72,6 @@ public class EvaluacionRiesgoService {
                 );
     }
 
-
     // =========================================================
     // OBTENER EVALUACIONES DE UNA SOLICITUD
     // =========================================================
@@ -76,11 +79,9 @@ public class EvaluacionRiesgoService {
     public List<EvaluacionRiesgo> obtenerPorSolicitud(
             Long solicitudId
     ) {
-
         return evaluacionRiesgoRepository
                 .findBySolicitudId(solicitudId);
     }
-
 
     // =========================================================
     // OBTENER HISTORIAL DE EVALUACIONES DE UN CLIENTE
@@ -89,13 +90,11 @@ public class EvaluacionRiesgoService {
     public List<EvaluacionRiesgo> obtenerPorCliente(
             Long clienteId
     ) {
-
         return evaluacionRiesgoRepository
                 .findBySolicitudClienteIdOrderByFechaEvaluacionDesc(
                         clienteId
                 );
     }
-
 
     // =========================================================
     // VERIFICAR DOCUMENTACIÓN
@@ -104,11 +103,9 @@ public class EvaluacionRiesgoService {
     public boolean documentacionCompleta(
             Long solicitudId
     ) {
-
         List<Documento> documentos =
                 documentoRepository
                         .findBySolicitudId(solicitudId);
-
 
         boolean identificacion =
                 documentos.stream()
@@ -121,7 +118,6 @@ public class EvaluacionRiesgoService {
                                         )
                         );
 
-
         boolean ingresos =
                 documentos.stream()
                         .anyMatch(documento ->
@@ -132,7 +128,6 @@ public class EvaluacionRiesgoService {
                                                 "Ingresos"
                                         )
                         );
-
 
         boolean general =
                 documentos.stream()
@@ -145,21 +140,19 @@ public class EvaluacionRiesgoService {
                                         )
                         );
 
-
         return identificacion
                 && ingresos
                 && general;
     }
 
-
     // =========================================================
     // CREAR EVALUACIÓN UTILIZANDO LA IA
     // =========================================================
 
+    @Transactional
     public EvaluacionRiesgo crearEvaluacion(
             Long solicitudId
     ) {
-
 
         // -----------------------------------------------------
         // 1. BUSCAR SOLICITUD
@@ -175,7 +168,6 @@ public class EvaluacionRiesgoService {
                                 )
                         );
 
-
         // -----------------------------------------------------
         // 2. EVITAR EVALUACIONES DUPLICADAS
         // -----------------------------------------------------
@@ -186,14 +178,11 @@ public class EvaluacionRiesgoService {
                                 solicitudId
                         );
 
-
         if (!evaluacionesExistentes.isEmpty()) {
-
             throw new ReglaNegocioException(
                     "Esta solicitud ya cuenta con una evaluación de riesgo."
             );
         }
-
 
         // -----------------------------------------------------
         // 3. VERIFICAR DOCUMENTACIÓN
@@ -202,12 +191,10 @@ public class EvaluacionRiesgoService {
         if (!documentacionCompleta(
                 solicitudId
         )) {
-
             throw new ValidacionException(
                     "La solicitud no tiene toda la documentación requerida."
             );
         }
-
 
         // -----------------------------------------------------
         // 4. VALIDAR INFORMACIÓN FINANCIERA
@@ -216,7 +203,6 @@ public class EvaluacionRiesgoService {
         validarDatosSolicitud(
                 solicitud
         );
-
 
         // -----------------------------------------------------
         // 5. CONVERTIR ANTIGÜEDAD LABORAL
@@ -228,14 +214,12 @@ public class EvaluacionRiesgoService {
                                 .getAntiguedadLaboral()
                 );
 
-
         // -----------------------------------------------------
         // 6. CONSTRUIR REQUEST PARA FASTAPI
         // -----------------------------------------------------
 
         PrediccionRiesgoRequest request =
                 new PrediccionRiesgoRequest();
-
 
         request.setIngresosMensuales(
                 solicitud.getIngresosMensuales()
@@ -269,7 +253,6 @@ public class EvaluacionRiesgoService {
                 antiguedadLaboral
         );
 
-
         // -----------------------------------------------------
         // 7. LLAMAR AL MICROSERVICIO DE IA
         // -----------------------------------------------------
@@ -280,14 +263,12 @@ public class EvaluacionRiesgoService {
                                 request
                         );
 
-
         // -----------------------------------------------------
         // 8. CREAR EVALUACIÓN CON EL RESULTADO DE LA IA
         // -----------------------------------------------------
 
         EvaluacionRiesgo evaluacion =
                 new EvaluacionRiesgo();
-
 
         evaluacion.setSolicitud(
                 solicitud
@@ -301,7 +282,6 @@ public class EvaluacionRiesgoService {
                 respuestaIa.getProbabilidadMora()
         );
 
-
         /*
          * confianzaModelo permanece en null.
          *
@@ -309,7 +289,6 @@ public class EvaluacionRiesgoService {
          * independiente que represente correctamente esta
          * propiedad.
          */
-
 
         evaluacion.setNivelRiesgo(
                 respuestaIa.getNivelRiesgo()
@@ -334,55 +313,188 @@ public class EvaluacionRiesgoService {
                 )
         );
 
+        // -----------------------------------------------------
+        // 9. GUARDAR RESULTADO EN ORACLE
+        // -----------------------------------------------------
+
+        EvaluacionRiesgo evaluacionGuardada =
+                evaluacionRiesgoRepository.save(
+                        evaluacion
+                );
 
         // -----------------------------------------------------
-// 9. GUARDAR RESULTADO EN POSTGRESQL
-// -----------------------------------------------------
+        // 10. ACTUALIZAR ESTADO DE LA SOLICITUD
+        // -----------------------------------------------------
 
-EvaluacionRiesgo evaluacionGuardada =
-        evaluacionRiesgoRepository.save(
-                evaluacion
+        /*
+         * Una vez que la evaluación de riesgo fue completada
+         * correctamente, la solicitud pasa automáticamente
+         * de "Pendiente" a "En evaluación".
+         *
+         * No se cambia el estado si la solicitud ya tiene
+         * una decisión final formal.
+         */
+
+        if (
+                solicitud.getFechaDecision() == null
+                        &&
+                !"Aprobado".equalsIgnoreCase(
+                        solicitud.getEstado()
+                )
+                        &&
+                !"Rechazado".equalsIgnoreCase(
+                        solicitud.getEstado()
+                )
+        ) {
+            solicitud.setEstado(
+                    "En evaluación"
+            );
+
+            solicitudRepository.save(
+                    solicitud
+            );
+        }
+
+        // -----------------------------------------------------
+        // 11. NOTIFICAR EVALUACIÓN COMPLETADA
+        // -----------------------------------------------------
+
+        notificarEvaluacionCompletada(
+                evaluacionGuardada
         );
 
-
-// -----------------------------------------------------
-// 10. ACTUALIZAR ESTADO DE LA SOLICITUD
-// -----------------------------------------------------
-
-/*
- * Una vez que la evaluación de riesgo fue completada
- * correctamente, la solicitud pasa automáticamente
- * de "Pendiente" a "En evaluación".
- *
- * No se cambia el estado si la solicitud ya tiene
- * una decisión final formal.
- */
-
-if (
-        solicitud.getFechaDecision() == null
-                &&
-        !"Aprobado".equalsIgnoreCase(
-                solicitud.getEstado()
-        )
-                &&
-        !"Rechazado".equalsIgnoreCase(
-                solicitud.getEstado()
-        )
-) {
-
-    solicitud.setEstado(
-            "En evaluación"
-    );
-
-    solicitudRepository.save(
-            solicitud
-    );
-}
-
-
-return evaluacionGuardada;
+        return evaluacionGuardada;
     }
 
+    // =========================================================
+    // NOTIFICAR EVALUACIÓN COMPLETADA
+    // =========================================================
+
+    private void notificarEvaluacionCompletada(
+            EvaluacionRiesgo evaluacion
+    ) {
+        Solicitud solicitud =
+                evaluacion.getSolicitud();
+
+        String nombreCliente =
+                obtenerNombreCliente(
+                        solicitud
+                );
+
+        String nivelRiesgo =
+                evaluacion.getNivelRiesgo() == null
+                        || evaluacion
+                        .getNivelRiesgo()
+                        .isBlank()
+                        ? "No determinado"
+                        : evaluacion
+                        .getNivelRiesgo();
+
+        String mensaje =
+                "La evaluación de riesgo del cliente "
+                        + nombreCliente
+                        + " ha sido completada. "
+                        + "Nivel de riesgo: "
+                        + nivelRiesgo
+                        + ".";
+
+        // -----------------------------------------------------
+        // ADMIN
+        // -----------------------------------------------------
+
+        List<Usuario> administradores =
+                usuarioRepository
+                        .findByRolAndActivoTrue(
+                                Rol.ADMIN
+                        );
+
+        for (
+                Usuario usuario
+                :
+                administradores
+        ) {
+            notificacionService
+                    .crearNotificacion(
+                            usuario.getId(),
+                            "Evaluación de riesgo completada",
+                            mensaje,
+                            "EVALUACION",
+                            "EVALUACION",
+                            evaluacion.getId(),
+                            "/evaluacion-riesgo"
+                    );
+        }
+
+        // -----------------------------------------------------
+        // ANALISTAS
+        // -----------------------------------------------------
+
+        List<Usuario> analistas =
+                usuarioRepository
+                        .findByRolAndActivoTrue(
+                                Rol.ANALISTA
+                        );
+
+        for (
+                Usuario usuario
+                :
+                analistas
+        ) {
+            notificacionService
+                    .crearNotificacion(
+                            usuario.getId(),
+                            "Evaluación de riesgo completada",
+                            mensaje,
+                            "EVALUACION",
+                            "EVALUACION",
+                            evaluacion.getId(),
+                            "/evaluacion-riesgo"
+                    );
+        }
+    }
+
+    // =========================================================
+    // OBTENER NOMBRE DEL CLIENTE
+    // =========================================================
+
+    private String obtenerNombreCliente(
+            Solicitud solicitud
+    ) {
+        if (
+                solicitud == null
+                        ||
+                solicitud.getCliente() == null
+        ) {
+            return "Cliente";
+        }
+
+        Cliente cliente =
+                solicitud.getCliente();
+
+        String nombres =
+                cliente.getNombres() == null
+                        ? ""
+                        : cliente
+                        .getNombres()
+                        .trim();
+
+        String apellidos =
+                cliente.getApellidos() == null
+                        ? ""
+                        : cliente
+                        .getApellidos()
+                        .trim();
+
+        String nombreCompleto =
+                (nombres + " " + apellidos)
+                        .trim();
+
+        if (nombreCompleto.isBlank()) {
+            return "Cliente";
+        }
+
+        return nombreCompleto;
+    }
 
     // =========================================================
     // ACTUALIZAR EVALUACIÓN
@@ -392,83 +504,64 @@ return evaluacionGuardada;
             Long id,
             EvaluacionRiesgo datos
     ) {
-
         EvaluacionRiesgo evaluacion =
                 obtenerEvaluacionPorId(
                         id
                 );
 
-
         if (datos.getScoreIa() != null) {
-
             evaluacion.setScoreIa(
                     datos.getScoreIa()
             );
         }
 
-
         if (datos.getProbabilidadMora() != null) {
-
             evaluacion.setProbabilidadMora(
                     datos.getProbabilidadMora()
             );
         }
 
-
         if (datos.getConfianzaModelo() != null) {
-
             evaluacion.setConfianzaModelo(
                     datos.getConfianzaModelo()
             );
         }
 
-
         if (datos.getNivelRiesgo() != null) {
-
             evaluacion.setNivelRiesgo(
                     datos.getNivelRiesgo()
             );
         }
 
-
         if (datos.getRecomendacion() != null) {
-
             evaluacion.setRecomendacion(
                     datos.getRecomendacion()
             );
         }
 
-
         if (datos.getModeloUtilizado() != null) {
-
             evaluacion.setModeloUtilizado(
                     datos.getModeloUtilizado()
             );
         }
 
-
         if (datos.getEstado() != null) {
-
             evaluacion.setEstado(
                     datos.getEstado()
             );
         }
 
-
         if (datos.getExplicacion() != null) {
-
             evaluacion.setExplicacion(
                     datos.getExplicacion()
             );
         }
-
 
         return evaluacionRiesgoRepository
                 .save(
                         evaluacion
                 );
     }
-
 
     // =========================================================
     // ELIMINAR EVALUACIÓN
@@ -477,19 +570,16 @@ return evaluacionGuardada;
     public void eliminarEvaluacion(
             Long id
     ) {
-
         EvaluacionRiesgo evaluacion =
                 obtenerEvaluacionPorId(
                         id
                 );
-
 
         evaluacionRiesgoRepository
                 .delete(
                         evaluacion
                 );
     }
-
 
     // =========================================================
     // VALIDAR DATOS DE LA SOLICITUD
@@ -499,54 +589,45 @@ return evaluacionGuardada;
             Solicitud solicitud
     ) {
 
-
         // -----------------------------------------------------
         // INGRESOS
         // -----------------------------------------------------
 
         if (solicitud.getIngresosMensuales() == null) {
-
             throw new ValidacionException(
                     "La solicitud no tiene ingresos mensuales."
             );
         }
-
 
         // -----------------------------------------------------
         // EGRESOS
         // -----------------------------------------------------
 
         if (solicitud.getEgresosMensuales() == null) {
-
             throw new ValidacionException(
                     "La solicitud no tiene egresos mensuales."
             );
         }
-
 
         // -----------------------------------------------------
         // NIVEL DE ENDEUDAMIENTO
         // -----------------------------------------------------
 
         if (solicitud.getNivelEndeudamiento() == null) {
-
             throw new ValidacionException(
                     "La solicitud no tiene nivel de endeudamiento."
             );
         }
-
 
         // -----------------------------------------------------
         // CAPACIDAD DE PAGO
         // -----------------------------------------------------
 
         if (solicitud.getCapacidadPago() == null) {
-
             throw new ValidacionException(
                     "La solicitud no tiene capacidad de pago."
             );
         }
-
 
         // -----------------------------------------------------
         // TIPO DE CRÉDITO
@@ -557,36 +638,30 @@ return evaluacionGuardada;
                         ||
                 solicitud.getTipoCredito().isBlank()
         ) {
-
             throw new ValidacionException(
                     "La solicitud no tiene tipo de crédito."
             );
         }
-
 
         // -----------------------------------------------------
         // MONTO
         // -----------------------------------------------------
 
         if (solicitud.getMonto() == null) {
-
             throw new ValidacionException(
                     "La solicitud no tiene monto solicitado."
             );
         }
-
 
         // -----------------------------------------------------
         // PLAZO
         // -----------------------------------------------------
 
         if (solicitud.getPlazoMeses() == null) {
-
             throw new ValidacionException(
                     "La solicitud no tiene plazo."
             );
         }
-
 
         // -----------------------------------------------------
         // ANTIGÜEDAD LABORAL
@@ -597,13 +672,11 @@ return evaluacionGuardada;
                         ||
                 solicitud.getAntiguedadLaboral().isBlank()
         ) {
-
             throw new ValidacionException(
                     "La solicitud no tiene antigüedad laboral."
             );
         }
     }
-
 
     // =========================================================
     // CONVERTIR ANTIGÜEDAD LABORAL
@@ -612,7 +685,6 @@ return evaluacionGuardada;
     private Double convertirAntiguedadLaboral(
             String antiguedad
     ) {
-
         try {
 
             /*
@@ -637,27 +709,21 @@ return evaluacionGuardada;
                                     ""
                             );
 
-
             if (valorLimpio.isBlank()) {
-
                 throw new NumberFormatException();
             }
-
 
             return Double.parseDouble(
                     valorLimpio
             );
 
-
         } catch (NumberFormatException e) {
-
             throw new ValidacionException(
                     "La antigüedad laboral no tiene un formato válido: "
                             + antiguedad
             );
         }
     }
-
 
     // =========================================================
     // GENERAR EXPLICACIÓN
@@ -667,9 +733,7 @@ return evaluacionGuardada;
             Solicitud solicitud,
             PrediccionRiesgoResponse respuesta
     ) {
-
         return String.format(
-
                 "La evaluación fue realizada mediante el modelo %s. "
                         + "El modelo estimó una probabilidad de mora de %.2f%% "
                         + "y un Score IA de %d/100. "
@@ -682,11 +746,8 @@ return evaluacionGuardada;
                         + "y no reemplaza la decisión del analista de crédito.",
 
                 respuesta.getModelo(),
-
                 respuesta.getProbabilidadMora(),
-
                 respuesta.getScoreIa(),
-
                 respuesta.getNivelRiesgo()
         );
     }

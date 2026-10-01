@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-
 import Layout from "../components/Layout";
 
 import {
@@ -9,7 +8,6 @@ import {
   actualizarSolicitud,
   eliminarSolicitud
 } from "../services/api";
-
 
 const initialForm = {
   clienteId: "",
@@ -33,9 +31,7 @@ const initialForm = {
   destino: ""
 };
 
-
 export default function Solicitudes() {
-
   // =========================================================
   // USUARIO Y PERMISOS
   // =========================================================
@@ -43,7 +39,6 @@ export default function Solicitudes() {
   let usuario = null;
 
   try {
-
     const usuarioGuardado =
       sessionStorage.getItem("usuario");
 
@@ -51,25 +46,19 @@ export default function Solicitudes() {
       usuario =
         JSON.parse(usuarioGuardado);
     }
-
   } catch (error) {
-
     console.error(
       "Error al obtener usuario:",
       error
     );
-
   }
-
 
   const puedeModificar =
     usuario?.rol === "ADMIN" ||
     usuario?.rol === "ANALISTA";
 
-
   const esGerencia =
     usuario?.rol === "GERENCIA";
-
 
   // =========================================================
   // ESTADOS
@@ -87,12 +76,10 @@ export default function Solicitudes() {
   const [guardando, setGuardando] =
     useState(false);
 
-
   const [
     solicitudSeleccionada,
     setSolicitudSeleccionada
   ] = useState(null);
-
 
   const [modalVer, setModalVer] =
     useState(false);
@@ -100,36 +87,27 @@ export default function Solicitudes() {
   const [modoEdicion, setModoEdicion] =
     useState(false);
 
-
   const [
     solicitudEditandoId,
     setSolicitudEditandoId
   ] = useState(null);
-
 
   // =========================================================
   // CARGAR DATOS
   // =========================================================
 
   useEffect(() => {
-
     cargarClientes();
     cargarSolicitudes();
-
   }, []);
 
-
   const cargarClientes = async () => {
-
     try {
-
       const datos =
         await obtenerClientes();
 
       setClientes(datos);
-
     } catch (error) {
-
       console.error(
         "Error al cargar clientes:",
         error
@@ -138,60 +116,44 @@ export default function Solicitudes() {
       alert(
         "No se pudieron cargar los clientes."
       );
-
     }
-
   };
 
-
   const cargarSolicitudes = async () => {
-
     try {
-
       const datos =
         await obtenerSolicitudes();
 
       setSolicitudes(datos);
-
     } catch (error) {
-
       console.error(
         "Error al cargar solicitudes:",
         error
       );
-
     }
-
   };
-
 
   // =========================================================
   // ACTUALIZAR FORMULARIO
   // =========================================================
 
   const update = (e) => {
-
     setForm({
       ...form,
       [e.target.name]:
         e.target.value
     });
-
   };
-
 
   // =========================================================
   // SELECCIONAR CLIENTE
   // =========================================================
 
   const seleccionarCliente = (e) => {
-
     const id =
       e.target.value;
 
-
     if (!id) {
-
       setForm({
         ...form,
         clienteId: "",
@@ -202,9 +164,7 @@ export default function Solicitudes() {
       });
 
       return;
-
     }
-
 
     const cliente =
       clientes.find(
@@ -213,14 +173,11 @@ export default function Solicitudes() {
           String(id)
       );
 
-
     if (!cliente) {
       return;
     }
 
-
     setForm((formAnterior) => ({
-
       ...formAnterior,
 
       clienteId:
@@ -237,35 +194,27 @@ export default function Solicitudes() {
 
       telefono:
         cliente.telefono || ""
-
     }));
-
   };
-
 
   // =========================================================
   // LIMPIAR
   // =========================================================
 
   const limpiar = () => {
-
     setForm(initialForm);
 
     setModoEdicion(false);
 
     setSolicitudEditandoId(null);
-
   };
-
 
   // =========================================================
   // CONSTRUIR SOLICITUD
   // =========================================================
 
   const construirSolicitud = () => {
-
     return {
-
       estadoCivil:
         form.estadoCivil,
 
@@ -328,76 +277,55 @@ export default function Solicitudes() {
 
       destinoCredito:
         form.destino
-
     };
-
   };
-
 
   // =========================================================
   // GUARDAR / ACTUALIZAR
   // =========================================================
 
   const guardar = async (e) => {
-
     e.preventDefault();
 
-
     if (!puedeModificar) {
-
       alert(
         "No tiene permisos para modificar solicitudes."
       );
 
       return;
-
     }
 
-
     if (!form.clienteId) {
-
       alert(
         "Debe seleccionar un cliente."
       );
 
       return;
-
     }
 
-
     if (!form.ingresos) {
-
       alert(
         "Ingrese los ingresos mensuales."
       );
 
       return;
-
     }
 
-
     if (!form.monto) {
-
       alert(
         "Ingrese el monto solicitado."
       );
 
       return;
-
     }
-
 
     const solicitud =
       construirSolicitud();
 
-
     try {
-
       setGuardando(true);
 
-
       if (modoEdicion) {
-
         const solicitudActualizada =
           await actualizarSolicitud(
             solicitudEditandoId,
@@ -405,116 +333,85 @@ export default function Solicitudes() {
             solicitud
           );
 
-
         console.log(
           "Solicitud actualizada:",
           solicitudActualizada
         );
 
-
         alert(
           "Solicitud actualizada correctamente."
         );
-
       } else {
-
         const nuevaSolicitud =
           await crearSolicitud(
             form.clienteId,
             solicitud
           );
 
-
         console.log(
           "Solicitud registrada:",
           nuevaSolicitud
         );
 
-
         alert(
           "Solicitud registrada correctamente."
         );
-
       }
-
 
       await cargarSolicitudes();
 
       limpiar();
-
-
     } catch (error) {
-
       console.error(
         "Error al guardar la solicitud:",
         error
       );
 
-
       if (modoEdicion) {
-
         alert(
           "No se pudo actualizar la solicitud."
         );
-
       } else {
-
         alert(
           "No se pudo registrar la solicitud."
         );
-
       }
-
     } finally {
-
       setGuardando(false);
-
     }
-
   };
-
 
   // =========================================================
   // VER SOLICITUD
   // =========================================================
 
   const verSolicitud = (solicitud) => {
-
     setSolicitudSeleccionada(
       solicitud
     );
 
     setModalVer(true);
-
   };
 
-
   const cerrarModalVer = () => {
-
     setModalVer(false);
 
     setSolicitudSeleccionada(null);
-
   };
-
 
   // =========================================================
   // EDITAR SOLICITUD
   // =========================================================
 
   const editarSolicitud = (solicitud) => {
-
     if (!puedeModificar) {
       return;
     }
 
-
     const cliente =
       solicitud.cliente;
 
-
     setForm({
-
       clienteId:
         cliente?.id || "",
 
@@ -576,24 +473,20 @@ export default function Solicitudes() {
 
       destino:
         solicitud.destinoCredito || ""
-
     });
 
-
+    // El ID sigue utilizándose internamente.
     setSolicitudEditandoId(
       solicitud.id
     );
 
     setModoEdicion(true);
 
-
     window.scrollTo({
       top: 0,
       behavior: "smooth"
     });
-
   };
-
 
   // =========================================================
   // ELIMINAR
@@ -601,87 +494,67 @@ export default function Solicitudes() {
 
   const borrarSolicitud =
     async (solicitud) => {
-
       if (!puedeModificar) {
         return;
       }
-
 
       const clienteNombre =
         solicitud.cliente
           ? `${solicitud.cliente.nombres || ""} ${solicitud.cliente.apellidos || ""}`.trim()
           : "este cliente";
 
-
+      // Ya NO mostramos el ID técnico al usuario.
       const confirmar =
         window.confirm(
-          `¿Está seguro de eliminar la solicitud #${solicitud.id} de ${clienteNombre}?\n\nEsta acción no se puede deshacer.`
+          `¿Está seguro de eliminar la solicitud de ${clienteNombre}?\n\nEsta acción no se puede deshacer.`
         );
-
 
       if (!confirmar) {
         return;
       }
 
-
       try {
-
+        // El ID continúa siendo necesario internamente.
         await eliminarSolicitud(
           solicitud.id
         );
-
 
         alert(
           "Solicitud eliminada correctamente."
         );
 
-
         if (
           solicitudEditandoId ===
           solicitud.id
         ) {
-
           limpiar();
-
         }
-
 
         if (
           solicitudSeleccionada?.id ===
           solicitud.id
         ) {
-
           cerrarModalVer();
-
         }
 
-
         await cargarSolicitudes();
-
-
       } catch (error) {
-
         console.error(
           "Error al eliminar solicitud:",
           error
         );
 
-
         alert(
           "No se pudo eliminar la solicitud."
         );
-
       }
-
     };
-
 
   // =========================================================
   // FORMATEAR DINERO
   // =========================================================
 
   const formatearDinero = (valor) => {
-
     return `$${Number(
       valor || 0
     ).toLocaleString(
@@ -691,16 +564,13 @@ export default function Solicitudes() {
         maximumFractionDigits: 2
       }
     )}`;
-
   };
-
 
   // =========================================================
   // CLASE ESTADO
   // =========================================================
 
   const obtenerClaseEstado = (estado) => {
-
     if (estado === "Aprobado") {
       return "aprobado";
     }
@@ -714,27 +584,21 @@ export default function Solicitudes() {
     }
 
     return "pendiente";
-
   };
-
 
   // =========================================================
   // RETURN
   // =========================================================
 
-  return (
-
+    return (
     <Layout title="Registro de Solicitud de Crédito">
-
 
       {/* =====================================================
           TARJETAS
       ===================================================== */}
 
       <section className="summary-cards three">
-
         <div className="summary-card">
-
           <h3>
             Cliente seleccionado
           </h3>
@@ -743,31 +607,23 @@ export default function Solicitudes() {
             {form.nombres ||
               "Sin seleccionar"}
           </strong>
-
         </div>
 
-
         <div className="summary-card yellow">
-
           <h3>
             Monto solicitado
           </h3>
 
           <strong>
-
             {form.monto
               ? formatearDinero(
                   form.monto
                 )
               : "$0,00"}
-
           </strong>
-
         </div>
 
-
         <div className="summary-card orange">
-
           <h3>
             Estado de la solicitud
           </h3>
@@ -775,11 +631,8 @@ export default function Solicitudes() {
           <strong>
             {form.estado || "Pendiente"}
           </strong>
-
         </div>
-
       </section>
-
 
       {/* =====================================================
           FORMULARIO ADMIN / ANALISTA
@@ -787,27 +640,21 @@ export default function Solicitudes() {
 
       {puedeModificar && (
         <>
-
           {/* ===================================================
               EDICIÓN
           =================================================== */}
 
           {modoEdicion && (
-
             <div className="editing-alert">
-
               <div>
-
                 <strong>
-                  ✏️ Editando solicitud #{solicitudEditandoId}
+                  ✏️ Editando solicitud
                 </strong>
 
                 <span>
                   Modifique los datos necesarios y presione Actualizar solicitud.
                 </span>
-
               </div>
-
 
               <button
                 type="button"
@@ -815,11 +662,8 @@ export default function Solicitudes() {
               >
                 Cancelar edición
               </button>
-
             </div>
-
           )}
-
 
           {/* ===================================================
               FORMULARIO
@@ -827,21 +671,15 @@ export default function Solicitudes() {
 
           <form onSubmit={guardar}>
 
-
             {/* DATOS PERSONALES */}
 
             <section className="panel">
-
               <h2 className="section-title">
                 Datos personales
               </h2>
 
-
               <div className="form-grid">
-
-
                 <div className="form-group">
-
                   <label>
                     Seleccionar cliente
                   </label>
@@ -851,37 +689,28 @@ export default function Solicitudes() {
                     value={form.clienteId}
                     onChange={seleccionarCliente}
                   >
-
                     <option value="">
                       Seleccione un cliente
                     </option>
 
                     {clientes.map(
                       (cliente) => (
-
                         <option
                           key={cliente.id}
                           value={cliente.id}
                         >
-
                           {cliente.cedula}
                           {" - "}
                           {cliente.nombres}
                           {" "}
                           {cliente.apellidos}
-
                         </option>
-
                       )
                     )}
-
                   </select>
-
                 </div>
 
-
                 <div className="form-group">
-
                   <label>
                     Cédula
                   </label>
@@ -892,12 +721,9 @@ export default function Solicitudes() {
                     readOnly
                     placeholder="Cédula del cliente"
                   />
-
                 </div>
 
-
                 <div className="form-group">
-
                   <label>
                     Nombres completos
                   </label>
@@ -908,12 +734,9 @@ export default function Solicitudes() {
                     readOnly
                     placeholder="Nombre del solicitante"
                   />
-
                 </div>
 
-
                 <div className="form-group">
-
                   <label>
                     Correo electrónico
                   </label>
@@ -924,12 +747,9 @@ export default function Solicitudes() {
                     readOnly
                     placeholder="correo@ejemplo.com"
                   />
-
                 </div>
 
-
                 <div className="form-group">
-
                   <label>
                     Teléfono
                   </label>
@@ -940,12 +760,9 @@ export default function Solicitudes() {
                     readOnly
                     placeholder="0999999999"
                   />
-
                 </div>
 
-
                 <div className="form-group">
-
                   <label>
                     Estado civil
                   </label>
@@ -955,7 +772,6 @@ export default function Solicitudes() {
                     value={form.estadoCivil}
                     onChange={update}
                   >
-
                     <option>
                       Soltero/a
                     </option>
@@ -971,14 +787,10 @@ export default function Solicitudes() {
                     <option>
                       Divorciado/a
                     </option>
-
                   </select>
-
                 </div>
 
-
                 <div className="form-group">
-
                   <label>
                     Ocupación
                   </label>
@@ -989,12 +801,9 @@ export default function Solicitudes() {
                     onChange={update}
                     placeholder="Ej. Comerciante"
                   />
-
                 </div>
 
-
                 <div className="form-group full">
-
                   <label>
                     Dirección domiciliaria
                   </label>
@@ -1005,30 +814,21 @@ export default function Solicitudes() {
                     onChange={update}
                     placeholder="Ingrese la dirección del cliente"
                   />
-
                 </div>
-
               </div>
-
             </section>
-
 
             {/* ===================================================
                 INFORMACIÓN FINANCIERA
             =================================================== */}
 
             <section className="panel">
-
               <h2 className="section-title">
                 Información financiera
               </h2>
 
-
               <div className="form-grid">
-
-
                 <div className="form-group">
-
                   <label>
                     Ingresos mensuales
                   </label>
@@ -1042,12 +842,9 @@ export default function Solicitudes() {
                     step="0.01"
                     placeholder="Ej. 850.00"
                   />
-
                 </div>
 
-
                 <div className="form-group">
-
                   <label>
                     Egresos mensuales
                   </label>
@@ -1061,12 +858,9 @@ export default function Solicitudes() {
                     step="0.01"
                     placeholder="Ej. 420.00"
                   />
-
                 </div>
 
-
                 <div className="form-group">
-
                   <label>
                     Nivel de endeudamiento
                   </label>
@@ -1080,12 +874,9 @@ export default function Solicitudes() {
                     step="0.01"
                     placeholder="Ej. 30"
                   />
-
                 </div>
 
-
                 <div className="form-group">
-
                   <label>
                     Empresa / Actividad
                   </label>
@@ -1096,12 +887,9 @@ export default function Solicitudes() {
                     onChange={update}
                     placeholder="Lugar de trabajo o actividad"
                   />
-
                 </div>
 
-
                 <div className="form-group">
-
                   <label>
                     Antigüedad laboral
                   </label>
@@ -1112,12 +900,9 @@ export default function Solicitudes() {
                     onChange={update}
                     placeholder="Ej. 2 años"
                   />
-
                 </div>
 
-
                 <div className="form-group">
-
                   <label>
                     Capacidad de pago estimada
                   </label>
@@ -1131,30 +916,21 @@ export default function Solicitudes() {
                     step="0.01"
                     placeholder="Ej. 250.00"
                   />
-
                 </div>
-
               </div>
-
             </section>
-
 
             {/* ===================================================
                 INFORMACIÓN DEL CRÉDITO
             =================================================== */}
 
             <section className="panel">
-
               <h2 className="section-title">
                 Información del crédito
               </h2>
 
-
               <div className="form-grid">
-
-
                 <div className="form-group">
-
                   <label>
                     Tipo de crédito
                   </label>
@@ -1164,7 +940,6 @@ export default function Solicitudes() {
                     value={form.tipoCredito}
                     onChange={update}
                   >
-
                     <option>
                       Consumo
                     </option>
@@ -1180,14 +955,10 @@ export default function Solicitudes() {
                     <option>
                       Comercial
                     </option>
-
                   </select>
-
                 </div>
 
-
                 <div className="form-group">
-
                   <label>
                     Monto solicitado
                   </label>
@@ -1201,12 +972,9 @@ export default function Solicitudes() {
                     step="0.01"
                     placeholder="Ej. 5000.00"
                   />
-
                 </div>
 
-
                 <div className="form-group">
-
                   <label>
                     Plazo
                   </label>
@@ -1216,22 +984,17 @@ export default function Solicitudes() {
                     value={form.plazo}
                     onChange={update}
                   >
-
                     <option>6 meses</option>
                     <option>12 meses</option>
                     <option>24 meses</option>
                     <option>36 meses</option>
                     <option>48 meses</option>
-
                   </select>
-
                 </div>
-
 
                 {/* ESTADO AUTOMÁTICO */}
 
                 <div className="form-group">
-
                   <label>
                     Estado de la solicitud
                   </label>
@@ -1245,12 +1008,9 @@ export default function Solicitudes() {
                   <small>
                     El estado se actualiza automáticamente según el proceso del crédito.
                   </small>
-
                 </div>
 
-
                 <div className="form-group full">
-
                   <label>
                     Destino del crédito
                   </label>
@@ -1261,26 +1021,19 @@ export default function Solicitudes() {
                     onChange={update}
                     placeholder="Describa para qué será utilizado el crédito solicitado..."
                   />
-
                 </div>
-
               </div>
 
-
               <div className="actions">
-
                 <button
                   type="button"
                   className="btn btn-cancel"
                   onClick={limpiar}
                 >
-
                   {modoEdicion
                     ? "Cancelar edición"
                     : "Cancelar"}
-
                 </button>
-
 
                 <button
                   type="button"
@@ -1290,43 +1043,31 @@ export default function Solicitudes() {
                   Limpiar
                 </button>
 
-
                 <button
                   type="submit"
                   className="btn btn-save"
                   disabled={guardando}
                 >
-
                   {guardando
-
                     ? modoEdicion
                       ? "Actualizando..."
                       : "Guardando..."
-
                     : modoEdicion
                       ? "💾 Actualizar solicitud"
                       : "💾 Guardar solicitud"}
-
                 </button>
-
               </div>
-
             </section>
-
           </form>
-
         </>
       )}
-
 
       {/* =====================================================
           AVISO GERENCIA
       ===================================================== */}
 
       {esGerencia && (
-
         <section className="panel">
-
           <div
             style={{
               padding: "14px 16px",
@@ -1335,35 +1076,25 @@ export default function Solicitudes() {
               borderRadius: "6px"
             }}
           >
-
             👁️{" "}
-
             <strong>
               Modo consulta:
             </strong>{" "}
-
             Gerencia puede consultar las
             solicitudes registradas y revisar
             su información, pero no puede crear,
             editar ni eliminar solicitudes.
-
           </div>
-
         </section>
-
       )}
-
 
       {/* =====================================================
           SOLICITUDES REGISTRADAS
       ===================================================== */}
 
       <section className="panel solicitudes-listado">
-
         <div className="solicitudes-header">
-
           <div>
-
             <h2 className="section-title">
               Solicitudes registradas
             </h2>
@@ -1371,27 +1102,18 @@ export default function Solicitudes() {
             <p className="solicitudes-subtitle">
               Historial de solicitudes de crédito registradas en el sistema.
             </p>
-
           </div>
 
-
           <div className="solicitudes-total">
-
             Total:{" "}
-
             <strong>
               {solicitudes.length}
             </strong>
-
           </div>
-
         </div>
 
-
         {solicitudes.length === 0 ? (
-
           <div className="empty-state">
-
             <span>📄</span>
 
             <h3>
@@ -1401,20 +1123,12 @@ export default function Solicitudes() {
             <p>
               Las solicitudes creadas aparecerán en esta sección.
             </p>
-
           </div>
-
         ) : (
-
           <div className="table-container">
-
             <table className="solicitudes-table">
-
               <thead>
-
                 <tr>
-
-                  <th>ID</th>
                   <th>Cliente</th>
                   <th>Cédula</th>
                   <th>Tipo</th>
@@ -1423,110 +1137,66 @@ export default function Solicitudes() {
                   <th>Fecha</th>
                   <th>Estado</th>
                   <th>Acciones</th>
-
                 </tr>
-
               </thead>
 
-
               <tbody>
-
                 {solicitudes.map(
                   (solicitud) => (
-
                     <tr key={solicitud.id}>
-
                       <td>
-                        #{solicitud.id}
-                      </td>
-
-
-                      <td>
-
                         <strong>
-
                           {solicitud.cliente
-
                             ? `${solicitud.cliente.nombres || ""} ${solicitud.cliente.apellidos || ""}`.trim()
-
                             : "Sin cliente"}
-
                         </strong>
-
                       </td>
 
-
                       <td>
-
                         {solicitud.cliente?.cedula ||
                           "-"}
-
                       </td>
-
 
                       <td>
-
                         {solicitud.tipoCredito ||
                           "-"}
-
                       </td>
 
-
                       <td className="monto-cell">
-
                         {formatearDinero(
                           solicitud.monto
                         )}
-
                       </td>
 
-
                       <td>
-
                         {solicitud.plazoMeses
-
                           ? `${solicitud.plazoMeses} meses`
-
                           : "-"}
-
                       </td>
 
-
                       <td>
-
                         {solicitud.fechaSolicitud
-
                           ? new Date(
                               solicitud.fechaSolicitud
                             ).toLocaleDateString(
                               "es-EC"
                             )
-
                           : "-"}
-
                       </td>
 
-
                       <td>
-
                         <span
                           className={`estado-badge ${obtenerClaseEstado(
                             solicitud.estado
                           )}`}
                         >
-
                           {solicitud.estado ||
                             "Pendiente"}
-
                         </span>
-
                       </td>
 
-
                       <td>
-
                         <div className="table-actions">
-
                           {/* VER - TODOS LOS ROLES */}
 
                           <button
@@ -1542,12 +1212,10 @@ export default function Solicitudes() {
                             👁
                           </button>
 
-
                           {/* EDITAR / ELIMINAR - ADMIN Y ANALISTA */}
 
                           {puedeModificar && (
                             <>
-
                               <button
                                 type="button"
                                 className="action-btn edit"
@@ -1561,7 +1229,6 @@ export default function Solicitudes() {
                                 ✏️
                               </button>
 
-
                               <button
                                 type="button"
                                 className="action-btn delete"
@@ -1574,64 +1241,44 @@ export default function Solicitudes() {
                               >
                                 🗑️
                               </button>
-
                             </>
                           )}
-
                         </div>
-
                       </td>
-
                     </tr>
-
                   )
                 )}
-
               </tbody>
-
             </table>
-
           </div>
-
         )}
-
       </section>
-
 
       {/* =====================================================
           MODAL VER SOLICITUD
       ===================================================== */}
-
-      {modalVer &&
+            {modalVer &&
         solicitudSeleccionada && (
-
           <div
             className="solicitud-modal-overlay"
             onClick={cerrarModalVer}
           >
-
             <div
               className="solicitud-modal"
               onClick={(e) =>
                 e.stopPropagation()
               }
             >
-
-
               <div className="solicitud-modal-header">
-
                 <div>
-
                   <h2>
                     Detalle de la solicitud
                   </h2>
 
                   <p>
-                    Solicitud #{solicitudSeleccionada.id}
+                    Información completa del crédito
                   </p>
-
                 </div>
-
 
                 <button
                   type="button"
@@ -1640,45 +1287,31 @@ export default function Solicitudes() {
                 >
                   ×
                 </button>
-
               </div>
 
-
               <div className="solicitud-modal-body">
-
 
                 {/* CLIENTE */}
 
                 <div className="solicitud-detail-section">
-
                   <h3>
                     👤 Información del cliente
                   </h3>
 
-
                   <div className="solicitud-detail-grid">
-
                     <div>
-
                       <span>
                         Nombre completo
                       </span>
 
                       <strong>
-
                         {solicitudSeleccionada.cliente
-
                           ? `${solicitudSeleccionada.cliente.nombres || ""} ${solicitudSeleccionada.cliente.apellidos || ""}`.trim()
-
                           : "-"}
-
                       </strong>
-
                     </div>
 
-
                     <div>
-
                       <span>
                         Cédula
                       </span>
@@ -1688,12 +1321,9 @@ export default function Solicitudes() {
                           .cliente
                           ?.cedula || "-"}
                       </strong>
-
                     </div>
 
-
                     <div>
-
                       <span>
                         Correo
                       </span>
@@ -1703,12 +1333,9 @@ export default function Solicitudes() {
                           .cliente
                           ?.correo || "-"}
                       </strong>
-
                     </div>
 
-
                     <div>
-
                       <span>
                         Teléfono
                       </span>
@@ -1718,12 +1345,9 @@ export default function Solicitudes() {
                           .cliente
                           ?.telefono || "-"}
                       </strong>
-
                     </div>
 
-
                     <div>
-
                       <span>
                         Estado civil
                       </span>
@@ -1732,12 +1356,9 @@ export default function Solicitudes() {
                         {solicitudSeleccionada
                           .estadoCivil || "-"}
                       </strong>
-
                     </div>
 
-
                     <div>
-
                       <span>
                         Ocupación
                       </span>
@@ -1746,12 +1367,9 @@ export default function Solicitudes() {
                         {solicitudSeleccionada
                           .ocupacion || "-"}
                       </strong>
-
                     </div>
 
-
                     <div className="detail-full">
-
                       <span>
                         Dirección
                       </span>
@@ -1760,27 +1378,19 @@ export default function Solicitudes() {
                         {solicitudSeleccionada
                           .direccion || "-"}
                       </strong>
-
                     </div>
-
                   </div>
-
                 </div>
-
 
                 {/* INFORMACIÓN FINANCIERA */}
 
                 <div className="solicitud-detail-section">
-
                   <h3>
                     💰 Información financiera
                   </h3>
 
-
                   <div className="solicitud-detail-grid">
-
                     <div>
-
                       <span>
                         Ingresos mensuales
                       </span>
@@ -1791,12 +1401,9 @@ export default function Solicitudes() {
                             .ingresosMensuales
                         )}
                       </strong>
-
                     </div>
 
-
                     <div>
-
                       <span>
                         Egresos mensuales
                       </span>
@@ -1807,12 +1414,9 @@ export default function Solicitudes() {
                             .egresosMensuales
                         )}
                       </strong>
-
                     </div>
 
-
                     <div>
-
                       <span>
                         Nivel de endeudamiento
                       </span>
@@ -1822,12 +1426,9 @@ export default function Solicitudes() {
                           .nivelEndeudamiento ?? 0}
                         %
                       </strong>
-
                     </div>
 
-
                     <div>
-
                       <span>
                         Capacidad de pago
                       </span>
@@ -1838,12 +1439,9 @@ export default function Solicitudes() {
                             .capacidadPago
                         )}
                       </strong>
-
                     </div>
 
-
                     <div>
-
                       <span>
                         Empresa / Actividad
                       </span>
@@ -1852,12 +1450,9 @@ export default function Solicitudes() {
                         {solicitudSeleccionada
                           .empresa || "-"}
                       </strong>
-
                     </div>
 
-
                     <div>
-
                       <span>
                         Antigüedad laboral
                       </span>
@@ -1866,27 +1461,19 @@ export default function Solicitudes() {
                         {solicitudSeleccionada
                           .antiguedadLaboral || "-"}
                       </strong>
-
                     </div>
-
                   </div>
-
                 </div>
-
 
                 {/* INFORMACIÓN DEL CRÉDITO */}
 
                 <div className="solicitud-detail-section">
-
                   <h3>
                     💳 Información del crédito
                   </h3>
 
-
                   <div className="solicitud-detail-grid">
-
                     <div>
-
                       <span>
                         Tipo de crédito
                       </span>
@@ -1895,12 +1482,9 @@ export default function Solicitudes() {
                         {solicitudSeleccionada
                           .tipoCredito || "-"}
                       </strong>
-
                     </div>
 
-
                     <div>
-
                       <span>
                         Monto solicitado
                       </span>
@@ -1911,32 +1495,22 @@ export default function Solicitudes() {
                             .monto
                         )}
                       </strong>
-
                     </div>
 
-
                     <div>
-
                       <span>
                         Plazo
                       </span>
 
                       <strong>
-
                         {solicitudSeleccionada
                           .plazoMeses
-
                           ? `${solicitudSeleccionada.plazoMeses} meses`
-
                           : "-"}
-
                       </strong>
-
                     </div>
 
-
                     <div>
-
                       <span>
                         Estado
                       </span>
@@ -1946,37 +1520,27 @@ export default function Solicitudes() {
                           .estado ||
                           "Pendiente"}
                       </strong>
-
                     </div>
 
-
                     <div>
-
                       <span>
                         Fecha de solicitud
                       </span>
 
                       <strong>
-
                         {solicitudSeleccionada
                           .fechaSolicitud
-
                           ? new Date(
                               solicitudSeleccionada
                                 .fechaSolicitud
                             ).toLocaleString(
                               "es-EC"
                             )
-
                           : "-"}
-
                       </strong>
-
                     </div>
 
-
                     <div className="detail-full">
-
                       <span>
                         Destino del crédito
                       </span>
@@ -1986,18 +1550,12 @@ export default function Solicitudes() {
                           .destinoCredito ||
                           "-"}
                       </strong>
-
                     </div>
-
                   </div>
-
                 </div>
-
               </div>
 
-
               <div className="solicitud-modal-footer">
-
                 <button
                   type="button"
                   className="btn btn-cancel"
@@ -2005,18 +1563,11 @@ export default function Solicitudes() {
                 >
                   Cerrar
                 </button>
-
               </div>
-
             </div>
-
           </div>
-
         )}
 
-
     </Layout>
-
   );
-
 }
