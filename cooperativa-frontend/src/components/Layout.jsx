@@ -45,6 +45,17 @@ function Layout({ title, children }) {
   const notificacionesRef = useRef(null);
 
   // =========================================================
+  // ESTADOS - TOAST
+  // =========================================================
+  const [toastNotificacion, setToastNotificacion] = useState(null);
+  const [toastVisible, setToastVisible] = useState(false);
+
+  const idsNotificacionesRef = useRef(new Set());
+  const primeraCargaNotificacionesRef = useRef(true);
+  const toastTimeoutRef = useRef(null);
+  const toastLimpiezaRef = useRef(null);
+
+  // =========================================================
   // OBTENER USUARIO DE LA SESIÓN
   // =========================================================
   let usuario = null;
@@ -105,6 +116,51 @@ function Layout({ title, children }) {
     navigate("/", {
       replace: true,
     });
+  };
+
+  // =========================================================
+  // CERRAR TOAST
+  // =========================================================
+  const cerrarToast = () => {
+    if (toastTimeoutRef.current) {
+      clearTimeout(toastTimeoutRef.current);
+      toastTimeoutRef.current = null;
+    }
+
+    if (toastLimpiezaRef.current) {
+      clearTimeout(toastLimpiezaRef.current);
+      toastLimpiezaRef.current = null;
+    }
+
+    setToastVisible(false);
+
+    toastLimpiezaRef.current = setTimeout(() => {
+      setToastNotificacion(null);
+    }, 350);
+  };
+
+  // =========================================================
+  // MOSTRAR TOAST
+  // =========================================================
+  const mostrarToast = (notificacion) => {
+    if (toastTimeoutRef.current) {
+      clearTimeout(toastTimeoutRef.current);
+    }
+
+    if (toastLimpiezaRef.current) {
+      clearTimeout(toastLimpiezaRef.current);
+    }
+
+    setToastNotificacion(notificacion);
+    setToastVisible(true);
+
+    toastTimeoutRef.current = setTimeout(() => {
+      setToastVisible(false);
+
+      toastLimpiezaRef.current = setTimeout(() => {
+        setToastNotificacion(null);
+      }, 350);
+    }, 3000);
   };
 
   // =========================================================
@@ -196,6 +252,83 @@ function Layout({ title, children }) {
   };
 
   // =========================================================
+  // COMPROBAR NOTIFICACIONES NUEVAS PARA EL TOAST
+  // =========================================================
+  const comprobarNotificacionesNuevas = async () => {
+    const token = sessionStorage.getItem("token");
+
+    if (!token) {
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        "http://localhost:8080/api/notificaciones",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.status === 401) {
+        cerrarSesion();
+        return;
+      }
+
+      if (!response.ok) {
+        return;
+      }
+
+      const datos = await response.json();
+      const lista = Array.isArray(datos) ? datos : [];
+
+      // PRIMERA CARGA:
+      // Registramos las notificaciones existentes sin mostrar toast.
+      if (primeraCargaNotificacionesRef.current) {
+        idsNotificacionesRef.current = new Set(
+          lista.map((notificacion) => notificacion.id)
+        );
+
+        primeraCargaNotificacionesRef.current = false;
+
+        setNotificaciones(lista);
+
+        return;
+      }
+
+      // BUSCAR NOTIFICACIONES QUE NO EXISTÍAN ANTES
+      const nuevas = lista.filter(
+        (notificacion) =>
+          !idsNotificacionesRef.current.has(notificacion.id)
+      );
+
+      // ACTUALIZAR LOS IDs CONOCIDOS
+      lista.forEach((notificacion) => {
+        idsNotificacionesRef.current.add(notificacion.id);
+      });
+
+      // ACTUALIZAR LA LISTA DE LA CAMPANA
+      setNotificaciones(lista);
+
+      // ACTUALIZAR CONTADOR
+      setContadorNoLeidas(
+        lista.filter((notificacion) => !notificacion.leida).length
+      );
+
+      // MOSTRAR SOLO LA NOTIFICACIÓN MÁS RECIENTE
+      if (nuevas.length > 0) {
+        mostrarToast(nuevas[0]);
+      }
+    } catch (error) {
+      console.error(
+        "Error al comprobar nuevas notificaciones:",
+        error
+      );
+    }
+  };
+
+  // =========================================================
   // ABRIR / CERRAR CAMPANA
   // =========================================================
   const alternarNotificaciones = async () => {
@@ -259,6 +392,7 @@ function Layout({ title, children }) {
         );
       }
 
+      cerrarToast();
       setMostrarNotificaciones(false);
 
       if (notificacion.ruta) {
@@ -343,18 +477,32 @@ function Layout({ title, children }) {
   };
 
   // =========================================================
-  // CARGAR CONTADOR AUTOMÁTICAMENTE
+  // COMPROBAR NOTIFICACIONES AUTOMÁTICAMENTE
   // =========================================================
   useEffect(() => {
-    cargarContadorNotificaciones();
+    const iniciarNotificaciones = async () => {
+      await cargarContadorNotificaciones();
+      await comprobarNotificacionesNuevas();
+    };
 
-    const intervalo = setInterval(
-      cargarContadorNotificaciones,
-      30000
-    );
+    iniciarNotificaciones();
+
+    // Cada 5 segundos revisamos si llegó una nueva.
+    const intervalo = setInterval(async () => {
+      await cargarContadorNotificaciones();
+      await comprobarNotificacionesNuevas();
+    }, 5000);
 
     return () => {
       clearInterval(intervalo);
+
+      if (toastTimeoutRef.current) {
+        clearTimeout(toastTimeoutRef.current);
+      }
+
+      if (toastLimpiezaRef.current) {
+        clearTimeout(toastLimpiezaRef.current);
+      }
     };
   }, []);
 
@@ -863,6 +1011,66 @@ function Layout({ title, children }) {
         {/* CONTENIDO DE CADA PÁGINA */}
         {children}
       </main>
+
+      {/* =====================================================
+          TOAST - NOTIFICACIÓN EMERGENTE
+      ===================================================== */}
+      {toastNotificacion && (
+        <div
+          className={`notification-toast ${
+            toastVisible ? "show" : "hide"
+          }`}
+          onClick={() =>
+            abrirNotificacion(toastNotificacion)
+          }
+          role="button"
+          tabIndex={0}
+          onKeyDown={(event) => {
+            if (
+              event.key === "Enter" ||
+              event.key === " "
+            ) {
+              abrirNotificacion(toastNotificacion);
+            }
+          }}
+        >
+          {/* ICONO */}
+          <div className="notification-toast-icon">
+            {toastNotificacion.tipo === "DECISION"
+              ? "⚖️"
+              : toastNotificacion.tipo === "EVALUACION"
+                ? "📊"
+                : toastNotificacion.tipo === "SOLICITUD"
+                  ? "📝"
+                  : "🔔"}
+          </div>
+
+          {/* CONTENIDO */}
+          <div className="notification-toast-content">
+            <strong>
+              {toastNotificacion.titulo}
+            </strong>
+
+            <p>
+              {toastNotificacion.mensaje}
+            </p>
+          </div>
+
+          {/* CERRAR */}
+          <button
+            type="button"
+            className="notification-toast-close"
+            onClick={(event) => {
+              event.stopPropagation();
+              cerrarToast();
+            }}
+            aria-label="Cerrar notificación"
+            title="Cerrar"
+          >
+            ×
+          </button>
+        </div>
+      )}
 
       {/* =====================================================
           MODAL CAMBIAR CONTRASEÑA
