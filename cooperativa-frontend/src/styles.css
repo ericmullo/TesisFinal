@@ -5041,3 +5041,194 @@ form .form-group textarea:focus {
     font-size: 13px;
   }
 }
+/* =========================================================
+   SIDEBAR DESPLEGABLE - CORRECCIÓN FINAL
+========================================================= */
+
+.layout {
+  display: flex !important;
+  min-height: 100vh;
+  width: 100%;
+}
+
+/* MENÚ ABIERTO */
+.layout .sidebar.sidebar-abierto {
+  width: 338px !important;
+  min-width: 338px !important;
+  max-width: 338px !important;
+
+  transform: translateX(0) !important;
+
+  opacity: 1;
+  visibility: visible;
+
+  overflow: hidden;
+
+  transition:
+    width 0.3s ease,
+    min-width 0.3s ease,
+    max-width 0.3s ease,
+    transform 0.3s ease,
+    opacity 0.2s ease;
+}
+
+/* MENÚ CERRADO */
+.layout .sidebar.sidebar-cerrado {
+  width: 0 !important;
+  min-width: 0 !important;
+  max-width: 0 !important;
+
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+
+  border: 0 !important;
+
+  transform: translateX(-100%) !important;
+
+  opacity: 0;
+  visibility: hidden;
+
+  overflow: hidden;
+
+  pointer-events: none;
+
+  transition:
+    width 0.3s ease,
+    min-width 0.3s ease,
+    max-width 0.3s ease,
+    transform 0.3s ease,
+    opacity 0.2s ease,
+    visibility 0.3s ease;
+}
+
+/* =========================================================
+   CONTENIDO
+========================================================= */
+
+.layout .content {
+  flex: 1 1 auto !important;
+  width: auto !important;
+  min-width: 0 !important;
+
+  transition:
+    width 0.3s ease,
+    margin 0.3s ease;
+}
+
+/* Cuando el menú está cerrado el contenido usa todo */
+.layout.menu-cerrado .content {
+  width: 100% !important;
+  margin-left: 0 !important;
+}
+
+/* =========================================================
+   TOPBAR
+========================================================= */
+
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.topbar-left h1 {
+  margin: 0;
+}
+
+/* =========================================================
+   BOTÓN HAMBURGUESA
+========================================================= */
+
+.menu-toggle {
+  width: 54px;
+  height: 54px;
+
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border: none;
+  border-radius: 12px;
+
+  background: #00723f;
+  color: #ffffff;
+
+  font-size: 30px;
+  font-weight: 600;
+  line-height: 1;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.menu-toggle:hover {
+  background: #008c4c;
+
+  transform: scale(1.04);
+
+  box-shadow:
+    0 5px 14px rgba(0, 104, 55, 0.22);
+}
+
+.menu-toggle:active {
+  transform: scale(0.96);
+}
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media (max-width: 768px) {
+
+  .layout .sidebar {
+    position: fixed !important;
+
+    top: 0;
+    left: 0;
+    bottom: 0;
+
+    height: 100vh;
+
+    z-index: 1000;
+  }
+
+  .layout .sidebar.sidebar-abierto {
+    width: 300px !important;
+    min-width: 300px !important;
+    max-width: 300px !important;
+
+    transform: translateX(0) !important;
+  }
+
+  .layout .sidebar.sidebar-cerrado {
+    width: 0 !important;
+    min-width: 0 !important;
+    max-width: 0 !important;
+
+    transform: translateX(-100%) !important;
+  }
+
+  .layout .content {
+    width: 100% !important;
+  }
+
+  .menu-toggle {
+    width: 46px;
+    height: 46px;
+
+    font-size: 25px;
+  }
+
+  .topbar-left {
+    gap: 10px;
+  }
+}
