@@ -921,9 +921,9 @@ function Layout({
         <div className="sidebar-logo">
 
           <img
-            src="/coop.png"
-            alt="Logo Coop"
-          />
+  src="/banner_logo.png"
+  alt="Cooperativa 15 de Abril"
+/>
 
         </div>
 
