@@ -1,6 +1,5 @@
 import Layout from "../components/Layout";
 import { useEffect, useState } from "react";
-
 import {
   obtenerClientes,
   crearCliente,
@@ -14,7 +13,6 @@ function Clientes() {
   // =========================================================
   // USUARIO Y PERMISOS
   // =========================================================
-
   let usuario = null;
 
   try {
@@ -37,7 +35,6 @@ function Clientes() {
   // =========================================================
   // ESTADOS
   // =========================================================
-
   const [clientes, setClientes] = useState([]);
   const [busqueda, setBusqueda] = useState("");
 
@@ -69,7 +66,6 @@ function Clientes() {
   // =========================================================
   // FORMULARIO
   // =========================================================
-
   const [formulario, setFormulario] = useState({
     cedula: "",
     nombres: "",
@@ -82,7 +78,6 @@ function Clientes() {
   // =========================================================
   // CARGAR CLIENTES
   // =========================================================
-
   useEffect(() => {
     cargarClientes();
   }, []);
@@ -103,7 +98,6 @@ function Clientes() {
   // =========================================================
   // CAMBIOS DEL FORMULARIO
   // =========================================================
-
   const manejarCambio = (e) => {
     const { name, value } = e.target;
 
@@ -116,7 +110,6 @@ function Clientes() {
   // =========================================================
   // LIMPIAR FORMULARIO
   // =========================================================
-
   const limpiarFormulario = () => {
     setFormulario({
       cedula: "",
@@ -133,7 +126,6 @@ function Clientes() {
   // =========================================================
   // VALIDAR FORMULARIO
   // =========================================================
-
   const formularioValido = () => {
     return (
       formulario.cedula.trim() &&
@@ -147,7 +139,6 @@ function Clientes() {
   // =========================================================
   // CREAR CLIENTE
   // =========================================================
-
   const manejarCrearCliente = async () => {
     if (!formularioValido()) {
       alert(
@@ -158,8 +149,14 @@ function Clientes() {
     }
 
     try {
+      // Todo cliente nuevo se envía como Activo.
+      const datosNuevoCliente = {
+        ...formulario,
+        estado: "Activo",
+      };
+
       const nuevoCliente =
-        await crearCliente(formulario);
+        await crearCliente(datosNuevoCliente);
 
       setClientes((clientesActuales) => [
         ...clientesActuales,
@@ -186,7 +183,6 @@ function Clientes() {
   // =========================================================
   // VER CLIENTE + HISTORIAL
   // =========================================================
-
   const manejarVerCliente = async (id) => {
     try {
       setCargandoHistorial(true);
@@ -227,7 +223,6 @@ function Clientes() {
   // =========================================================
   // EDITAR CLIENTE
   // =========================================================
-
   const manejarEditarCliente = async (id) => {
     if (!puedeModificar) {
       return;
@@ -314,7 +309,6 @@ function Clientes() {
   // =========================================================
   // ELIMINAR CLIENTE
   // =========================================================
-
   const manejarSolicitarEliminar = (
     cliente
   ) => {
@@ -374,7 +368,6 @@ function Clientes() {
   // =========================================================
   // CLASE DE ESTADO
   // =========================================================
-
   const obtenerClaseEstado = (
     estado
   ) => {
@@ -396,7 +389,6 @@ function Clientes() {
   // =========================================================
   // CLASE DE RIESGO
   // =========================================================
-
   const obtenerClaseRiesgo = (
     riesgo
   ) => {
@@ -425,7 +417,6 @@ function Clientes() {
   // =========================================================
   // FORMATEAR DINERO
   // =========================================================
-
   const formatearDinero = (
     valor
   ) => {
@@ -443,7 +434,6 @@ function Clientes() {
   // =========================================================
   // FORMATEAR PORCENTAJE
   // =========================================================
-
   const formatearPorcentaje = (
     valor
   ) => {
@@ -466,7 +456,6 @@ function Clientes() {
   // =========================================================
   // FORMATEAR FECHA
   // =========================================================
-
   const formatearFecha = (
     fecha
   ) => {
@@ -488,7 +477,6 @@ function Clientes() {
   // =========================================================
   // CONTADORES GENERALES
   // =========================================================
-
   const totalClientes =
     clientes.length;
 
@@ -514,7 +502,6 @@ function Clientes() {
   // =========================================================
   // HISTORIAL DEL CLIENTE
   // =========================================================
-
   const ultimaEvaluacion =
     historialEvaluaciones.length > 0
       ? historialEvaluaciones[0]
@@ -523,7 +510,6 @@ function Clientes() {
   // =========================================================
   // BUSCADOR
   // =========================================================
-
   const clientesFiltrados =
     clientes.filter((cliente) => {
       const texto =
@@ -557,7 +543,6 @@ function Clientes() {
   // =========================================================
   // RETURN
   // =========================================================
-
   return (
     <Layout title="Gestión de Clientes">
 
@@ -797,37 +782,45 @@ function Clientes() {
 
               </div>
 
-              <div className="form-group">
+              {/* =============================================
+                  ESTADO
+                  Solo aparece cuando se EDITA un cliente.
+                  Al CREAR, no se muestra.
+              ============================================= */}
 
-                <label>
-                  Estado
-                </label>
+              {clienteEditandoId && (
+                <div className="form-group">
 
-                <select
-                  name="estado"
-                  value={
-                    formulario.estado
-                  }
-                  onChange={
-                    manejarCambio
-                  }
-                >
+                  <label>
+                    Estado
+                  </label>
 
-                  <option value="Activo">
-                    Activo
-                  </option>
+                  <select
+                    name="estado"
+                    value={
+                      formulario.estado
+                    }
+                    onChange={
+                      manejarCambio
+                    }
+                  >
 
-                  <option value="En revisión">
-                    En revisión
-                  </option>
+                    <option value="Activo">
+                      Activo
+                    </option>
 
-                  <option value="Alerta">
-                    Alerta
-                  </option>
+                    <option value="En revisión">
+                      En revisión
+                    </option>
 
-                </select>
+                    <option value="Alerta">
+                      Alerta
+                    </option>
 
-              </div>
+                  </select>
+
+                </div>
+              )}
 
             </div>
 

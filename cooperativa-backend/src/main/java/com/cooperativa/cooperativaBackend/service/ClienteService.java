@@ -15,27 +15,43 @@ public class ClienteService {
         this.clienteRepository = clienteRepository;
     }
 
-    // Obtener todos
+    // =========================================================
+    // OBTENER TODOS LOS CLIENTES
+    // =========================================================
     public List<Cliente> obtenerClientes() {
         return clienteRepository.findAll();
     }
 
-    // Guardar
+    // =========================================================
+    // CREAR CLIENTE
+    // Todo cliente nuevo inicia automáticamente como Activo
+    // =========================================================
     public Cliente guardarCliente(Cliente cliente) {
+
+        cliente.setEstado("Activo");
+
         return clienteRepository.save(cliente);
     }
 
-    // Obtener por ID
+    // =========================================================
+    // OBTENER CLIENTE POR ID
+    // =========================================================
     public Cliente obtenerClientePorId(Long id) {
         return clienteRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Cliente no encontrado"));
+                .orElseThrow(() ->
+                        new RuntimeException("Cliente no encontrado"));
     }
 
-    // Actualizar
-    public Cliente actualizarCliente(Long id, Cliente datosActualizados) {
+    // =========================================================
+    // ACTUALIZAR CLIENTE
+    // =========================================================
+    public Cliente actualizarCliente(
+            Long id,
+            Cliente datosActualizados) {
 
         Cliente cliente = clienteRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Cliente no encontrado"));
+                .orElseThrow(() ->
+                        new RuntimeException("Cliente no encontrado"));
 
         cliente.setCedula(datosActualizados.getCedula());
         cliente.setNombres(datosActualizados.getNombres());
@@ -47,11 +63,14 @@ public class ClienteService {
         return clienteRepository.save(cliente);
     }
 
-    // Eliminar
+    // =========================================================
+    // ELIMINAR CLIENTE
+    // =========================================================
     public void eliminarCliente(Long id) {
 
         Cliente cliente = clienteRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Cliente no encontrado"));
+                .orElseThrow(() ->
+                        new RuntimeException("Cliente no encontrado"));
 
         clienteRepository.delete(cliente);
     }
