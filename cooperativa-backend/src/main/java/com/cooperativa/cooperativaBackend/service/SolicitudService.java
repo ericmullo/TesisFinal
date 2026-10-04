@@ -29,6 +29,7 @@ public class SolicitudService {
     private final EvaluacionRiesgoRepository evaluacionRiesgoRepository;
     private final UsuarioRepository usuarioRepository;
     private final NotificacionService notificacionService;
+    private final EmailService emailService;
 
     // =========================================================
     // CONSTRUCTOR
@@ -39,7 +40,8 @@ public class SolicitudService {
             ClienteRepository clienteRepository,
             EvaluacionRiesgoRepository evaluacionRiesgoRepository,
             UsuarioRepository usuarioRepository,
-            NotificacionService notificacionService
+            NotificacionService notificacionService,
+            EmailService emailService
     ) {
         this.solicitudRepository =
                 solicitudRepository;
@@ -55,6 +57,9 @@ public class SolicitudService {
 
         this.notificacionService =
                 notificacionService;
+
+        this.emailService =
+                emailService;
     }
 
     // =========================================================
@@ -145,6 +150,14 @@ public class SolicitudService {
         // =====================================================
 
         notificarNuevaSolicitud(
+                solicitudGuardada
+        );
+
+        // =====================================================
+        // CORREO AL CLIENTE
+        // =====================================================
+
+        enviarCorreoSolicitudRegistrada(
                 solicitudGuardada
         );
 
@@ -335,6 +348,14 @@ public class SolicitudService {
                 "APROBADA"
         );
 
+        // =====================================================
+        // CORREO DE APROBACIÓN AL CLIENTE
+        // =====================================================
+
+        enviarCorreoSolicitudAprobada(
+                solicitudGuardada
+        );
+
         return solicitudGuardada;
     }
 
@@ -401,7 +422,105 @@ public class SolicitudService {
                 "RECHAZADA"
         );
 
+        // =====================================================
+        // CORREO DE RECHAZO AL CLIENTE
+        // =====================================================
+
+        enviarCorreoSolicitudRechazada(
+                solicitudGuardada
+        );
+
         return solicitudGuardada;
+    }
+
+    // =========================================================
+    // CORREO - SOLICITUD REGISTRADA
+    // =========================================================
+
+    private void enviarCorreoSolicitudRegistrada(
+            Solicitud solicitud
+    ) {
+        try {
+            emailService.enviarSolicitudRegistrada(
+                    solicitud
+            );
+
+            System.out.println(
+                    "Correo de solicitud registrada enviado correctamente."
+            );
+
+        } catch (Exception e) {
+
+            /*
+             * El fallo del correo NO debe impedir que
+             * la solicitud quede registrada.
+             */
+
+            System.err.println(
+                    "No se pudo enviar el correo de solicitud registrada: "
+                            + e.getMessage()
+            );
+        }
+    }
+
+    // =========================================================
+    // CORREO - SOLICITUD APROBADA
+    // =========================================================
+
+    private void enviarCorreoSolicitudAprobada(
+            Solicitud solicitud
+    ) {
+        try {
+            emailService.enviarSolicitudAprobada(
+                    solicitud
+            );
+
+            System.out.println(
+                    "Correo de aprobación enviado correctamente."
+            );
+
+        } catch (Exception e) {
+
+            /*
+             * El fallo del correo NO debe revertir
+             * la decisión de aprobación.
+             */
+
+            System.err.println(
+                    "No se pudo enviar el correo de aprobación: "
+                            + e.getMessage()
+            );
+        }
+    }
+
+    // =========================================================
+    // CORREO - SOLICITUD RECHAZADA
+    // =========================================================
+
+    private void enviarCorreoSolicitudRechazada(
+            Solicitud solicitud
+    ) {
+        try {
+            emailService.enviarSolicitudRechazada(
+                    solicitud
+            );
+
+            System.out.println(
+                    "Correo de rechazo enviado correctamente."
+            );
+
+        } catch (Exception e) {
+
+            /*
+             * El fallo del correo NO debe revertir
+             * la decisión de rechazo.
+             */
+
+            System.err.println(
+                    "No se pudo enviar el correo de rechazo: "
+                            + e.getMessage()
+            );
+        }
     }
 
     // =========================================================
