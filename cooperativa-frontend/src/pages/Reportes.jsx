@@ -3,36 +3,29 @@ import Layout from "../components/Layout";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-
 import {
   obtenerEvaluaciones,
   obtenerSolicitudes,
 } from "../services/api";
 
 export default function Reportes() {
-
   // =========================================================
   // DATOS
   // =========================================================
-
   const [evaluaciones, setEvaluaciones] = useState([]);
   const [solicitudes, setSolicitudes] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
 
-
   // =========================================================
   // FILTROS
   // =========================================================
-
   const [fechaInicio, setFechaInicio] = useState("");
   const [fechaFin, setFechaFin] = useState("");
   const [tipoCredito, setTipoCredito] = useState("Todos");
   const [nivelRiesgo, setNivelRiesgo] = useState("Todos");
   const [decisionAnalista, setDecisionAnalista] = useState("Todos");
 
-
-  // Estos son los filtros que realmente están aplicados.
   const [filtrosAplicados, setFiltrosAplicados] = useState({
     fechaInicio: "",
     fechaFin: "",
@@ -41,20 +34,15 @@ export default function Reportes() {
     decisionAnalista: "Todos",
   });
 
-
   // =========================================================
-  // CARGAR EVALUACIONES
+  // CARGAR DATOS
   // =========================================================
-
   useEffect(() => {
     cargarDatos();
   }, []);
 
-
   const cargarDatos = async () => {
-
     try {
-
       setCargando(true);
       setError("");
 
@@ -68,9 +56,7 @@ export default function Reportes() {
 
       setEvaluaciones(datosEvaluaciones || []);
       setSolicitudes(datosSolicitudes || []);
-
     } catch (error) {
-
       console.error(
         "Error cargando reportes:",
         error
@@ -79,35 +65,26 @@ export default function Reportes() {
       setError(
         "No se pudo cargar la información de los reportes."
       );
-
     } finally {
-
       setCargando(false);
-
     }
-
   };
-
 
   // =========================================================
   // APLICAR FILTROS
   // =========================================================
-
   const aplicarFiltros = () => {
-
     if (
       fechaInicio &&
       fechaFin &&
       fechaInicio > fechaFin
     ) {
-
       alert(
         "La fecha de inicio no puede ser posterior a la fecha final."
       );
 
       return;
     }
-
 
     setFiltrosAplicados({
       fechaInicio,
@@ -116,16 +93,12 @@ export default function Reportes() {
       nivelRiesgo,
       decisionAnalista,
     });
-
   };
-
 
   // =========================================================
   // LIMPIAR FILTROS
   // =========================================================
-
   const limpiarFiltros = () => {
-
     setFechaInicio("");
     setFechaFin("");
     setTipoCredito("Todos");
@@ -139,14 +112,11 @@ export default function Reportes() {
       nivelRiesgo: "Todos",
       decisionAnalista: "Todos",
     });
-
   };
-
 
   // =========================================================
   // DECISIÓN FORMAL DEL ANALISTA
   // =========================================================
-
   const obtenerDecisionFormal = (solicitud) => {
     if (!solicitud?.fechaDecision) {
       return "Sin decisión";
@@ -173,28 +143,21 @@ export default function Reportes() {
     return "Sin decisión";
   };
 
-
   // =========================================================
   // EVALUACIONES FILTRADAS
   // =========================================================
-
   const evaluacionesFiltradas = useMemo(() => {
-
     return evaluaciones.filter((evaluacion) => {
-
       const solicitud = evaluacion.solicitud;
 
       if (!solicitud) {
         return false;
       }
 
-
       // -----------------------------------------------------
-      // FECHA
+      // FECHA INICIO
       // -----------------------------------------------------
-
       if (filtrosAplicados.fechaInicio) {
-
         if (!evaluacion.fechaEvaluacion) {
           return false;
         }
@@ -210,12 +173,12 @@ export default function Reportes() {
         if (fecha < inicio) {
           return false;
         }
-
       }
 
-
+      // -----------------------------------------------------
+      // FECHA FIN
+      // -----------------------------------------------------
       if (filtrosAplicados.fechaFin) {
-
         if (!evaluacion.fechaEvaluacion) {
           return false;
         }
@@ -231,29 +194,22 @@ export default function Reportes() {
         if (fecha > fin) {
           return false;
         }
-
       }
-
 
       // -----------------------------------------------------
       // TIPO DE CRÉDITO
       // -----------------------------------------------------
-
       if (
         filtrosAplicados.tipoCredito !== "Todos" &&
         solicitud.tipoCredito !==
           filtrosAplicados.tipoCredito
       ) {
-
         return false;
-
       }
-
 
       // -----------------------------------------------------
       // NIVEL DE RIESGO
       // -----------------------------------------------------
-
       if (
         filtrosAplicados.nivelRiesgo !== "Todos" &&
         String(
@@ -261,16 +217,12 @@ export default function Reportes() {
         ).toLowerCase() !==
           filtrosAplicados.nivelRiesgo.toLowerCase()
       ) {
-
         return false;
-
       }
-
 
       // -----------------------------------------------------
       // DECISIÓN FINAL DEL ANALISTA
       // -----------------------------------------------------
-
       if (
         filtrosAplicados.decisionAnalista !== "Todos" &&
         obtenerDecisionFormal(solicitud) !==
@@ -279,24 +231,18 @@ export default function Reportes() {
         return false;
       }
 
-
       return true;
-
     });
-
   }, [
     evaluaciones,
     filtrosAplicados,
   ]);
 
-
   // =========================================================
   // INDICADORES
   // =========================================================
-
   const totalEvaluaciones =
     evaluacionesFiltradas.length;
-
 
   const riesgoAlto =
     evaluacionesFiltradas.filter(
@@ -306,7 +252,6 @@ export default function Reportes() {
         ).toLowerCase() === "alto"
     ).length;
 
-
   const riesgoMedio =
     evaluacionesFiltradas.filter(
       (evaluacion) =>
@@ -314,7 +259,6 @@ export default function Reportes() {
           evaluacion.nivelRiesgo || ""
         ).toLowerCase() === "medio"
     ).length;
-
 
   const riesgoBajo =
     evaluacionesFiltradas.filter(
@@ -324,11 +268,9 @@ export default function Reportes() {
         ).toLowerCase() === "bajo"
     ).length;
 
-
   // =========================================================
   // DECISIONES FORMALES DEL ANALISTA
   // =========================================================
-
   const decisionesFormalesFiltradas =
     evaluacionesFiltradas.filter(
       (evaluacion) =>
@@ -371,13 +313,10 @@ export default function Reportes() {
         ) === "Sin decisión"
     ).length;
 
-
   // =========================================================
-  // PROMEDIO DE PROBABILIDAD DE MORA ESTIMADA
+  // PROMEDIO DE PROBABILIDAD DE MORA
   // =========================================================
-
   const probabilidadMoraPromedio = useMemo(() => {
-
     const valores = evaluacionesFiltradas
       .map(
         (evaluacion) =>
@@ -390,11 +329,9 @@ export default function Reportes() {
           Number.isFinite(valor)
       );
 
-
     if (valores.length === 0) {
       return 0;
     }
-
 
     const suma = valores.reduce(
       (acumulado, valor) =>
@@ -402,18 +339,13 @@ export default function Reportes() {
       0
     );
 
-
     return suma / valores.length;
-
   }, [evaluacionesFiltradas]);
-
 
   // =========================================================
   // SCORE PROMEDIO
   // =========================================================
-
   const scorePromedio = useMemo(() => {
-
     const scores = evaluacionesFiltradas
       .map(
         (evaluacion) =>
@@ -424,11 +356,9 @@ export default function Reportes() {
           Number.isFinite(valor)
       );
 
-
     if (scores.length === 0) {
       return 0;
     }
-
 
     const suma = scores.reduce(
       (acumulado, valor) =>
@@ -436,22 +366,16 @@ export default function Reportes() {
       0
     );
 
-
     return suma / scores.length;
-
   }, [evaluacionesFiltradas]);
-
 
   // =========================================================
   // RIESGO PREDOMINANTE
   // =========================================================
-
   const obtenerRiesgoPredominante = () => {
-
     if (totalEvaluaciones === 0) {
       return "-";
     }
-
 
     const cantidades = [
       {
@@ -468,44 +392,29 @@ export default function Reportes() {
       },
     ];
 
-
     cantidades.sort(
       (a, b) =>
         b.cantidad - a.cantidad
     );
-
-
-    /*
-      Si existe empate entre los valores máximos,
-      mostramos "Mixto".
-    */
 
     if (
       cantidades.length > 1 &&
       cantidades[0].cantidad ===
         cantidades[1].cantidad
     ) {
-
       return "Mixto";
-
     }
 
-
     return cantidades[0].riesgo;
-
   };
-
 
   const riesgoPredominante =
     obtenerRiesgoPredominante();
 
-
   // =========================================================
   // EVALUACIONES POR MES
   // =========================================================
-
   const datosMensuales = useMemo(() => {
-
     const meses = [
       "Ene",
       "Feb",
@@ -521,7 +430,6 @@ export default function Reportes() {
       "Dic",
     ];
 
-
     const datos = meses.map(
       (mes) => ({
         mes,
@@ -529,21 +437,17 @@ export default function Reportes() {
       })
     );
 
-
     evaluacionesFiltradas.forEach(
       (evaluacion) => {
-
         if (
           !evaluacion.fechaEvaluacion
         ) {
           return;
         }
 
-
         const fecha = new Date(
           evaluacion.fechaEvaluacion
         );
-
 
         if (
           Number.isNaN(
@@ -553,49 +457,38 @@ export default function Reportes() {
           return;
         }
 
-
         const mes =
           fecha.getMonth();
-
 
         const probabilidad =
           Number(
             evaluacion.probabilidadMora
           );
 
-
         if (
           Number.isFinite(
             probabilidad
           )
         ) {
-
           datos[
             mes
           ].probabilidades.push(
             probabilidad
           );
-
         }
-
       }
     );
 
-
     return datos.map(
       (item) => {
-
         if (
           item.probabilidades.length === 0
         ) {
-
           return {
             mes: item.mes,
             promedio: 0,
           };
-
         }
-
 
         const suma =
           item.probabilidades.reduce(
@@ -604,60 +497,41 @@ export default function Reportes() {
             0
           );
 
-
         return {
           mes: item.mes,
-
           promedio:
             suma /
             item.probabilidades.length,
         };
-
       }
     );
-
   }, [evaluacionesFiltradas]);
-
 
   // =========================================================
   // ALTURA DEL GRÁFICO
   // =========================================================
-
   const calcularAltura = (
     porcentaje
   ) => {
-
     if (porcentaje <= 0) {
       return "8px";
     }
 
-
-    /*
-      Como la probabilidad está entre
-      0 y 100, usamos una altura máxima
-      visual de 220px.
-    */
-
     const altura =
       (porcentaje / 100) * 220;
-
 
     return `${Math.max(
       altura,
       25
     )}px`;
-
   };
-
 
   // =========================================================
   // FORMATEADORES
   // =========================================================
-
   const formatearPorcentaje = (
     valor
   ) => {
-
     return `${Number(
       valor || 0
     ).toLocaleString(
@@ -667,21 +541,17 @@ export default function Reportes() {
         maximumFractionDigits: 2,
       }
     )}%`;
-
   };
-
 
   const formatearDinero = (
     valor
   ) => {
-
     if (
       valor === null ||
       valor === undefined
     ) {
       return "-";
     }
-
 
     return Number(
       valor
@@ -692,18 +562,14 @@ export default function Reportes() {
         currency: "USD",
       }
     );
-
   };
-
 
   const formatearFecha = (
     fecha
   ) => {
-
     if (!fecha) {
       return "-";
     }
-
 
     return new Date(
       fecha
@@ -715,1093 +581,866 @@ export default function Reportes() {
         year: "numeric",
       }
     );
-
   };
-
 
   // =========================================================
   // BADGE
   // =========================================================
-
   const obtenerClaseRiesgo = (
     riesgo
   ) => {
-
     const valor = String(
       riesgo || ""
     ).toLowerCase();
-
 
     if (valor === "bajo") {
       return "badge bajo";
     }
 
-
     if (valor === "medio") {
       return "badge medio";
     }
-
 
     if (valor === "alto") {
       return "badge alto";
     }
 
-
     return "badge";
-
   };
 
-
   // =========================================================
-  // EXPORTACIONES
-  // POR AHORA LAS CONECTAMOS EN EL SIGUIENTE PASO
+  // EXPORTAR PDF
   // =========================================================
-
   const exportarPDF = () => {
+    if (evaluacionesFiltradas.length === 0) {
+      alert(
+        "No existen evaluaciones para exportar con los filtros seleccionados."
+      );
 
-  // =========================================================
-  // VALIDAR DATOS
-  // =========================================================
+      return;
+    }
 
-  if (evaluacionesFiltradas.length === 0) {
+    const pdf = new jsPDF({
+      orientation: "landscape",
+      unit: "mm",
+      format: "a4",
+    });
 
-    alert(
-      "No existen evaluaciones para exportar con los filtros seleccionados."
+    const anchoPagina =
+      pdf.internal.pageSize.getWidth();
+
+    // =========================================================
+    // ENCABEZADO
+    // =========================================================
+    pdf.setFont(
+      "helvetica",
+      "bold"
     );
 
-    return;
-  }
-
-
-  // =========================================================
-  // CREAR PDF
-  // =========================================================
-
-  const pdf = new jsPDF({
-    orientation: "landscape",
-    unit: "mm",
-    format: "a4",
-  });
-
-
-  const anchoPagina =
-    pdf.internal.pageSize.getWidth();
-
-
-  // =========================================================
-  // ENCABEZADO
-  // =========================================================
-
-  pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(18);
-
-  pdf.text(
-    "COOPERATIVA 15 DE ABRIL",
-    anchoPagina / 2,
-    16,
-    {
-      align: "center",
-    }
-  );
-
-
-  pdf.setFontSize(14);
-
-  pdf.text(
-    "Reporte de Evaluacion de Riesgo Crediticio",
-    anchoPagina / 2,
-    24,
-    {
-      align: "center",
-    }
-  );
-
-
-  pdf.setFont(
-    "helvetica",
-    "normal"
-  );
-
-  pdf.setFontSize(9);
-
-  pdf.text(
-    `Fecha de generacion: ${new Date().toLocaleString("es-EC")}`,
-    14,
-    33
-  );
-
-
-  // =========================================================
-  // FILTROS UTILIZADOS
-  // =========================================================
-
-  pdf.setFont(
-    "helvetica",
-    "bold"
-  );
-
-  pdf.setFontSize(11);
-
-  pdf.text(
-    "Filtros aplicados",
-    14,
-    42
-  );
-
-
-  pdf.setFont(
-    "helvetica",
-    "normal"
-  );
-
-  pdf.setFontSize(9);
-
-
-  const inicio =
-    filtrosAplicados.fechaInicio ||
-    "Sin limite";
-
-
-  const fin =
-    filtrosAplicados.fechaFin ||
-    "Sin limite";
-
-
-  pdf.text(
-    `Periodo: ${inicio} - ${fin}`,
-    14,
-    49
-  );
-
-
-  pdf.text(
-    `Tipo de credito: ${filtrosAplicados.tipoCredito}`,
-    90,
-    49
-  );
-
-
-  pdf.text(
-    `Nivel de riesgo: ${filtrosAplicados.nivelRiesgo}`,
-    180,
-    49
-  );
-
-  pdf.text(
-    `Decision: ${filtrosAplicados.decisionAnalista}`,
-    14,
-    54
-  );
-
-
-  // =========================================================
-  // RESUMEN
-  // =========================================================
-
-  pdf.setFont(
-    "helvetica",
-    "bold"
-  );
-
-  pdf.setFontSize(11);
-
-  pdf.text(
-    "Resumen del periodo",
-    14,
-    60
-  );
-
-
-  autoTable(pdf, {
-
-    startY: 65,
-
-    head: [[
-      "Evaluaciones",
-      "Score IA promedio",
-      "Prob. mora promedio",
-      "Riesgo alto",
-      "Riesgo medio",
-      "Riesgo bajo",
-      "Predominante",
-      "Aprobadas",
-      "Rechazadas",
-    ]],
-
-    body: [[
-
-      totalEvaluaciones,
-
-      totalEvaluaciones > 0
-        ? `${scorePromedio.toFixed(1)}/100`
-        : "-",
-
-      formatearPorcentaje(
-        probabilidadMoraPromedio
-      ),
-
-      riesgoAlto,
-
-      riesgoMedio,
-
-      riesgoBajo,
-
-      riesgoPredominante,
-
-      totalAprobadas,
-
-      totalRechazadas,
-
-    ]],
-
-    theme: "grid",
-
-    styles: {
-      fontSize: 8,
-      halign: "center",
-      valign: "middle",
-    },
-
-    headStyles: {
-      fillColor: [0, 100, 55],
-      textColor: [255, 255, 255],
-      fontStyle: "bold",
-    },
-
-  });
-
-
-  // =========================================================
-  // DETALLE DE EVALUACIONES
-  // =========================================================
-
-  const finalResumen =
-    pdf.lastAutoTable?.finalY || 80;
-
-
-  pdf.setFont(
-    "helvetica",
-    "bold"
-  );
-
-  pdf.setFontSize(11);
-
-  pdf.text(
-    "Detalle de evaluaciones",
-    14,
-    finalResumen + 12
-  );
-
-
-  // =========================================================
-  // CONSTRUIR FILAS
-  // =========================================================
-
-  const filas =
-    evaluacionesFiltradas.map(
-      (evaluacion) => {
-
-        const solicitud =
-          evaluacion.solicitud;
-
-        const cliente =
-          solicitud?.cliente;
-
-
-        const nombreCliente =
-          cliente
-            ? `${cliente.nombres || ""} ${cliente.apellidos || ""}`.trim()
-            : "-";
-
-
-        return [
-
-          formatearFecha(
-            evaluacion.fechaEvaluacion
-          ),
-
-          `#${solicitud?.id || "-"}`,
-
-          nombreCliente,
-
-          solicitud?.tipoCredito ||
-            "-",
-
-          formatearDinero(
-            solicitud?.monto
-          ),
-
-          evaluacion.scoreIa != null
-            ? `${evaluacion.scoreIa}/100`
-            : "-",
-
-          formatearPorcentaje(
-            evaluacion.probabilidadMora
-          ),
-
-          evaluacion.nivelRiesgo ||
-            "-",
-
-          obtenerDecisionFormal(
-            solicitud
-          ),
-
-          formatearFecha(
-            solicitud?.fechaDecision
-          ),
-
-        ];
-
+    pdf.setFontSize(18);
+
+    pdf.text(
+      "COOPERATIVA 15 DE ABRIL",
+      anchoPagina / 2,
+      16,
+      {
+        align: "center",
       }
     );
 
-
-  // =========================================================
-  // TABLA PRINCIPAL
-  // =========================================================
-
-  autoTable(pdf, {
-
-    startY:
-      finalResumen + 17,
-
-    head: [[
-
-      "Fecha",
-      "Solicitud",
-      "Cliente",
-      "Tipo credito",
-      "Monto",
-      "Score IA",
-      "Mora estimada",
-      "Riesgo",
-      "Decision",
-      "Fecha decision",
-
-    ]],
-
-    body: filas,
-
-    theme: "striped",
-
-    styles: {
-      fontSize: 7.5,
-      cellPadding: 2.5,
-      valign: "middle",
-    },
-
-    headStyles: {
-      fillColor: [0, 100, 55],
-      textColor: [255, 255, 255],
-      fontStyle: "bold",
-    },
-
-    columnStyles: {
-
-      0: {
-        cellWidth: 23
-      },
-
-      1: {
-        cellWidth: 18,
-        halign: "center"
-      },
-
-      2: {
-        cellWidth: 42
-      },
-
-      3: {
-        cellWidth: 30
-      },
-
-      4: {
-        cellWidth: 25,
-        halign: "right"
-      },
-
-      5: {
-        cellWidth: 22,
-        halign: "center"
-      },
-
-      6: {
-        cellWidth: 28,
-        halign: "center"
-      },
-
-      7: {
-        cellWidth: 22,
-        halign: "center"
-      },
-
-      8: {
-        cellWidth: 22,
-        halign: "center"
-      },
-
-      9: {
-        cellWidth: 24,
-        halign: "center"
-      },
-
-    },
-
-
-    // =======================================================
-    // PIE DE PÁGINA
-    // =======================================================
-
-    didDrawPage: (data) => {
-
-      const numeroPagina =
-        pdf.internal.getNumberOfPages();
-
-
-      pdf.setFont(
-        "helvetica",
-        "normal"
-      );
-
-      pdf.setFontSize(8);
-
-
-      pdf.text(
-        `Pagina ${numeroPagina}`,
-        anchoPagina - 14,
-        pdf.internal.pageSize.getHeight() - 8,
-        {
-          align: "right"
-        }
-      );
-
-
-      pdf.text(
-        "Sistema interno de evaluacion de riesgo crediticio",
-        14,
-        pdf.internal.pageSize.getHeight() - 8
-      );
-
-    },
-
-  });
-
-
-  // =========================================================
-  // NOTA METODOLÓGICA
-  // =========================================================
-
-  let posicionNota =
-    pdf.lastAutoTable?.finalY + 12;
-
-
-  const altoPagina =
-    pdf.internal.pageSize.getHeight();
-
-
-  if (
-    posicionNota >
-    altoPagina - 25
-  ) {
-
-    pdf.addPage();
-
-    posicionNota = 20;
-
-  }
-
-
-  pdf.setFont(
-    "helvetica",
-    "bold"
-  );
-
-  pdf.setFontSize(9);
-
-  pdf.text(
-    "Nota:",
-    14,
-    posicionNota
-  );
-
-
-  pdf.setFont(
-    "helvetica",
-    "normal"
-  );
-
-
-  const nota =
-    "La probabilidad de mora corresponde a una estimacion generada por el modelo de inteligencia artificial para cada solicitud. " +
-    "No representa morosidad real observada ni constituye por si sola una decision definitiva de aprobacion o rechazo.";
-
-
-  const textoNota =
-    pdf.splitTextToSize(
-      nota,
-      anchoPagina - 28
-    );
-
-
-  pdf.text(
-    textoNota,
-    14,
-    posicionNota + 5
-  );
-
-
-  // =========================================================
-  // NOMBRE DEL ARCHIVO
-  // =========================================================
-
-  const hoy =
-    new Date();
-
-
-  const fechaArchivo =
-    `${hoy.getFullYear()}-${String(
-      hoy.getMonth() + 1
-    ).padStart(2, "0")}-${String(
-      hoy.getDate()
-    ).padStart(2, "0")}`;
-
-
-  const nombreArchivo =
-    `reporte_riesgo_crediticio_${fechaArchivo}.pdf`;
-
-
-  // =========================================================
-  // DESCARGAR PDF
-  // =========================================================
-
-  pdf.save(
-    nombreArchivo
-  );
-
-};
-
-
-  const exportarExcel = () => {
-
-  // =========================================================
-  // VALIDAR QUE EXISTAN DATOS
-  // =========================================================
-
-  if (evaluacionesFiltradas.length === 0) {
-
-    alert(
-      "No existen evaluaciones para exportar con los filtros seleccionados."
-    );
-
-    return;
-  }
-
-
-  // =========================================================
-  // INFORMACIÓN GENERAL DEL REPORTE
-  // =========================================================
-
-  const fechaGeneracion =
-    new Date().toLocaleString(
-      "es-EC"
-    );
-
-
-  const periodoInicio =
-    filtrosAplicados.fechaInicio ||
-    "Sin límite";
-
-
-  const periodoFin =
-    filtrosAplicados.fechaFin ||
-    "Sin límite";
-
-
-  // =========================================================
-  // HOJA 1: RESUMEN GERENCIAL
-  // =========================================================
-
-  const datosResumen = [
-
-    [
-      "REPORTE DE EVALUACIÓN DE RIESGO CREDITICIO"
-    ],
-
-    [],
-
-    [
-      "Fecha de generación",
-      fechaGeneracion
-    ],
-
-    [
-      "Fecha inicio",
-      periodoInicio
-    ],
-
-    [
-      "Fecha fin",
-      periodoFin
-    ],
-
-    [
-      "Tipo de crédito",
-      filtrosAplicados.tipoCredito
-    ],
-
-    [
-      "Nivel de riesgo",
-      filtrosAplicados.nivelRiesgo
-    ],
-
-    [
-      "Decisión del analista",
-      filtrosAplicados.decisionAnalista
-    ],
-
-    [],
-
-    [
-      "INDICADORES DEL PERIODO"
-    ],
-
-    [],
-
-    [
-      "Indicador",
-      "Valor"
-    ],
-
-    [
-      "Evaluaciones realizadas",
-      totalEvaluaciones
-    ],
-
-    [
-      "Score IA promedio",
-      Number(
-        scorePromedio.toFixed(2)
-      )
-    ],
-
-    [
-      "Probabilidad de mora promedio",
-      Number(
-        probabilidadMoraPromedio.toFixed(2)
-      ) / 100
-    ],
-
-    [
-      "Riesgo alto",
-      riesgoAlto
-    ],
-
-    [
-      "Riesgo medio",
-      riesgoMedio
-    ],
-
-    [
-      "Riesgo bajo",
-      riesgoBajo
-    ],
-
-    [
-      "Riesgo predominante",
-      riesgoPredominante
-    ],
-
-    [
-      "Decisiones formales",
-      totalDecisionesFormales
-    ],
-
-    [
-      "Aprobadas por analista",
-      totalAprobadas
-    ],
-
-    [
-      "Rechazadas por analista",
-      totalRechazadas
-    ],
-
-    [
-      "Sin decisión formal",
-      totalSinDecision
-    ],
-
-  ];
-
-
-  const hojaResumen =
-    XLSX.utils.aoa_to_sheet(
-      datosResumen
-    );
-
-
-  // Formato porcentaje para la probabilidad promedio.
-  // Buscamos la fila por su etiqueta para que el formato
-  // siga funcionando aunque agreguemos nuevos indicadores.
-
-  Object.keys(hojaResumen).forEach((referencia) => {
-    const celda = hojaResumen[referencia];
-
-    if (
-      celda?.v ===
-      "Probabilidad de mora promedio"
-    ) {
-      const fila = Number(
-        referencia.replace(/\D/g, "")
-      );
-
-      const celdaValor =
-        hojaResumen[`B${fila}`];
-
-      if (celdaValor) {
-        celdaValor.z = "0.00%";
+    pdf.setFontSize(14);
+
+    pdf.text(
+      "Reporte de Evaluacion de Riesgo Crediticio",
+      anchoPagina / 2,
+      24,
+      {
+        align: "center",
       }
-    }
-  });
+    );
 
+    pdf.setFont(
+      "helvetica",
+      "normal"
+    );
 
-  // Ancho de columnas
+    pdf.setFontSize(9);
 
-  hojaResumen["!cols"] = [
+    pdf.text(
+      `Fecha de generacion: ${new Date().toLocaleString("es-EC")}`,
+      14,
+      33
+    );
 
-    {
-      wch: 35
-    },
+    // =========================================================
+    // FILTROS UTILIZADOS
+    // =========================================================
+    pdf.setFont(
+      "helvetica",
+      "bold"
+    );
 
-    {
-      wch: 25
-    },
+    pdf.setFontSize(11);
 
-  ];
+    pdf.text(
+      "Filtros aplicados",
+      14,
+      42
+    );
 
+    pdf.setFont(
+      "helvetica",
+      "normal"
+    );
 
-  // =========================================================
-  // HOJA 2: DETALLE DE EVALUACIONES
-  // =========================================================
+    pdf.setFontSize(9);
 
-  const datosDetalle =
-    evaluacionesFiltradas.map(
-      (evaluacion) => {
+    const inicio =
+      filtrosAplicados.fechaInicio ||
+      "Sin limite";
 
-        const solicitud =
-          evaluacion.solicitud;
+    const fin =
+      filtrosAplicados.fechaFin ||
+      "Sin limite";
 
-        const cliente =
-          solicitud?.cliente;
+    pdf.text(
+      `Periodo: ${inicio} - ${fin}`,
+      14,
+      49
+    );
 
+    pdf.text(
+      `Tipo de credito: ${filtrosAplicados.tipoCredito}`,
+      90,
+      49
+    );
 
-        return {
+    pdf.text(
+      `Nivel de riesgo: ${filtrosAplicados.nivelRiesgo}`,
+      180,
+      49
+    );
 
-          "ID Evaluación":
-            evaluacion.id,
+    pdf.text(
+      `Decision: ${filtrosAplicados.decisionAnalista}`,
+      14,
+      54
+    );
 
-          "Fecha evaluación":
+    // =========================================================
+    // RESUMEN
+    // =========================================================
+    pdf.setFont(
+      "helvetica",
+      "bold"
+    );
+
+    pdf.setFontSize(11);
+
+    pdf.text(
+      "Resumen del periodo",
+      14,
+      60
+    );
+
+    autoTable(pdf, {
+      startY: 65,
+      head: [[
+        "Evaluaciones",
+        "Score IA promedio",
+        "Prob. mora promedio",
+        "Riesgo alto",
+        "Riesgo medio",
+        "Riesgo bajo",
+        "Predominante",
+        "Aprobadas",
+        "Rechazadas",
+      ]],
+      body: [[
+        totalEvaluaciones,
+        totalEvaluaciones > 0
+          ? `${scorePromedio.toFixed(1)}/100`
+          : "-",
+        formatearPorcentaje(
+          probabilidadMoraPromedio
+        ),
+        riesgoAlto,
+        riesgoMedio,
+        riesgoBajo,
+        riesgoPredominante,
+        totalAprobadas,
+        totalRechazadas,
+      ]],
+      theme: "grid",
+      styles: {
+        fontSize: 8,
+        halign: "center",
+        valign: "middle",
+      },
+      headStyles: {
+        fillColor: [0, 100, 55],
+        textColor: [255, 255, 255],
+        fontStyle: "bold",
+      },
+    });
+
+    // =========================================================
+    // DETALLE DE EVALUACIONES
+    // =========================================================
+    const finalResumen =
+      pdf.lastAutoTable?.finalY || 80;
+
+    pdf.setFont(
+      "helvetica",
+      "bold"
+    );
+
+    pdf.setFontSize(11);
+
+    pdf.text(
+      "Detalle de evaluaciones",
+      14,
+      finalResumen + 12
+    );
+
+    const filas =
+      evaluacionesFiltradas.map(
+        (evaluacion) => {
+          const solicitud =
+            evaluacion.solicitud;
+
+          const cliente =
+            solicitud?.cliente;
+
+          const nombreCliente =
+            cliente
+              ? `${cliente.nombres || ""} ${cliente.apellidos || ""}`.trim()
+              : "-";
+
+          return [
             formatearFecha(
               evaluacion.fechaEvaluacion
             ),
 
-          "ID Solicitud":
-            solicitud?.id || "",
+            solicitud?.codigoSolicitud || "-",
 
-          "Cédula":
-            cliente?.cedula || "",
+            nombreCliente,
 
-          "Cliente":
-            cliente
-              ? `${cliente.nombres || ""} ${cliente.apellidos || ""}`.trim()
-              : "",
+            solicitud?.tipoCredito ||
+              "-",
 
-          "Tipo de crédito":
-            solicitud?.tipoCredito || "",
-
-          "Monto solicitado":
-            Number(
-              solicitud?.monto || 0
+            formatearDinero(
+              solicitud?.monto
             ),
 
-          "Plazo (meses)":
-            solicitud?.plazoMeses || "",
+            evaluacion.scoreIa != null
+              ? `${evaluacion.scoreIa}/100`
+              : "-",
 
-          "Ingresos mensuales":
-            Number(
-              solicitud?.ingresosMensuales || 0
+            formatearPorcentaje(
+              evaluacion.probabilidadMora
             ),
 
-          "Egresos mensuales":
-            Number(
-              solicitud?.egresosMensuales || 0
-            ),
+            evaluacion.nivelRiesgo ||
+              "-",
 
-          "Nivel de endeudamiento":
-            Number(
-              solicitud?.nivelEndeudamiento || 0
-            ),
-
-          "Capacidad de pago":
-            Number(
-              solicitud?.capacidadPago || 0
-            ),
-
-          "Score IA":
-            evaluacion.scoreIa ?? "",
-
-          "Probabilidad de mora":
-            evaluacion.probabilidadMora != null
-              ? Number(
-                  evaluacion.probabilidadMora
-                ) / 100
-              : "",
-
-          "Nivel de riesgo":
-            evaluacion.nivelRiesgo || "",
-
-          "Recomendación":
-            evaluacion.recomendacion || "",
-
-          "Modelo utilizado":
-            evaluacion.modeloUtilizado || "",
-
-          "Estado evaluación IA":
-            evaluacion.estado || "",
-
-          "Decisión analista":
             obtenerDecisionFormal(
               solicitud
             ),
 
-          "Fecha decisión":
             formatearFecha(
               solicitud?.fechaDecision
             ),
+          ];
+        }
+      );
 
-          "Observación decisión":
-            solicitud?.observacionDecision || "",
+    autoTable(pdf, {
+      startY:
+        finalResumen + 17,
 
-        };
+      head: [[
+        "Fecha",
+        "Solicitud",
+        "Cliente",
+        "Tipo credito",
+        "Monto",
+        "Score IA",
+        "Mora estimada",
+        "Riesgo",
+        "Decision",
+        "Fecha decision",
+      ]],
 
+      body: filas,
+
+      theme: "striped",
+
+      styles: {
+        fontSize: 7.5,
+        cellPadding: 2.5,
+        valign: "middle",
+      },
+
+      headStyles: {
+        fillColor: [0, 100, 55],
+        textColor: [255, 255, 255],
+        fontStyle: "bold",
+      },
+
+      columnStyles: {
+        0: {
+          cellWidth: 23
+        },
+        1: {
+          cellWidth: 28,
+          halign: "center"
+        },
+        2: {
+          cellWidth: 38
+        },
+        3: {
+          cellWidth: 28
+        },
+        4: {
+          cellWidth: 24,
+          halign: "right"
+        },
+        5: {
+          cellWidth: 20,
+          halign: "center"
+        },
+        6: {
+          cellWidth: 27,
+          halign: "center"
+        },
+        7: {
+          cellWidth: 21,
+          halign: "center"
+        },
+        8: {
+          cellWidth: 22,
+          halign: "center"
+        },
+        9: {
+          cellWidth: 24,
+          halign: "center"
+        },
+      },
+
+      didDrawPage: () => {
+        const numeroPagina =
+          pdf.internal.getNumberOfPages();
+
+        pdf.setFont(
+          "helvetica",
+          "normal"
+        );
+
+        pdf.setFontSize(8);
+
+        pdf.text(
+          `Pagina ${numeroPagina}`,
+          anchoPagina - 14,
+          pdf.internal.pageSize.getHeight() - 8,
+          {
+            align: "right"
+          }
+        );
+
+        pdf.text(
+          "Sistema interno de evaluacion de riesgo crediticio",
+          14,
+          pdf.internal.pageSize.getHeight() - 8
+        );
+      },
+    });
+
+    // =========================================================
+    // NOTA METODOLÓGICA
+    // =========================================================
+    let posicionNota =
+      pdf.lastAutoTable?.finalY + 12;
+
+    const altoPagina =
+      pdf.internal.pageSize.getHeight();
+
+    if (
+      posicionNota >
+      altoPagina - 25
+    ) {
+      pdf.addPage();
+      posicionNota = 20;
+    }
+
+    pdf.setFont(
+      "helvetica",
+      "bold"
+    );
+
+    pdf.setFontSize(9);
+
+    pdf.text(
+      "Nota:",
+      14,
+      posicionNota
+    );
+
+    pdf.setFont(
+      "helvetica",
+      "normal"
+    );
+
+    const nota =
+      "La probabilidad de mora corresponde a una estimacion generada por el modelo de inteligencia artificial para cada solicitud. " +
+      "No representa morosidad real observada ni constituye por si sola una decision definitiva de aprobacion o rechazo.";
+
+    const textoNota =
+      pdf.splitTextToSize(
+        nota,
+        anchoPagina - 28
+      );
+
+    pdf.text(
+      textoNota,
+      14,
+      posicionNota + 5
+    );
+
+    // =========================================================
+    // NOMBRE DEL ARCHIVO
+    // =========================================================
+    const hoy =
+      new Date();
+
+    const fechaArchivo =
+      `${hoy.getFullYear()}-${String(
+        hoy.getMonth() + 1
+      ).padStart(2, "0")}-${String(
+        hoy.getDate()
+      ).padStart(2, "0")}`;
+
+    const nombreArchivo =
+      `reporte_riesgo_crediticio_${fechaArchivo}.pdf`;
+
+    pdf.save(
+      nombreArchivo
+    );
+  };
+
+  // =========================================================
+  // EXPORTAR EXCEL
+  // =========================================================
+  const exportarExcel = () => {
+    if (evaluacionesFiltradas.length === 0) {
+      alert(
+        "No existen evaluaciones para exportar con los filtros seleccionados."
+      );
+
+      return;
+    }
+
+    const fechaGeneracion =
+      new Date().toLocaleString(
+        "es-EC"
+      );
+
+    const periodoInicio =
+      filtrosAplicados.fechaInicio ||
+      "Sin límite";
+
+    const periodoFin =
+      filtrosAplicados.fechaFin ||
+      "Sin límite";
+
+    // =========================================================
+    // HOJA 1: RESUMEN GERENCIAL
+    // =========================================================
+    const datosResumen = [
+      [
+        "REPORTE DE EVALUACIÓN DE RIESGO CREDITICIO"
+      ],
+      [],
+      [
+        "Fecha de generación",
+        fechaGeneracion
+      ],
+      [
+        "Fecha inicio",
+        periodoInicio
+      ],
+      [
+        "Fecha fin",
+        periodoFin
+      ],
+      [
+        "Tipo de crédito",
+        filtrosAplicados.tipoCredito
+      ],
+      [
+        "Nivel de riesgo",
+        filtrosAplicados.nivelRiesgo
+      ],
+      [
+        "Decisión del analista",
+        filtrosAplicados.decisionAnalista
+      ],
+      [],
+      [
+        "INDICADORES DEL PERIODO"
+      ],
+      [],
+      [
+        "Indicador",
+        "Valor"
+      ],
+      [
+        "Evaluaciones realizadas",
+        totalEvaluaciones
+      ],
+      [
+        "Score IA promedio",
+        Number(
+          scorePromedio.toFixed(2)
+        )
+      ],
+      [
+        "Probabilidad de mora promedio",
+        Number(
+          probabilidadMoraPromedio.toFixed(2)
+        ) / 100
+      ],
+      [
+        "Riesgo alto",
+        riesgoAlto
+      ],
+      [
+        "Riesgo medio",
+        riesgoMedio
+      ],
+      [
+        "Riesgo bajo",
+        riesgoBajo
+      ],
+      [
+        "Riesgo predominante",
+        riesgoPredominante
+      ],
+      [
+        "Decisiones formales",
+        totalDecisionesFormales
+      ],
+      [
+        "Aprobadas por analista",
+        totalAprobadas
+      ],
+      [
+        "Rechazadas por analista",
+        totalRechazadas
+      ],
+      [
+        "Sin decisión formal",
+        totalSinDecision
+      ],
+    ];
+
+    const hojaResumen =
+      XLSX.utils.aoa_to_sheet(
+        datosResumen
+      );
+
+    Object.keys(hojaResumen).forEach((referencia) => {
+      const celda =
+        hojaResumen[referencia];
+
+      if (
+        celda?.v ===
+        "Probabilidad de mora promedio"
+      ) {
+        const fila = Number(
+          referencia.replace(/\D/g, "")
+        );
+
+        const celdaValor =
+          hojaResumen[`B${fila}`];
+
+        if (celdaValor) {
+          celdaValor.z = "0.00%";
+        }
       }
+    });
+
+    hojaResumen["!cols"] = [
+      {
+        wch: 35
+      },
+      {
+        wch: 25
+      },
+    ];
+
+    // =========================================================
+    // HOJA 2: DETALLE DE EVALUACIONES
+    // =========================================================
+    const datosDetalle =
+      evaluacionesFiltradas.map(
+        (evaluacion) => {
+          const solicitud =
+            evaluacion.solicitud;
+
+          const cliente =
+            solicitud?.cliente;
+
+          return {
+            "Código solicitud":
+              solicitud?.codigoSolicitud || "",
+
+            "Fecha evaluación":
+              formatearFecha(
+                evaluacion.fechaEvaluacion
+              ),
+
+            "Fecha solicitud":
+              formatearFecha(
+                solicitud?.fechaSolicitud
+              ),
+
+            "Cédula":
+              cliente?.cedula || "",
+
+            "Cliente":
+              cliente
+                ? `${cliente.nombres || ""} ${cliente.apellidos || ""}`.trim()
+                : "",
+
+            "Tipo de crédito":
+              solicitud?.tipoCredito || "",
+
+            "Monto solicitado":
+              Number(
+                solicitud?.monto || 0
+              ),
+
+            "Plazo (meses)":
+              solicitud?.plazoMeses || "",
+
+            "Ingresos mensuales":
+              Number(
+                solicitud?.ingresosMensuales || 0
+              ),
+
+            "Egresos mensuales":
+              Number(
+                solicitud?.egresosMensuales || 0
+              ),
+
+            "Nivel de endeudamiento":
+              Number(
+                solicitud?.nivelEndeudamiento || 0
+              ),
+
+            "Capacidad de pago":
+              Number(
+                solicitud?.capacidadPago || 0
+              ),
+
+            "Score IA":
+              evaluacion.scoreIa ?? "",
+
+            "Probabilidad de mora":
+              evaluacion.probabilidadMora != null
+                ? Number(
+                    evaluacion.probabilidadMora
+                  ) / 100
+                : "",
+
+            "Nivel de riesgo":
+              evaluacion.nivelRiesgo || "",
+
+            "Recomendación":
+              evaluacion.recomendacion || "",
+
+            "Modelo utilizado":
+              evaluacion.modeloUtilizado || "",
+
+            "Estado evaluación IA":
+              evaluacion.estado || "",
+
+            "Decisión analista":
+              obtenerDecisionFormal(
+                solicitud
+              ),
+
+            "Fecha decisión":
+              formatearFecha(
+                solicitud?.fechaDecision
+              ),
+
+            "Observación decisión":
+              solicitud?.observacionDecision || "",
+          };
+        }
+      );
+
+    const hojaDetalle =
+      XLSX.utils.json_to_sheet(
+        datosDetalle
+      );
+
+    hojaDetalle["!cols"] = [
+      { wch: 22 }, // Código solicitud
+      { wch: 18 }, // Fecha evaluación
+      { wch: 18 }, // Fecha solicitud
+      { wch: 16 }, // Cédula
+      { wch: 30 }, // Cliente
+      { wch: 20 }, // Tipo crédito
+      { wch: 18 }, // Monto
+      { wch: 15 }, // Plazo
+      { wch: 20 }, // Ingresos
+      { wch: 20 }, // Egresos
+      { wch: 23 }, // Endeudamiento
+      { wch: 20 }, // Capacidad
+      { wch: 12 }, // Score
+      { wch: 22 }, // Mora
+      { wch: 18 }, // Riesgo
+      { wch: 55 }, // Recomendación
+      { wch: 30 }, // Modelo
+      { wch: 20 }, // Estado evaluación IA
+      { wch: 20 }, // Decisión analista
+      { wch: 18 }, // Fecha decisión
+      { wch: 70 }, // Observación decisión
+    ];
+
+    // =========================================================
+    // FORMATOS DE CELDAS
+    // =========================================================
+    const rango =
+      XLSX.utils.decode_range(
+        hojaDetalle["!ref"]
+      );
+
+    for (
+      let fila = 1;
+      fila <= rango.e.r;
+      fila++
+    ) {
+      // Monto solicitado - columna G
+      const celdaMonto =
+        hojaDetalle[
+          XLSX.utils.encode_cell({
+            r: fila,
+            c: 6
+          })
+        ];
+
+      if (celdaMonto) {
+        celdaMonto.z =
+          '$#,##0.00';
+      }
+
+      // Ingresos - columna I
+      const celdaIngresos =
+        hojaDetalle[
+          XLSX.utils.encode_cell({
+            r: fila,
+            c: 8
+          })
+        ];
+
+      if (celdaIngresos) {
+        celdaIngresos.z =
+          '$#,##0.00';
+      }
+
+      // Egresos - columna J
+      const celdaEgresos =
+        hojaDetalle[
+          XLSX.utils.encode_cell({
+            r: fila,
+            c: 9
+          })
+        ];
+
+      if (celdaEgresos) {
+        celdaEgresos.z =
+          '$#,##0.00';
+      }
+
+      // Capacidad de pago - columna L
+      const celdaCapacidad =
+        hojaDetalle[
+          XLSX.utils.encode_cell({
+            r: fila,
+            c: 11
+          })
+        ];
+
+      if (celdaCapacidad) {
+        celdaCapacidad.z =
+          '$#,##0.00';
+      }
+
+      // Probabilidad de mora - columna N
+      const celdaMora =
+        hojaDetalle[
+          XLSX.utils.encode_cell({
+            r: fila,
+            c: 13
+          })
+        ];
+
+      if (celdaMora) {
+        celdaMora.z =
+          "0.00%";
+      }
+    }
+
+    // =========================================================
+    // CREAR LIBRO DE EXCEL
+    // =========================================================
+    const libro =
+      XLSX.utils.book_new();
+
+    XLSX.utils.book_append_sheet(
+      libro,
+      hojaResumen,
+      "Resumen"
     );
 
-
-  const hojaDetalle =
-    XLSX.utils.json_to_sheet(
-      datosDetalle
+    XLSX.utils.book_append_sheet(
+      libro,
+      hojaDetalle,
+      "Evaluaciones"
     );
 
+    const hoy =
+      new Date();
 
-  // =========================================================
-  // ANCHOS DE COLUMNAS
-  // =========================================================
+    const fechaArchivo =
+      `${hoy.getFullYear()}-${String(
+        hoy.getMonth() + 1
+      ).padStart(2, "0")}-${String(
+        hoy.getDate()
+      ).padStart(2, "0")}`;
 
-  hojaDetalle["!cols"] = [
+    const nombreArchivo =
+      `reporte_riesgo_crediticio_${fechaArchivo}.xlsx`;
 
-    { wch: 14 }, // Evaluación
-    { wch: 18 }, // Fecha
-    { wch: 14 }, // Solicitud
-    { wch: 16 }, // Cédula
-    { wch: 30 }, // Cliente
-    { wch: 20 }, // Tipo crédito
-    { wch: 18 }, // Monto
-    { wch: 15 }, // Plazo
-    { wch: 20 }, // Ingresos
-    { wch: 20 }, // Egresos
-    { wch: 23 }, // Endeudamiento
-    { wch: 20 }, // Capacidad
-    { wch: 12 }, // Score
-    { wch: 22 }, // Mora
-    { wch: 18 }, // Riesgo
-    { wch: 55 }, // Recomendación
-    { wch: 30 }, // Modelo
-    { wch: 20 }, // Estado evaluación IA
-    { wch: 20 }, // Decisión analista
-    { wch: 18 }, // Fecha decisión
-    { wch: 70 }, // Observación decisión
-
-  ];
-
-
-  // =========================================================
-  // FORMATOS DE CELDAS
-  // =========================================================
-
-  const rango =
-    XLSX.utils.decode_range(
-      hojaDetalle["!ref"]
+    XLSX.writeFile(
+      libro,
+      nombreArchivo
     );
-
-
-  /*
-    Recorremos desde la segunda fila porque
-    la primera contiene los encabezados.
-  */
-
-  for (
-    let fila = 1;
-    fila <= rango.e.r;
-    fila++
-  ) {
-
-    // Monto solicitado - columna G
-
-    const celdaMonto =
-      hojaDetalle[
-        XLSX.utils.encode_cell({
-          r: fila,
-          c: 6
-        })
-      ];
-
-
-    if (celdaMonto) {
-      celdaMonto.z =
-        '$#,##0.00';
-    }
-
-
-    // Ingresos - columna I
-
-    const celdaIngresos =
-      hojaDetalle[
-        XLSX.utils.encode_cell({
-          r: fila,
-          c: 8
-        })
-      ];
-
-
-    if (celdaIngresos) {
-      celdaIngresos.z =
-        '$#,##0.00';
-    }
-
-
-    // Egresos - columna J
-
-    const celdaEgresos =
-      hojaDetalle[
-        XLSX.utils.encode_cell({
-          r: fila,
-          c: 9
-        })
-      ];
-
-
-    if (celdaEgresos) {
-      celdaEgresos.z =
-        '$#,##0.00';
-    }
-
-
-    // Capacidad de pago - columna L
-
-    const celdaCapacidad =
-      hojaDetalle[
-        XLSX.utils.encode_cell({
-          r: fila,
-          c: 11
-        })
-      ];
-
-
-    if (celdaCapacidad) {
-      celdaCapacidad.z =
-        '$#,##0.00';
-    }
-
-
-    // Probabilidad de mora - columna N
-
-    const celdaMora =
-      hojaDetalle[
-        XLSX.utils.encode_cell({
-          r: fila,
-          c: 13
-        })
-      ];
-
-
-    if (celdaMora) {
-      celdaMora.z =
-        "0.00%";
-    }
-
-  }
-
-
-  // =========================================================
-  // CREAR LIBRO DE EXCEL
-  // =========================================================
-
-  const libro =
-    XLSX.utils.book_new();
-
-
-  XLSX.utils.book_append_sheet(
-    libro,
-    hojaResumen,
-    "Resumen"
-  );
-
-
-  XLSX.utils.book_append_sheet(
-    libro,
-    hojaDetalle,
-    "Evaluaciones"
-  );
-
-
-  // =========================================================
-  // NOMBRE DEL ARCHIVO
-  // =========================================================
-
-  const hoy =
-    new Date();
-
-
-  const fechaArchivo =
-    `${hoy.getFullYear()}-${String(
-      hoy.getMonth() + 1
-    ).padStart(2, "0")}-${String(
-      hoy.getDate()
-    ).padStart(2, "0")}`;
-
-
-  const nombreArchivo =
-    `reporte_riesgo_crediticio_${fechaArchivo}.xlsx`;
-
-
-  // =========================================================
-  // DESCARGAR
-  // =========================================================
-
-  XLSX.writeFile(
-    libro,
-    nombreArchivo
-  );
-
-};
-
+  };
 
   // =========================================================
   // CARGANDO
   // =========================================================
-
   if (cargando) {
-
     return (
-
       <Layout
         title="Reportes y Dashboard Gerencial"
-        
       >
-
         <section className="panel">
-
           <p
             style={{
               textAlign: "center",
@@ -1810,66 +1449,45 @@ export default function Reportes() {
           >
             ⏳ Cargando información de reportes...
           </p>
-
         </section>
-
       </Layout>
-
     );
-
   }
-
 
   // =========================================================
   // RETURN
   // =========================================================
-
   return (
-
     <Layout
       title="Reportes y Dashboard Gerencial"
       user="Gerencia"
     >
-
       {/* =====================================================
           ERROR
       ===================================================== */}
-
       {error && (
-
         <section
           className="panel"
           style={{
             marginBottom: "20px",
           }}
         >
-
           <strong>
             ⚠️ {error}
           </strong>
-
         </section>
-
       )}
-
 
       {/* =====================================================
           FILTROS
       ===================================================== */}
-
       <section className="panel">
-
         <h2 className="section-title">
           Filtros de consulta
         </h2>
 
-
         <div className="filters">
-
-          {/* FECHA INICIO */}
-
           <div className="form-group">
-
             <label>
               Fecha inicio
             </label>
@@ -1884,14 +1502,9 @@ export default function Reportes() {
                   )
               }
             />
-
           </div>
 
-
-          {/* FECHA FIN */}
-
           <div className="form-group">
-
             <label>
               Fecha fin
             </label>
@@ -1906,14 +1519,9 @@ export default function Reportes() {
                   )
               }
             />
-
           </div>
 
-
-          {/* TIPO CRÉDITO */}
-
           <div className="form-group">
-
             <label>
               Tipo de crédito
             </label>
@@ -1927,7 +1535,6 @@ export default function Reportes() {
                   )
               }
             >
-
               <option>
                 Todos
               </option>
@@ -1947,16 +1554,10 @@ export default function Reportes() {
               <option>
                 Comercial
               </option>
-
             </select>
-
           </div>
 
-
-          {/* RIESGO */}
-
           <div className="form-group">
-
             <label>
               Nivel de riesgo
             </label>
@@ -1970,7 +1571,6 @@ export default function Reportes() {
                   )
               }
             >
-
               <option>
                 Todos
               </option>
@@ -1986,16 +1586,10 @@ export default function Reportes() {
               <option>
                 Alto
               </option>
-
             </select>
-
           </div>
 
-
-          {/* DECISIÓN DEL ANALISTA */}
-
           <div className="form-group">
-
             <label>
               Decisión del analista
             </label>
@@ -2009,16 +1603,12 @@ export default function Reportes() {
                   )
               }
             >
-
               <option>Todos</option>
               <option>Aprobado</option>
               <option>Rechazado</option>
               <option>Sin decisión</option>
-
             </select>
-
           </div>
-
 
           <button
             className="btn btn-green"
@@ -2026,21 +1616,15 @@ export default function Reportes() {
           >
             🔎 Aplicar filtros
           </button>
-
         </div>
 
-
-        {/* EXPORTACIONES */}
-
         <div className="export-buttons">
-
           <button
             className="btn btn-yellow"
             onClick={exportarPDF}
           >
             📄 Exportar PDF
           </button>
-
 
           <button
             className="btn btn-green"
@@ -2049,27 +1633,20 @@ export default function Reportes() {
             📊 Exportar Excel
           </button>
 
-
           <button
             className="btn btn-gray"
             onClick={limpiarFiltros}
           >
             Limpiar filtros
           </button>
-
         </div>
-
       </section>
-
 
       {/* =====================================================
           RESUMEN
       ===================================================== */}
-
       <section className="summary-cards four">
-
         <div className="card">
-
           <h3>
             Solicitudes evaluadas
           </h3>
@@ -2081,33 +1658,25 @@ export default function Reportes() {
           <p>
             Total según los filtros seleccionados.
           </p>
-
         </div>
 
-
         <div className="card red">
-
           <h3>
             Probabilidad de mora promedio
           </h3>
 
           <div className="number">
-
             {formatearPorcentaje(
               probabilidadMoraPromedio
             )}
-
           </div>
 
           <p>
             Promedio estimado por el modelo de IA.
           </p>
-
         </div>
 
-
         <div className="card orange">
-
           <h3>
             Riesgo medio
           </h3>
@@ -2119,12 +1688,9 @@ export default function Reportes() {
           <p>
             Evaluaciones clasificadas como riesgo medio.
           </p>
-
         </div>
 
-
         <div className="card yellow">
-
           <h3>
             Riesgo bajo
           </h3>
@@ -2136,22 +1702,14 @@ export default function Reportes() {
           <p>
             Evaluaciones clasificadas como riesgo bajo.
           </p>
-
         </div>
-
       </section>
-
 
       {/* =====================================================
           GRÁFICO + RESUMEN
       ===================================================== */}
-
       <section className="report-grid">
-
-        {/* GRÁFICO */}
-
         <div className="panel">
-
           <h2 className="section-title">
             Probabilidad de mora estimada por mes
           </h2>
@@ -2166,12 +1724,9 @@ export default function Reportes() {
             generadas por el modelo.
           </p>
 
-
           <div className="chart-box">
-
             {datosMensuales.map(
               (item) => (
-
                 <div
                   className="bar"
                   key={item.mes}
@@ -2187,33 +1742,22 @@ export default function Reportes() {
                     )}`
                   }
                 >
-
                   <small>
-
                     {formatearPorcentaje(
                       item.promedio
                     )}
-
                   </small>
 
                   <span>
                     {item.mes}
                   </span>
-
                 </div>
-
               )
             )}
-
           </div>
-
         </div>
 
-
-        {/* INDICADORES */}
-
         <div className="panel">
-
           <h2 className="section-title">
             Resumen del periodo
           </h2>
@@ -2229,11 +1773,8 @@ export default function Reportes() {
             {totalDecisionesSistema}
           </p>
 
-
           <div className="report-list">
-
             <div className="report-item">
-
               <strong>
                 Evaluaciones realizadas
               </strong>
@@ -2241,12 +1782,9 @@ export default function Reportes() {
               <p>
                 {totalEvaluaciones}
               </p>
-
             </div>
 
-
             <div className="report-item">
-
               <strong>
                 Score IA promedio
               </strong>
@@ -2259,12 +1797,9 @@ export default function Reportes() {
                   : "-"
                 }
               </p>
-
             </div>
 
-
             <div className="report-item">
-
               <strong>
                 Riesgo alto
               </strong>
@@ -2272,12 +1807,9 @@ export default function Reportes() {
               <p>
                 {riesgoAlto}
               </p>
-
             </div>
 
-
             <div className="report-item">
-
               <strong>
                 Riesgo medio
               </strong>
@@ -2285,12 +1817,9 @@ export default function Reportes() {
               <p>
                 {riesgoMedio}
               </p>
-
             </div>
 
-
             <div className="report-item">
-
               <strong>
                 Riesgo bajo
               </strong>
@@ -2298,12 +1827,9 @@ export default function Reportes() {
               <p>
                 {riesgoBajo}
               </p>
-
             </div>
 
-
             <div className="report-item">
-
               <strong>
                 Riesgo predominante
               </strong>
@@ -2311,11 +1837,9 @@ export default function Reportes() {
               <p>
                 {riesgoPredominante}
               </p>
-
             </div>
 
             <div className="report-item">
-
               <strong>
                 Decisiones formales
               </strong>
@@ -2323,12 +1847,9 @@ export default function Reportes() {
               <p>
                 {totalDecisionesFormales}
               </p>
-
             </div>
 
-
             <div className="report-item">
-
               <strong>
                 Aprobadas por analista
               </strong>
@@ -2336,12 +1857,9 @@ export default function Reportes() {
               <p>
                 {totalAprobadas}
               </p>
-
             </div>
 
-
             <div className="report-item">
-
               <strong>
                 Rechazadas por analista
               </strong>
@@ -2349,12 +1867,9 @@ export default function Reportes() {
               <p>
                 {totalRechazadas}
               </p>
-
             </div>
 
-
             <div className="report-item">
-
               <strong>
                 Sin decisión formal
               </strong>
@@ -2362,39 +1877,27 @@ export default function Reportes() {
               <p>
                 {totalSinDecision}
               </p>
-
             </div>
-
           </div>
-
         </div>
-
       </section>
-
 
       {/* =====================================================
           DETALLE DE EVALUACIONES
       ===================================================== */}
-
       <section className="panel">
-
         <h2 className="section-title">
           Detalle de evaluaciones
         </h2>
-
 
         <div
           style={{
             overflowX: "auto",
           }}
         >
-
           <table className="table">
-
             <thead>
-
               <tr>
-
                 <th>
                   Fecha
                 </th>
@@ -2438,100 +1941,70 @@ export default function Reportes() {
                 <th>
                   Fecha decisión
                 </th>
-
               </tr>
-
             </thead>
 
-
             <tbody>
-
               {evaluacionesFiltradas.map(
                 (evaluacion) => {
-
                   const solicitud =
                     evaluacion.solicitud;
 
                   const cliente =
                     solicitud?.cliente;
 
-
                   return (
-
                     <tr
                       key={
                         evaluacion.id
                       }
                     >
-
                       <td>
-
                         {formatearFecha(
                           evaluacion.fechaEvaluacion
                         )}
-
                       </td>
 
-
                       <td>
-
-                        #{solicitud?.id || "-"}
-
+                        <strong>
+                          {solicitud?.codigoSolicitud || "-"}
+                        </strong>
                       </td>
 
-
                       <td>
-
                         {cliente
-                          ? `${cliente.nombres || ""} ${cliente.apellidos || ""}`
+                          ? `${cliente.nombres || ""} ${cliente.apellidos || ""}`.trim()
                           : "-"
                         }
-
                       </td>
 
-
                       <td>
-
                         {solicitud?.tipoCredito ||
                           "-"}
-
                       </td>
 
-
                       <td>
-
                         {formatearDinero(
                           solicitud?.monto
                         )}
-
                       </td>
 
-
                       <td>
-
                         <strong>
-
                           {evaluacion.scoreIa != null
                             ? `${evaluacion.scoreIa}/100`
                             : "-"
                           }
-
                         </strong>
-
                       </td>
 
-
                       <td>
-
                         {formatearPorcentaje(
                           evaluacion.probabilidadMora
                         )}
-
                       </td>
 
-
                       <td>
-
                         <span
                           className={
                             obtenerClaseRiesgo(
@@ -2539,58 +2012,38 @@ export default function Reportes() {
                             )
                           }
                         >
-
                           {evaluacion.nivelRiesgo ||
                             "-"
                           }
-
                         </span>
-
                       </td>
 
-
                       <td>
-
                         {evaluacion.estado ||
                           "-"
                         }
-
                       </td>
 
-
                       <td>
-
                         {obtenerDecisionFormal(
                           solicitud
                         )}
-
                       </td>
 
-
                       <td>
-
                         {formatearFecha(
                           solicitud?.fechaDecision
                         )}
-
                       </td>
-
                     </tr>
-
                   );
-
                 }
               )}
-
             </tbody>
-
           </table>
-
         </div>
 
-
         {evaluacionesFiltradas.length === 0 && (
-
           <div
             style={{
               textAlign: "center",
@@ -2598,7 +2051,6 @@ export default function Reportes() {
               color: "#777",
             }}
           >
-
             <div
               style={{
                 fontSize: "35px",
@@ -2611,15 +2063,9 @@ export default function Reportes() {
             <strong>
               No existen evaluaciones para los filtros seleccionados.
             </strong>
-
           </div>
-
         )}
-
       </section>
-
     </Layout>
-
   );
-
 }

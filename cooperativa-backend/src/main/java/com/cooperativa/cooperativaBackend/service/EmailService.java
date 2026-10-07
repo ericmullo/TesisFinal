@@ -2,7 +2,6 @@ package com.cooperativa.cooperativaBackend.service;
 
 import com.cooperativa.cooperativaBackend.model.Cliente;
 import com.cooperativa.cooperativaBackend.model.Solicitud;
-
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -27,14 +26,12 @@ public class EmailService {
     // ENVÍO GENÉRICO
     // También utilizado actualmente por el 2FA
     // =========================================================
-
     public void enviarCorreo(
             String destinatario,
             String asunto,
             String mensaje
     ) {
-        SimpleMailMessage correo =
-                new SimpleMailMessage();
+        SimpleMailMessage correo = new SimpleMailMessage();
 
         correo.setFrom(remitente);
         correo.setTo(destinatario);
@@ -47,31 +44,30 @@ public class EmailService {
     // =========================================================
     // SOLICITUD DE CRÉDITO REGISTRADA
     // =========================================================
-
     public void enviarSolicitudRegistrada(
             Solicitud solicitud
     ) {
         Cliente cliente =
-                obtenerClienteValido(
-                        solicitud
-                );
+                obtenerClienteValido(solicitud);
 
         if (!tieneCorreo(cliente)) {
             System.err.println(
                     "No se envió el correo de solicitud registrada: " +
                     "el cliente no tiene correo electrónico."
             );
-
             return;
         }
 
         String nombreCliente =
-                obtenerNombreCliente(
-                        cliente
-                );
+                obtenerNombreCliente(cliente);
+
+        String codigoSolicitud =
+                obtenerCodigoSolicitud(solicitud);
 
         String asunto =
-                "Solicitud de crédito registrada - Cooperativa 15 de Abril";
+                "Solicitud de crédito registrada - " +
+                codigoSolicitud +
+                " - Cooperativa 15 de Abril";
 
         String mensaje =
                 "Estimado/a " + nombreCliente + ":\n\n" +
@@ -81,6 +77,9 @@ public class EmailService {
 
                 "DETALLE DE LA SOLICITUD\n" +
                 "----------------------------------------\n" +
+
+                "Código de solicitud: " +
+                codigoSolicitud + "\n" +
 
                 "Tipo de crédito: " +
                 valorTexto(
@@ -123,6 +122,11 @@ public class EmailService {
                 "la solicitud podrá avanzar a las siguientes etapas " +
                 "del proceso de análisis.\n\n" +
 
+                "Conserve el código de solicitud " +
+                codigoSolicitud +
+                " como referencia para cualquier consulta relacionada " +
+                "con su trámite.\n\n" +
+
                 "Este es un mensaje automático. Por favor, no responda " +
                 "a este correo.\n\n" +
 
@@ -140,31 +144,30 @@ public class EmailService {
     // =========================================================
     // SOLICITUD APROBADA
     // =========================================================
-
     public void enviarSolicitudAprobada(
             Solicitud solicitud
     ) {
         Cliente cliente =
-                obtenerClienteValido(
-                        solicitud
-                );
+                obtenerClienteValido(solicitud);
 
         if (!tieneCorreo(cliente)) {
             System.err.println(
                     "No se envió el correo de aprobación: " +
                     "el cliente no tiene correo electrónico."
             );
-
             return;
         }
 
         String nombreCliente =
-                obtenerNombreCliente(
-                        cliente
-                );
+                obtenerNombreCliente(cliente);
+
+        String codigoSolicitud =
+                obtenerCodigoSolicitud(solicitud);
 
         String asunto =
-                "Solicitud de crédito aprobada - Cooperativa 15 de Abril";
+                "Solicitud de crédito aprobada - " +
+                codigoSolicitud +
+                " - Cooperativa 15 de Abril";
 
         String mensaje =
                 "Estimado/a " + nombreCliente + ":\n\n" +
@@ -175,6 +178,9 @@ public class EmailService {
 
                 "DETALLE DEL CRÉDITO\n" +
                 "----------------------------------------\n" +
+
+                "Código de solicitud: " +
+                codigoSolicitud + "\n" +
 
                 "Tipo de crédito: " +
                 valorTexto(
@@ -203,6 +209,10 @@ public class EmailService {
                 "relacionadas con su crédito, comuníquese o acérquese " +
                 "a la Cooperativa de Ahorro y Crédito 15 de Abril.\n\n" +
 
+                "Para cualquier consulta relacionada con este trámite, " +
+                "utilice como referencia el código " +
+                codigoSolicitud + ".\n\n" +
+
                 "Agradecemos la confianza depositada en nuestra institución.\n\n" +
 
                 "Este es un mensaje automático. Por favor, no responda " +
@@ -222,31 +232,30 @@ public class EmailService {
     // =========================================================
     // SOLICITUD RECHAZADA
     // =========================================================
-
     public void enviarSolicitudRechazada(
             Solicitud solicitud
     ) {
         Cliente cliente =
-                obtenerClienteValido(
-                        solicitud
-                );
+                obtenerClienteValido(solicitud);
 
         if (!tieneCorreo(cliente)) {
             System.err.println(
                     "No se envió el correo de resultado: " +
                     "el cliente no tiene correo electrónico."
             );
-
             return;
         }
 
         String nombreCliente =
-                obtenerNombreCliente(
-                        cliente
-                );
+                obtenerNombreCliente(cliente);
+
+        String codigoSolicitud =
+                obtenerCodigoSolicitud(solicitud);
 
         String asunto =
-                "Resultado de su solicitud de crédito - Cooperativa 15 de Abril";
+                "Resultado de su solicitud de crédito - " +
+                codigoSolicitud +
+                " - Cooperativa 15 de Abril";
 
         String mensaje =
                 "Estimado/a " + nombreCliente + ":\n\n" +
@@ -257,6 +266,9 @@ public class EmailService {
 
                 "DETALLE DE LA SOLICITUD\n" +
                 "----------------------------------------\n" +
+
+                "Código de solicitud: " +
+                codigoSolicitud + "\n" +
 
                 "Tipo de crédito: " +
                 valorTexto(
@@ -285,6 +297,10 @@ public class EmailService {
                 "puede comunicarse o acercarse a la Cooperativa de " +
                 "Ahorro y Crédito 15 de Abril.\n\n" +
 
+                "Para cualquier consulta relacionada con este trámite, " +
+                "utilice como referencia el código " +
+                codigoSolicitud + ".\n\n" +
+
                 "Agradecemos su interés y la confianza depositada " +
                 "en nuestra institución.\n\n" +
 
@@ -305,7 +321,6 @@ public class EmailService {
     // =========================================================
     // OBTENER CLIENTE
     // =========================================================
-
     private Cliente obtenerClienteValido(
             Solicitud solicitud
     ) {
@@ -327,7 +342,6 @@ public class EmailService {
     // =========================================================
     // VALIDAR CORREO
     // =========================================================
-
     private boolean tieneCorreo(
             Cliente cliente
     ) {
@@ -340,7 +354,6 @@ public class EmailService {
     // =========================================================
     // NOMBRE COMPLETO DEL CLIENTE
     // =========================================================
-
     private String obtenerNombreCliente(
             Cliente cliente
     ) {
@@ -364,10 +377,25 @@ public class EmailService {
     }
 
     // =========================================================
+    // CÓDIGO DE SOLICITUD
+    // =========================================================
+    private String obtenerCodigoSolicitud(
+            Solicitud solicitud
+    ) {
+        if (
+                solicitud.getCodigoSolicitud() == null ||
+                solicitud.getCodigoSolicitud().trim().isEmpty()
+        ) {
+            return "Sin código";
+        }
+
+        return solicitud.getCodigoSolicitud().trim();
+    }
+
+    // =========================================================
     // FORMATEAR MONTO
     // Solicitud utiliza Double para monto
     // =========================================================
-
     private String formatearDinero(
             Double monto
     ) {
@@ -389,7 +417,6 @@ public class EmailService {
     // FORMATEAR PLAZO
     // Solicitud utiliza Integer para plazoMeses
     // =========================================================
-
     private String formatearPlazo(
             Integer plazoMeses
     ) {
@@ -403,7 +430,6 @@ public class EmailService {
     // =========================================================
     // TEXTO SEGURO
     // =========================================================
-
     private String valorTexto(
             String valor
     ) {

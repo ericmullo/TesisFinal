@@ -11,7 +11,6 @@ function Dashboard() {
   // =========================================================
   // ESTADOS
   // =========================================================
-
   const [clientes, setClientes] = useState([]);
   const [solicitudes, setSolicitudes] = useState([]);
   const [evaluaciones, setEvaluaciones] = useState([]);
@@ -22,13 +21,11 @@ function Dashboard() {
   // =========================================================
   // AÑO ACTUAL
   // =========================================================
-
   const anioActual = new Date().getFullYear();
 
   // =========================================================
   // CARGAR INFORMACIÓN DEL DASHBOARD
   // =========================================================
-
   useEffect(() => {
     cargarDashboard();
   }, []);
@@ -68,7 +65,6 @@ function Dashboard() {
   // =========================================================
   // CONTADORES GENERALES
   // =========================================================
-
   const totalClientes = clientes.length;
   const totalSolicitudes = solicitudes.length;
   const totalEvaluaciones = evaluaciones.length;
@@ -76,7 +72,6 @@ function Dashboard() {
   // =========================================================
   // DISTRIBUCIÓN DE RIESGO
   // =========================================================
-
   const riesgoAlto = evaluaciones.filter(
     (evaluacion) =>
       String(evaluacion.nivelRiesgo || "")
@@ -101,7 +96,6 @@ function Dashboard() {
   // Solo contamos una decisión como formal cuando existe
   // fechaDecision. Así no mezclamos registros antiguos.
   // =========================================================
-
   const decisionesFormales = solicitudes.filter(
     (solicitud) => {
       const estado = String(
@@ -155,7 +149,6 @@ function Dashboard() {
   // =========================================================
   // SOLICITUDES SIN DECISIÓN FORMAL
   // =========================================================
-
   const solicitudesPendientes = solicitudes.filter(
     (solicitud) =>
       !solicitud.fechaDecision
@@ -164,7 +157,6 @@ function Dashboard() {
   // =========================================================
   // SOLICITUDES POR MES - AÑO ACTUAL
   // =========================================================
-
   const obtenerSolicitudesPorMes = () => {
     const meses = [
       "Ene",
@@ -202,7 +194,6 @@ function Dashboard() {
       }
 
       const mes = fecha.getMonth();
-
       conteo[mes] += 1;
     });
 
@@ -218,7 +209,6 @@ function Dashboard() {
   // =========================================================
   // ALTURA DE LAS BARRAS
   // =========================================================
-
   const maximoSolicitudesMes = Math.max(
     ...solicitudesPorMes.map(
       (item) => item.cantidad
@@ -247,7 +237,6 @@ function Dashboard() {
   // =========================================================
   // ÚLTIMAS EVALUACIONES
   // =========================================================
-
   const evaluacionesRecientes = [
     ...evaluaciones,
   ]
@@ -267,7 +256,6 @@ function Dashboard() {
   // =========================================================
   // FORMATEAR PORCENTAJE
   // =========================================================
-
   const formatearPorcentaje = (valor) => {
     if (
       valor === null ||
@@ -288,7 +276,6 @@ function Dashboard() {
   // =========================================================
   // FORMATEAR FECHA
   // =========================================================
-
   const formatearFecha = (fecha) => {
     if (!fecha) {
       return "-";
@@ -307,7 +294,6 @@ function Dashboard() {
   // =========================================================
   // CLASE DEL BADGE DE RIESGO
   // =========================================================
-
   const obtenerClaseRiesgo = (riesgo) => {
     const valor = String(
       riesgo || ""
@@ -331,7 +317,6 @@ function Dashboard() {
   // =========================================================
   // ESTADO VISUAL DE LA EVALUACIÓN
   // =========================================================
-
   const obtenerTextoEstado = (evaluacion) => {
     if (evaluacion.estado) {
       return evaluacion.estado;
@@ -343,7 +328,6 @@ function Dashboard() {
   // =========================================================
   // CARGANDO
   // =========================================================
-
   if (cargando) {
     return (
       <Layout title="Dashboard Principal">
@@ -364,14 +348,11 @@ function Dashboard() {
   // =========================================================
   // RETURN
   // =========================================================
-
   return (
     <Layout title="Dashboard Principal">
-
       {/* =====================================================
           ERROR
       ===================================================== */}
-
       {error && (
         <section
           className="panel"
@@ -389,11 +370,8 @@ function Dashboard() {
       {/* =====================================================
           TARJETAS PRINCIPALES
       ===================================================== */}
-
       <section className="cards five">
-
         {/* CLIENTES */}
-
         <div className="card">
           <h3>
             Total clientes
@@ -409,7 +387,6 @@ function Dashboard() {
         </div>
 
         {/* SOLICITUDES */}
-
         <div className="card">
           <h3>
             Total solicitudes
@@ -425,7 +402,6 @@ function Dashboard() {
         </div>
 
         {/* RIESGO ALTO */}
-
         <div className="card red">
           <h3>
             Riesgo alto
@@ -441,7 +417,6 @@ function Dashboard() {
         </div>
 
         {/* RIESGO MEDIO */}
-
         <div className="card orange">
           <h3>
             Riesgo medio
@@ -457,7 +432,6 @@ function Dashboard() {
         </div>
 
         {/* RIESGO BAJO */}
-
         <div className="card yellow">
           <h3>
             Riesgo bajo
@@ -471,20 +445,17 @@ function Dashboard() {
             Evaluaciones de riesgo bajo
           </p>
         </div>
-
       </section>
 
       {/* =====================================================
           SEGUNDA FILA DE INDICADORES
       ===================================================== */}
-
       <section
         className="summary-cards four"
         style={{
           marginBottom: "24px",
         }}
       >
-
         <div className="small-card">
           <h3>
             Evaluaciones IA
@@ -534,17 +505,13 @@ function Dashboard() {
             {solicitudesRechazadas}
           </strong>
         </div>
-
       </section>
 
       {/* =====================================================
           GRÁFICO + RESUMEN DE RIESGO
       ===================================================== */}
-
       <section className="dashboard-grid">
-
         {/* SOLICITUDES POR MES */}
-
         <div className="panel">
           <h2>
             Solicitudes por mes - {anioActual}
@@ -557,7 +524,8 @@ function Dashboard() {
               marginBottom: "25px",
             }}
           >
-            Distribución mensual de solicitudes registradas durante {anioActual}
+            Distribución mensual de solicitudes registradas durante{" "}
+            {anioActual}
           </p>
 
           <div className="bar-chart">
@@ -588,7 +556,6 @@ function Dashboard() {
         </div>
 
         {/* RESUMEN DE RIESGO */}
-
         <div className="panel">
           <h2>
             Resumen de riesgo
@@ -605,7 +572,6 @@ function Dashboard() {
           </p>
 
           <div className="risk-list">
-
             <div className="risk-item high">
               <strong>
                 Riesgo alto ({riesgoAlto})
@@ -629,18 +595,14 @@ function Dashboard() {
 
               Solicitudes con menor riesgo estimado por el modelo.
             </div>
-
           </div>
         </div>
-
       </section>
 
       {/* =====================================================
           ÚLTIMAS EVALUACIONES
       ===================================================== */}
-
       <section className="panel footer-panel">
-
         <div
           style={{
             display: "flex",
@@ -729,12 +691,14 @@ function Dashboard() {
                 return (
                   <tr key={evaluacion.id}>
                     <td>
-                      #{solicitud?.id || "-"}
+                      <strong>
+                        {solicitud?.codigoSolicitud || "-"}
+                      </strong>
                     </td>
 
                     <td>
                       {cliente
-                        ? `${cliente.nombres || ""} ${cliente.apellidos || ""}`
+                        ? `${cliente.nombres || ""} ${cliente.apellidos || ""}`.trim()
                         : "-"}
                     </td>
 
@@ -815,9 +779,7 @@ function Dashboard() {
             </p>
           </div>
         )}
-
       </section>
-
     </Layout>
   );
 }

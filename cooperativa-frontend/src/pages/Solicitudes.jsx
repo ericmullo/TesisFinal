@@ -39,18 +39,13 @@ export default function Solicitudes() {
   let usuario = null;
 
   try {
-    const usuarioGuardado =
-      sessionStorage.getItem("usuario");
+    const usuarioGuardado = sessionStorage.getItem("usuario");
 
     if (usuarioGuardado) {
-      usuario =
-        JSON.parse(usuarioGuardado);
+      usuario = JSON.parse(usuarioGuardado);
     }
   } catch (error) {
-    console.error(
-      "Error al obtener usuario:",
-      error
-    );
+    console.error("Error al obtener usuario:", error);
   }
 
   const puedeModificar =
@@ -64,28 +59,18 @@ export default function Solicitudes() {
   // ESTADOS
   // =========================================================
 
-  const [form, setForm] =
-    useState(initialForm);
-
-  const [clientes, setClientes] =
-    useState([]);
-
-  const [solicitudes, setSolicitudes] =
-    useState([]);
-
-  const [guardando, setGuardando] =
-    useState(false);
+  const [form, setForm] = useState(initialForm);
+  const [clientes, setClientes] = useState([]);
+  const [solicitudes, setSolicitudes] = useState([]);
+  const [guardando, setGuardando] = useState(false);
 
   const [
     solicitudSeleccionada,
     setSolicitudSeleccionada
   ] = useState(null);
 
-  const [modalVer, setModalVer] =
-    useState(false);
-
-  const [modoEdicion, setModoEdicion] =
-    useState(false);
+  const [modalVer, setModalVer] = useState(false);
+  const [modoEdicion, setModoEdicion] = useState(false);
 
   const [
     solicitudEditandoId,
@@ -103,33 +88,20 @@ export default function Solicitudes() {
 
   const cargarClientes = async () => {
     try {
-      const datos =
-        await obtenerClientes();
-
+      const datos = await obtenerClientes();
       setClientes(datos);
     } catch (error) {
-      console.error(
-        "Error al cargar clientes:",
-        error
-      );
-
-      alert(
-        "No se pudieron cargar los clientes."
-      );
+      console.error("Error al cargar clientes:", error);
+      alert("No se pudieron cargar los clientes.");
     }
   };
 
   const cargarSolicitudes = async () => {
     try {
-      const datos =
-        await obtenerSolicitudes();
-
+      const datos = await obtenerSolicitudes();
       setSolicitudes(datos);
     } catch (error) {
-      console.error(
-        "Error al cargar solicitudes:",
-        error
-      );
+      console.error("Error al cargar solicitudes:", error);
     }
   };
 
@@ -140,8 +112,7 @@ export default function Solicitudes() {
   const update = (e) => {
     setForm({
       ...form,
-      [e.target.name]:
-        e.target.value
+      [e.target.name]: e.target.value
     });
   };
 
@@ -150,8 +121,7 @@ export default function Solicitudes() {
   // =========================================================
 
   const seleccionarCliente = (e) => {
-    const id =
-      e.target.value;
+    const id = e.target.value;
 
     if (!id) {
       setForm({
@@ -166,12 +136,10 @@ export default function Solicitudes() {
       return;
     }
 
-    const cliente =
-      clientes.find(
-        (cliente) =>
-          String(cliente.id) ===
-          String(id)
-      );
+    const cliente = clientes.find(
+      (cliente) =>
+        String(cliente.id) === String(id)
+    );
 
     if (!cliente) {
       return;
@@ -179,21 +147,12 @@ export default function Solicitudes() {
 
     setForm((formAnterior) => ({
       ...formAnterior,
-
-      clienteId:
-        cliente.id,
-
-      cedula:
-        cliente.cedula || "",
-
+      clienteId: cliente.id,
+      cedula: cliente.cedula || "",
       nombres:
         `${cliente.nombres || ""} ${cliente.apellidos || ""}`.trim(),
-
-      correo:
-        cliente.correo || "",
-
-      telefono:
-        cliente.telefono || ""
+      correo: cliente.correo || "",
+      telefono: cliente.telefono || ""
     }));
   };
 
@@ -203,9 +162,7 @@ export default function Solicitudes() {
 
   const limpiar = () => {
     setForm(initialForm);
-
     setModoEdicion(false);
-
     setSolicitudEditandoId(null);
   };
 
@@ -215,14 +172,9 @@ export default function Solicitudes() {
 
   const construirSolicitud = () => {
     return {
-      estadoCivil:
-        form.estadoCivil,
-
-      ocupacion:
-        form.ocupacion,
-
-      direccion:
-        form.direccion,
+      estadoCivil: form.estadoCivil,
+      ocupacion: form.ocupacion,
+      direccion: form.direccion,
 
       ingresosMensuales:
         Number(form.ingresos),
@@ -237,8 +189,7 @@ export default function Solicitudes() {
           ? Number(form.endeudamiento)
           : 0,
 
-      empresa:
-        form.empresa,
+      empresa: form.empresa,
 
       antiguedadLaboral:
         form.antiguedad,
@@ -261,14 +212,6 @@ export default function Solicitudes() {
             ""
           )
         ),
-
-      /*
-       * El frontend muestra el estado,
-       * pero no permite modificarlo manualmente.
-       *
-       * El backend conserva/controla el estado
-       * durante las actualizaciones.
-       */
 
       estado:
         modoEdicion
@@ -354,12 +297,13 @@ export default function Solicitudes() {
         );
 
         alert(
-          "Solicitud registrada correctamente."
+          `Solicitud registrada correctamente.\n\nCódigo: ${
+            nuevaSolicitud.codigoSolicitud || ""
+          }`
         );
       }
 
       await cargarSolicitudes();
-
       limpiar();
     } catch (error) {
       console.error(
@@ -395,7 +339,6 @@ export default function Solicitudes() {
 
   const cerrarModalVer = () => {
     setModalVer(false);
-
     setSolicitudSeleccionada(null);
   };
 
@@ -475,7 +418,7 @@ export default function Solicitudes() {
         solicitud.destinoCredito || ""
     });
 
-    // El ID sigue utilizándose internamente.
+    // El ID técnico continúa utilizándose internamente.
     setSolicitudEditandoId(
       solicitud.id
     );
@@ -503,10 +446,13 @@ export default function Solicitudes() {
           ? `${solicitud.cliente.nombres || ""} ${solicitud.cliente.apellidos || ""}`.trim()
           : "este cliente";
 
-      // Ya NO mostramos el ID técnico al usuario.
+      const codigo =
+        solicitud.codigoSolicitud ||
+        "la solicitud seleccionada";
+
       const confirmar =
         window.confirm(
-          `¿Está seguro de eliminar la solicitud de ${clienteNombre}?\n\nEsta acción no se puede deshacer.`
+          `¿Está seguro de eliminar ${codigo} de ${clienteNombre}?\n\nEsta acción no se puede deshacer.`
         );
 
       if (!confirmar) {
@@ -514,7 +460,7 @@ export default function Solicitudes() {
       }
 
       try {
-        // El ID continúa siendo necesario internamente.
+        // El ID técnico sigue siendo necesario internamente.
         await eliminarSolicitud(
           solicitud.id
         );
@@ -590,7 +536,7 @@ export default function Solicitudes() {
   // RETURN
   // =========================================================
 
-    return (
+  return (
     <Layout title="Registro de Solicitud de Crédito">
 
       {/* =====================================================
@@ -640,10 +586,6 @@ export default function Solicitudes() {
 
       {puedeModificar && (
         <>
-          {/* ===================================================
-              EDICIÓN
-          =================================================== */}
-
           {modoEdicion && (
             <div className="editing-alert">
               <div>
@@ -664,10 +606,6 @@ export default function Solicitudes() {
               </button>
             </div>
           )}
-
-          {/* ===================================================
-              FORMULARIO
-          =================================================== */}
 
           <form onSubmit={guardar}>
 
@@ -992,8 +930,6 @@ export default function Solicitudes() {
                   </select>
                 </div>
 
-                {/* ESTADO AUTOMÁTICO */}
-
                 <div className="form-group">
                   <label>
                     Estado de la solicitud
@@ -1080,10 +1016,8 @@ export default function Solicitudes() {
             <strong>
               Modo consulta:
             </strong>{" "}
-            Gerencia puede consultar las
-            solicitudes registradas y revisar
-            su información, pero no puede crear,
-            editar ni eliminar solicitudes.
+            Gerencia puede consultar las solicitudes registradas y revisar
+            su información, pero no puede crear, editar ni eliminar solicitudes.
           </div>
         </section>
       )}
@@ -1129,6 +1063,7 @@ export default function Solicitudes() {
             <table className="solicitudes-table">
               <thead>
                 <tr>
+                  <th>Código</th>
                   <th>Cliente</th>
                   <th>Cédula</th>
                   <th>Tipo</th>
@@ -1144,6 +1079,12 @@ export default function Solicitudes() {
                 {solicitudes.map(
                   (solicitud) => (
                     <tr key={solicitud.id}>
+                      <td>
+                        <strong>
+                          {solicitud.codigoSolicitud || "-"}
+                        </strong>
+                      </td>
+
                       <td>
                         <strong>
                           {solicitud.cliente
@@ -1197,8 +1138,6 @@ export default function Solicitudes() {
 
                       <td>
                         <div className="table-actions">
-                          {/* VER - TODOS LOS ROLES */}
-
                           <button
                             type="button"
                             className="action-btn view"
@@ -1211,8 +1150,6 @@ export default function Solicitudes() {
                           >
                             👁
                           </button>
-
-                          {/* EDITAR / ELIMINAR - ADMIN Y ANALISTA */}
 
                           {puedeModificar && (
                             <>
@@ -1257,7 +1194,8 @@ export default function Solicitudes() {
       {/* =====================================================
           MODAL VER SOLICITUD
       ===================================================== */}
-            {modalVer &&
+
+      {modalVer &&
         solicitudSeleccionada && (
           <div
             className="solicitud-modal-overlay"
@@ -1276,7 +1214,8 @@ export default function Solicitudes() {
                   </h2>
 
                   <p>
-                    Información completa del crédito
+                    {solicitudSeleccionada.codigoSolicitud ||
+                      "Información completa del crédito"}
                   </p>
                 </div>
 
@@ -1473,6 +1412,17 @@ export default function Solicitudes() {
                   </h3>
 
                   <div className="solicitud-detail-grid">
+                    <div>
+                      <span>
+                        Código de solicitud
+                      </span>
+
+                      <strong>
+                        {solicitudSeleccionada
+                          .codigoSolicitud || "-"}
+                      </strong>
+                    </div>
+
                     <div>
                       <span>
                         Tipo de crédito
