@@ -3,13 +3,11 @@ package com.cooperativa.cooperativaBackend.service;
 import com.cooperativa.cooperativaBackend.exception.RecursoNoEncontradoException;
 import com.cooperativa.cooperativaBackend.exception.ReglaNegocioException;
 import com.cooperativa.cooperativaBackend.exception.ValidacionException;
-
 import com.cooperativa.cooperativaBackend.model.Cliente;
 import com.cooperativa.cooperativaBackend.model.EvaluacionRiesgo;
 import com.cooperativa.cooperativaBackend.model.Rol;
 import com.cooperativa.cooperativaBackend.model.Solicitud;
 import com.cooperativa.cooperativaBackend.model.Usuario;
-
 import com.cooperativa.cooperativaBackend.repository.ClienteRepository;
 import com.cooperativa.cooperativaBackend.repository.EvaluacionRiesgoRepository;
 import com.cooperativa.cooperativaBackend.repository.SolicitudRepository;
@@ -19,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.Year;
 import java.util.List;
 
 @Service
@@ -43,23 +42,12 @@ public class SolicitudService {
             NotificacionService notificacionService,
             EmailService emailService
     ) {
-        this.solicitudRepository =
-                solicitudRepository;
-
-        this.clienteRepository =
-                clienteRepository;
-
-        this.evaluacionRiesgoRepository =
-                evaluacionRiesgoRepository;
-
-        this.usuarioRepository =
-                usuarioRepository;
-
-        this.notificacionService =
-                notificacionService;
-
-        this.emailService =
-                emailService;
+        this.solicitudRepository = solicitudRepository;
+        this.clienteRepository = clienteRepository;
+        this.evaluacionRiesgoRepository = evaluacionRiesgoRepository;
+        this.usuarioRepository = usuarioRepository;
+        this.notificacionService = notificacionService;
+        this.emailService = emailService;
     }
 
     // =========================================================
@@ -74,9 +62,7 @@ public class SolicitudService {
     // OBTENER POR ID
     // =========================================================
 
-    public Solicitud obtenerSolicitudPorId(
-            Long id
-    ) {
+    public Solicitud obtenerSolicitudPorId(Long id) {
         return solicitudRepository
                 .findById(id)
                 .orElseThrow(() ->
@@ -100,8 +86,7 @@ public class SolicitudService {
                         .findById(clienteId)
                         .orElseThrow(() ->
                                 new RecursoNoEncontradoException(
-                                        "Cliente no encontrado con ID: "
-                                                + clienteId
+                                        "Cliente no encontrado con ID: " + clienteId
                                 )
                         );
 
@@ -109,30 +94,43 @@ public class SolicitudService {
          * Una solicitud nueva:
          *
          * - No puede traer un ID manual.
+         * - No puede traer un código manual.
          * - Siempre empieza Pendiente.
          * - No puede tener decisión final.
-         *
-         * Aunque el frontend intente enviar "Aprobado",
-         * "Rechazado" o "En evaluación", el backend
-         * lo reemplaza por "Pendiente".
          */
 
         solicitud.setId(null);
 
-        solicitud.setCliente(
-                cliente
-        );
+        solicitud.setCliente(cliente);
 
-        solicitud.setEstado(
-                "Pendiente"
-        );
+        solicitud.setEstado("Pendiente");
 
-        solicitud.setObservacionDecision(
-                null
-        );
+        solicitud.setObservacionDecision(null);
 
-        solicitud.setFechaDecision(
-                null
+        solicitud.setFechaDecision(null);
+
+        // =====================================================
+        // GENERAR CÓDIGO DE SOLICITUD
+        // =====================================================
+
+        Long siguienteNumero =
+                solicitudRepository
+                        .obtenerSiguienteCodigoSolicitud();
+
+        String codigoSolicitud =
+                String.format(
+                        "SOL-%d-%06d",
+                        Year.now().getValue(),
+                        siguienteNumero
+                );
+
+        /*
+         * El código enviado desde frontend/Postman se ignora.
+         * El backend siempre genera el código oficial.
+         */
+
+        solicitud.setCodigoSolicitud(
+                codigoSolicitud
         );
 
         // =====================================================
@@ -178,8 +176,7 @@ public class SolicitudService {
                         .findById(id)
                         .orElseThrow(() ->
                                 new RecursoNoEncontradoException(
-                                        "Solicitud no encontrada con ID: "
-                                                + id
+                                        "Solicitud no encontrada con ID: " + id
                                 )
                         );
 
@@ -188,8 +185,7 @@ public class SolicitudService {
                         .findById(clienteId)
                         .orElseThrow(() ->
                                 new RecursoNoEncontradoException(
-                                        "Cliente no encontrado con ID: "
-                                                + clienteId
+                                        "Cliente no encontrado con ID: " + clienteId
                                 )
                         );
 
@@ -258,19 +254,15 @@ public class SolicitudService {
         );
 
         /*
-         * MUY IMPORTANTE:
+         * NO modificamos:
          *
-         * NO hacemos:
+         * - codigoSolicitud
+         * - estado
+         * - observacionDecision
+         * - fechaDecision
          *
-         * solicitud.setEstado(...)
-         * solicitud.setObservacionDecision(...)
-         * solicitud.setFechaDecision(...)
-         *
-         * Por lo tanto, aunque alguien envíe mediante Postman:
-         *
-         * "estado": "Aprobado"
-         *
-         * este método lo ignora.
+         * Por lo tanto, el código de solicitud no puede
+         * modificarse mediante una actualización normal.
          *
          * La decisión final solamente puede realizarse
          * mediante aprobarSolicitud() o rechazarSolicitud().
@@ -299,27 +291,17 @@ public class SolicitudService {
                         id
                 );
 
-        // Debe existir evaluación IA completada
-
         verificarEvaluacionCompletada(
                 id
         );
-
-        // Debe existir una observación válida
 
         validarObservacion(
                 observacion
         );
 
-        // No puede existir una decisión anterior
-
         verificarSinDecisionFinal(
                 solicitud
         );
-
-        // =====================================================
-        // REGISTRAR DECISIÓN
-        // =====================================================
 
         solicitud.setEstado(
                 "Aprobado"
@@ -338,19 +320,10 @@ public class SolicitudService {
                         solicitud
                 );
 
-        // =====================================================
-        // NOTIFICAR DECISIÓN
-        // ADMIN + ANALISTA + GERENCIA
-        // =====================================================
-
         notificarDecisionSolicitud(
                 solicitudGuardada,
                 "APROBADA"
         );
-
-        // =====================================================
-        // CORREO DE APROBACIÓN AL CLIENTE
-        // =====================================================
 
         enviarCorreoSolicitudAprobada(
                 solicitudGuardada
@@ -373,27 +346,17 @@ public class SolicitudService {
                         id
                 );
 
-        // Debe existir evaluación IA completada
-
         verificarEvaluacionCompletada(
                 id
         );
-
-        // Debe existir una observación válida
 
         validarObservacion(
                 observacion
         );
 
-        // No puede existir una decisión anterior
-
         verificarSinDecisionFinal(
                 solicitud
         );
-
-        // =====================================================
-        // REGISTRAR DECISIÓN
-        // =====================================================
 
         solicitud.setEstado(
                 "Rechazado"
@@ -412,19 +375,10 @@ public class SolicitudService {
                         solicitud
                 );
 
-        // =====================================================
-        // NOTIFICAR DECISIÓN
-        // ADMIN + ANALISTA + GERENCIA
-        // =====================================================
-
         notificarDecisionSolicitud(
                 solicitudGuardada,
                 "RECHAZADA"
         );
-
-        // =====================================================
-        // CORREO DE RECHAZO AL CLIENTE
-        // =====================================================
 
         enviarCorreoSolicitudRechazada(
                 solicitudGuardada
@@ -535,17 +489,13 @@ public class SolicitudService {
                         solicitud
                 );
 
-        /*
-         * El ID técnico de la solicitud no se muestra
-         * al usuario.
-         *
-         * El ID continúa guardándose internamente en
-         * entidadId para relacionar la notificación
-         * con la solicitud correspondiente.
-         */
+        String codigo =
+                solicitud.getCodigoSolicitud();
 
         String mensaje =
-                "Se registró una nueva solicitud del cliente "
+                "Se registró la solicitud "
+                        + codigo
+                        + " del cliente "
                         + nombreCliente
                         + ".";
 
@@ -559,11 +509,7 @@ public class SolicitudService {
                                 Rol.ADMIN
                         );
 
-        for (
-                Usuario usuario
-                :
-                administradores
-        ) {
+        for (Usuario usuario : administradores) {
             notificacionService
                     .crearNotificacion(
                             usuario.getId(),
@@ -586,11 +532,7 @@ public class SolicitudService {
                                 Rol.ANALISTA
                         );
 
-        for (
-                Usuario usuario
-                :
-                analistas
-        ) {
+        for (Usuario usuario : analistas) {
             notificacionService
                     .crearNotificacion(
                             usuario.getId(),
@@ -617,6 +559,9 @@ public class SolicitudService {
                         solicitud
                 );
 
+        String codigo =
+                solicitud.getCodigoSolicitud();
+
         String titulo;
         String mensaje;
 
@@ -629,16 +574,21 @@ public class SolicitudService {
                     "Solicitud aprobada";
 
             mensaje =
-                    "La solicitud del cliente "
+                    "La solicitud "
+                            + codigo
+                            + " del cliente "
                             + nombreCliente
                             + " fue aprobada.";
 
         } else {
+
             titulo =
                     "Solicitud rechazada";
 
             mensaje =
-                    "La solicitud del cliente "
+                    "La solicitud "
+                            + codigo
+                            + " del cliente "
                             + nombreCliente
                             + " fue rechazada.";
         }
@@ -653,11 +603,7 @@ public class SolicitudService {
                                 Rol.ADMIN
                         );
 
-        for (
-                Usuario usuario
-                :
-                administradores
-        ) {
+        for (Usuario usuario : administradores) {
             notificacionService
                     .crearNotificacion(
                             usuario.getId(),
@@ -680,11 +626,7 @@ public class SolicitudService {
                                 Rol.ANALISTA
                         );
 
-        for (
-                Usuario usuario
-                :
-                analistas
-        ) {
+        for (Usuario usuario : analistas) {
             notificacionService
                     .crearNotificacion(
                             usuario.getId(),
@@ -707,11 +649,7 @@ public class SolicitudService {
                                 Rol.GERENCIA
                         );
 
-        for (
-                Usuario usuario
-                :
-                gerencia
-        ) {
+        for (Usuario usuario : gerencia) {
             notificacionService
                     .crearNotificacion(
                             usuario.getId(),
@@ -757,9 +695,7 @@ public class SolicitudService {
                 (nombres + " " + apellidos)
                         .trim();
 
-        if (
-                nombreCompleto.isBlank()
-        ) {
+        if (nombreCompleto.isBlank()) {
             return "Cliente";
         }
 
@@ -801,11 +737,6 @@ public class SolicitudService {
     private void verificarSinDecisionFinal(
             Solicitud solicitud
     ) {
-        /*
-         * Usamos fechaDecision como parte fundamental
-         * para identificar una decisión formal.
-         */
-
         if (
                 solicitud.getFechaDecision() != null
                         &&
@@ -838,9 +769,7 @@ public class SolicitudService {
                                 solicitudId
                         );
 
-        if (
-                evaluaciones.isEmpty()
-        ) {
+        if (evaluaciones.isEmpty()) {
             throw new ValidacionException(
                     "La solicitud todavía no tiene una evaluación de riesgo."
             );
@@ -860,9 +789,7 @@ public class SolicitudService {
                                                 )
                         );
 
-        if (
-                !completada
-        ) {
+        if (!completada) {
             throw new ValidacionException(
                     "La evaluación de riesgo todavía no ha sido completada."
             );

@@ -13,6 +13,18 @@ public class Solicitud {
     private Long id;
 
     // =========================================================
+    // CÓDIGO DE NEGOCIO VISIBLE
+    // =========================================================
+
+    @Column(
+            name = "CODIGO_SOLICITUD",
+            nullable = false,
+            unique = true,
+            length = 30
+    )
+    private String codigoSolicitud;
+
+    // =========================================================
     // INFORMACIÓN PERSONAL COMPLEMENTARIA
     // =========================================================
 
@@ -21,7 +33,6 @@ public class Solicitud {
     private String ocupacion;
 
     private String direccion;
-
 
     // =========================================================
     // INFORMACIÓN FINANCIERA
@@ -39,7 +50,6 @@ public class Solicitud {
 
     private Double capacidadPago;
 
-
     // =========================================================
     // INFORMACIÓN DEL CRÉDITO
     // =========================================================
@@ -56,7 +66,6 @@ public class Solicitud {
 
     private LocalDateTime fechaSolicitud;
 
-
     // =========================================================
     // DECISIÓN FINAL DEL ANALISTA
     // =========================================================
@@ -66,7 +75,6 @@ public class Solicitud {
 
     private LocalDateTime fechaDecision;
 
-
     // =========================================================
     // RELACIÓN CON CLIENTE
     // =========================================================
@@ -75,7 +83,6 @@ public class Solicitud {
     @JoinColumn(name = "cliente_id", nullable = false)
     private Cliente cliente;
 
-
     // =========================================================
     // CONSTRUCTOR
     // =========================================================
@@ -83,7 +90,6 @@ public class Solicitud {
     public Solicitud() {
 
     }
-
 
     // =========================================================
     // PRE PERSIST
@@ -101,7 +107,6 @@ public class Solicitud {
         }
     }
 
-
     // =========================================================
     // GETTERS Y SETTERS
     // =========================================================
@@ -116,6 +121,17 @@ public class Solicitud {
         this.id = id;
     }
 
+    public String getCodigoSolicitud() {
+
+        return codigoSolicitud;
+    }
+
+    public void setCodigoSolicitud(
+            String codigoSolicitud
+    ) {
+
+        this.codigoSolicitud = codigoSolicitud;
+    }
 
     public String getEstadoCivil() {
 
@@ -127,7 +143,6 @@ public class Solicitud {
         this.estadoCivil = estadoCivil;
     }
 
-
     public String getOcupacion() {
 
         return ocupacion;
@@ -137,7 +152,6 @@ public class Solicitud {
 
         this.ocupacion = ocupacion;
     }
-
 
     public String getDireccion() {
 
@@ -149,7 +163,6 @@ public class Solicitud {
         this.direccion = direccion;
     }
 
-
     public Double getIngresosMensuales() {
 
         return ingresosMensuales;
@@ -159,7 +172,6 @@ public class Solicitud {
 
         this.ingresosMensuales = ingresosMensuales;
     }
-
 
     public Double getEgresosMensuales() {
 
@@ -171,7 +183,6 @@ public class Solicitud {
         this.egresosMensuales = egresosMensuales;
     }
 
-
     public Double getNivelEndeudamiento() {
 
         return nivelEndeudamiento;
@@ -181,7 +192,6 @@ public class Solicitud {
 
         this.nivelEndeudamiento = nivelEndeudamiento;
     }
-
 
     public String getEmpresa() {
 
@@ -193,7 +203,6 @@ public class Solicitud {
         this.empresa = empresa;
     }
 
-
     public String getAntiguedadLaboral() {
 
         return antiguedadLaboral;
@@ -203,7 +212,6 @@ public class Solicitud {
 
         this.antiguedadLaboral = antiguedadLaboral;
     }
-
 
     public Double getCapacidadPago() {
 
@@ -215,7 +223,6 @@ public class Solicitud {
         this.capacidadPago = capacidadPago;
     }
 
-
     public String getTipoCredito() {
 
         return tipoCredito;
@@ -225,7 +232,6 @@ public class Solicitud {
 
         this.tipoCredito = tipoCredito;
     }
-
 
     public Double getMonto() {
 
@@ -237,7 +243,6 @@ public class Solicitud {
         this.monto = monto;
     }
 
-
     public Integer getPlazoMeses() {
 
         return plazoMeses;
@@ -247,7 +252,6 @@ public class Solicitud {
 
         this.plazoMeses = plazoMeses;
     }
-
 
     public String getEstado() {
 
@@ -259,7 +263,6 @@ public class Solicitud {
         this.estado = estado;
     }
 
-
     public String getDestinoCredito() {
 
         return destinoCredito;
@@ -270,7 +273,6 @@ public class Solicitud {
         this.destinoCredito = destinoCredito;
     }
 
-
     public LocalDateTime getFechaSolicitud() {
 
         return fechaSolicitud;
@@ -280,7 +282,6 @@ public class Solicitud {
 
         this.fechaSolicitud = fechaSolicitud;
     }
-
 
     public String getObservacionDecision() {
 
@@ -294,7 +295,6 @@ public class Solicitud {
         this.observacionDecision = observacionDecision;
     }
 
-
     public LocalDateTime getFechaDecision() {
 
         return fechaDecision;
@@ -306,7 +306,6 @@ public class Solicitud {
 
         this.fechaDecision = fechaDecision;
     }
-
 
     public Cliente getCliente() {
 
