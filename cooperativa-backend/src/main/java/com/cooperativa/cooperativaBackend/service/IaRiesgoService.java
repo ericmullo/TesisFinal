@@ -2,6 +2,8 @@ package com.cooperativa.cooperativaBackend.service;
 
 import com.cooperativa.cooperativaBackend.dto.PrediccionRiesgoRequest;
 import com.cooperativa.cooperativaBackend.dto.PrediccionRiesgoResponse;
+
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
@@ -10,10 +12,11 @@ public class IaRiesgoService {
 
     private final RestClient restClient;
 
-    public IaRiesgoService() {
-
+    public IaRiesgoService(
+            @Value("${IA_URL:http://localhost:8000}") String iaUrl
+    ) {
         this.restClient = RestClient.builder()
-                .baseUrl("http://localhost:8000")
+                .baseUrl(iaUrl)
                 .build();
     }
 
@@ -21,12 +24,15 @@ public class IaRiesgoService {
             PrediccionRiesgoRequest request
     ) {
 
-        PrediccionRiesgoResponse respuesta = restClient
-                .post()
-                .uri("/predict")
-                .body(request)
-                .retrieve()
-                .body(PrediccionRiesgoResponse.class);
+        PrediccionRiesgoResponse respuesta =
+                restClient
+                        .post()
+                        .uri("/predict")
+                        .body(request)
+                        .retrieve()
+                        .body(
+                                PrediccionRiesgoResponse.class
+                        );
 
         if (respuesta == null) {
             throw new RuntimeException(

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { API_URL } from "../services/api";
 
 function Login() {
   const navigate = useNavigate();
@@ -89,7 +90,7 @@ function Login() {
       setCargando(true);
 
       const response = await fetch(
-        "http://localhost:8080/api/auth/login",
+        `${API_URL}/auth/login`,
         {
           method: "POST",
           headers: {
@@ -156,7 +157,7 @@ function Login() {
       setCargando(true);
 
       const response = await fetch(
-        "http://localhost:8080/api/auth/verificar-codigo",
+        `${API_URL}/auth/verificar-codigo`,
         {
           method: "POST",
           headers: {
@@ -227,7 +228,7 @@ function Login() {
       setReenviando(true);
 
       const response = await fetch(
-        "http://localhost:8080/api/auth/reenviar-codigo",
+        `${API_URL}/auth/reenviar-codigo`,
         {
           method: "POST",
           headers: {
