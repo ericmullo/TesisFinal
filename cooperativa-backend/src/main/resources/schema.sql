@@ -1,0 +1,3 @@
+CREATE SEQUENCE IF NOT EXISTS seq_codigo_solicitud
+    START WITH 1
+    INCREMENT BY 1;

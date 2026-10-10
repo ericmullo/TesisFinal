@@ -11,7 +11,7 @@ public interface SolicitudRepository
         extends JpaRepository<Solicitud, Long> {
 
     @Query(
-            value = "SELECT SEQ_CODIGO_SOLICITUD.NEXTVAL FROM DUAL",
+            value = "SELECT nextval('seq_codigo_solicitud')",
             nativeQuery = true
     )
     Long obtenerSiguienteCodigoSolicitud();
