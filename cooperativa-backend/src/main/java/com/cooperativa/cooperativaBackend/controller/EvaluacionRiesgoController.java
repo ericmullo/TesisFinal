@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import java.util.LinkedHashMap;
 
 
 @RestController
@@ -109,22 +110,82 @@ public class EvaluacionRiesgoController {
 
 
     // =========================================================
-    // CREAR EVALUACIÓN
-    // POST /api/evaluaciones?solicitudId=1
-    // =========================================================
+// CREAR EVALUACIÓN
+// POST /api/evaluaciones?solicitudId=1
+// =========================================================
 
-    @PostMapping
-    public EvaluacionRiesgo
-    crearEvaluacion(
-            @RequestParam Long solicitudId
-    ) {
+@PostMapping
+public ResponseEntity<Map<String, Object>>
+crearEvaluacion(
+        @RequestParam Long solicitudId
+) {
 
-        return evaluacionRiesgoService
-                .crearEvaluacion(
-                        solicitudId
-                );
+    EvaluacionRiesgo evaluacion =
+            evaluacionRiesgoService
+                    .crearEvaluacion(
+                            solicitudId
+                    );
 
-    }
+
+    Map<String, Object> respuesta =
+            new LinkedHashMap<>();
+
+
+    respuesta.put(
+            "id",
+            evaluacion.getId()
+    );
+
+    respuesta.put(
+            "scoreIa",
+            evaluacion.getScoreIa()
+    );
+
+    respuesta.put(
+            "probabilidadMora",
+            evaluacion.getProbabilidadMora()
+    );
+
+    respuesta.put(
+            "confianzaModelo",
+            evaluacion.getConfianzaModelo()
+    );
+
+    respuesta.put(
+            "nivelRiesgo",
+            evaluacion.getNivelRiesgo()
+    );
+
+    respuesta.put(
+            "recomendacion",
+            evaluacion.getRecomendacion()
+    );
+
+    respuesta.put(
+            "modeloUtilizado",
+            evaluacion.getModeloUtilizado()
+    );
+
+    respuesta.put(
+            "estado",
+            evaluacion.getEstado()
+    );
+
+    respuesta.put(
+            "explicacion",
+            evaluacion.getExplicacion()
+    );
+
+    respuesta.put(
+            "fechaEvaluacion",
+            evaluacion.getFechaEvaluacion()
+    );
+
+
+    return ResponseEntity.ok(
+            respuesta
+    );
+}
 
 
     // =========================================================
