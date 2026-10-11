@@ -2,137 +2,220 @@ package com.cooperativa.cooperativaBackend.service;
 
 import com.cooperativa.cooperativaBackend.model.Cliente;
 import com.cooperativa.cooperativaBackend.model.Solicitud;
+
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClient;
 
 import java.text.NumberFormat;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 @Service
 public class EmailService {
 
-    private final JavaMailSender mailSender;
+    private final RestClient restClient;
+    private final String apiKey;
+    private final String remitente;
 
-    @Value("${spring.mail.username}")
-    private String remitente;
+    // =========================================================
+    // CONSTRUCTOR
+    // =========================================================
 
-    public EmailService(JavaMailSender mailSender) {
-        this.mailSender = mailSender;
+    public EmailService(
+            @Value("${resend.api-key}") String apiKey,
+            @Value("${resend.from-email}") String remitente
+    ) {
+
+        this.restClient =
+                RestClient
+                        .builder()
+                        .baseUrl(
+                                "https://api.resend.com"
+                        )
+                        .build();
+
+        this.apiKey =
+                apiKey;
+
+        this.remitente =
+                remitente;
     }
+
 
     // =========================================================
     // ENVÍO GENÉRICO
-    // También utilizado actualmente por el 2FA
+    // UTILIZADO TAMBIÉN POR EL 2FA
     // =========================================================
+
     public void enviarCorreo(
             String destinatario,
             String asunto,
             String mensaje
     ) {
-        SimpleMailMessage correo = new SimpleMailMessage();
 
-        correo.setFrom(remitente);
-        correo.setTo(destinatario);
-        correo.setSubject(asunto);
-        correo.setText(mensaje);
+        Map<String, Object> cuerpo =
+                Map.of(
+                        "from",
+                        "Cooperativa 15 de Abril <"
+                                + remitente
+                                + ">",
 
-        mailSender.send(correo);
+                        "to",
+                        List.of(
+                                destinatario
+                        ),
+
+                        "subject",
+                        asunto,
+
+                        "text",
+                        mensaje
+                );
+
+
+        restClient
+                .post()
+                .uri("/emails")
+                .header(
+                        "Authorization",
+                        "Bearer " + apiKey
+                )
+                .contentType(
+                        MediaType.APPLICATION_JSON
+                )
+                .body(
+                        cuerpo
+                )
+                .retrieve()
+                .toBodilessEntity();
     }
+
 
     // =========================================================
     // SOLICITUD DE CRÉDITO REGISTRADA
     // =========================================================
+
     public void enviarSolicitudRegistrada(
             Solicitud solicitud
     ) {
-        Cliente cliente =
-                obtenerClienteValido(solicitud);
 
-        if (!tieneCorreo(cliente)) {
+        Cliente cliente =
+                obtenerClienteValido(
+                        solicitud
+                );
+
+
+        if (
+                !tieneCorreo(
+                        cliente
+                )
+        ) {
+
             System.err.println(
-                    "No se envió el correo de solicitud registrada: " +
-                    "el cliente no tiene correo electrónico."
+                    "No se envió el correo de solicitud registrada: "
+                            +
+                            "el cliente no tiene correo electrónico."
             );
+
             return;
         }
 
+
         String nombreCliente =
-                obtenerNombreCliente(cliente);
+                obtenerNombreCliente(
+                        cliente
+                );
+
 
         String codigoSolicitud =
-                obtenerCodigoSolicitud(solicitud);
+                obtenerCodigoSolicitud(
+                        solicitud
+                );
+
 
         String asunto =
-                "Solicitud de crédito registrada - " +
-                codigoSolicitud +
-                " - Cooperativa 15 de Abril";
+                "Solicitud de crédito registrada - "
+                        +
+                        codigoSolicitud
+                        +
+                        " - Cooperativa 15 de Abril";
+
 
         String mensaje =
-                "Estimado/a " + nombreCliente + ":\n\n" +
+                "Estimado/a "
+                        + nombreCliente
+                        + ":\n\n"
 
-                "Le informamos que su solicitud de crédito ha sido " +
-                "registrada correctamente en la Cooperativa 15 de Abril.\n\n" +
+                        + "Le informamos que su solicitud de crédito ha sido "
+                        + "registrada correctamente en la Cooperativa 15 de Abril.\n\n"
 
-                "DETALLE DE LA SOLICITUD\n" +
-                "----------------------------------------\n" +
+                        + "DETALLE DE LA SOLICITUD\n"
+                        + "----------------------------------------\n"
 
-                "Código de solicitud: " +
-                codigoSolicitud + "\n" +
+                        + "Código de solicitud: "
+                        + codigoSolicitud
+                        + "\n"
 
-                "Tipo de crédito: " +
-                valorTexto(
-                        solicitud.getTipoCredito()
-                ) + "\n" +
+                        + "Tipo de crédito: "
+                        + valorTexto(
+                                solicitud.getTipoCredito()
+                        )
+                        + "\n"
 
-                "Monto solicitado: " +
-                formatearDinero(
-                        solicitud.getMonto()
-                ) + "\n" +
+                        + "Monto solicitado: "
+                        + formatearDinero(
+                                solicitud.getMonto()
+                        )
+                        + "\n"
 
-                "Plazo: " +
-                formatearPlazo(
-                        solicitud.getPlazoMeses()
-                ) + "\n" +
+                        + "Plazo: "
+                        + formatearPlazo(
+                                solicitud.getPlazoMeses()
+                        )
+                        + "\n"
 
-                "Destino del crédito: " +
-                valorTexto(
-                        solicitud.getDestinoCredito()
-                ) + "\n" +
+                        + "Destino del crédito: "
+                        + valorTexto(
+                                solicitud.getDestinoCredito()
+                        )
+                        + "\n"
 
-                "Estado actual: Pendiente\n" +
-                "----------------------------------------\n\n" +
+                        + "Estado actual: Pendiente\n"
+                        + "----------------------------------------\n\n"
 
-                "DOCUMENTACIÓN REQUERIDA\n\n" +
+                        + "DOCUMENTACIÓN REQUERIDA\n\n"
 
-                "Para continuar con el proceso de evaluación de su " +
-                "solicitud, es necesario presentar la siguiente " +
-                "documentación:\n\n" +
+                        + "Para continuar con el proceso de evaluación de su "
+                        + "solicitud, es necesario presentar la siguiente "
+                        + "documentación:\n\n"
 
-                "1. Documento de identificación.\n" +
-                "2. Documento de respaldo de ingresos.\n" +
-                "3. Documento general requerido para la solicitud.\n\n" +
+                        + "1. Documento de identificación.\n"
+                        + "2. Documento de respaldo de ingresos.\n"
+                        + "3. Documento general requerido para la solicitud.\n\n"
 
-                "La documentación deberá ser entregada para que la " +
-                "solicitud pueda continuar con el proceso de evaluación " +
-                "de riesgo crediticio.\n\n" +
+                        + "La documentación deberá ser entregada para que la "
+                        + "solicitud pueda continuar con el proceso de evaluación "
+                        + "de riesgo crediticio.\n\n"
 
-                "Una vez completada la documentación requerida, " +
-                "la solicitud podrá avanzar a las siguientes etapas " +
-                "del proceso de análisis.\n\n" +
+                        + "Una vez completada la documentación requerida, "
+                        + "la solicitud podrá avanzar a las siguientes etapas "
+                        + "del proceso de análisis.\n\n"
 
-                "Conserve el código de solicitud " +
-                codigoSolicitud +
-                " como referencia para cualquier consulta relacionada " +
-                "con su trámite.\n\n" +
+                        + "Conserve el código de solicitud "
+                        + codigoSolicitud
+                        + " como referencia para cualquier consulta relacionada "
+                        + "con su trámite.\n\n"
 
-                "Este es un mensaje automático. Por favor, no responda " +
-                "a este correo.\n\n" +
+                        + "Este es un mensaje automático. Por favor, no responda "
+                        + "a este correo.\n\n"
 
-                "Atentamente,\n" +
-                "Cooperativa de Ahorro y Crédito 15 de Abril\n" +
-                "Seguridad y confianza.";
+                        + "Atentamente,\n"
+                        + "Cooperativa de Ahorro y Crédito 15 de Abril\n"
+                        + "Seguridad y confianza.";
+
 
         enviarCorreo(
                 cliente.getCorreo(),
@@ -140,87 +223,119 @@ public class EmailService {
                 mensaje
         );
     }
+
 
     // =========================================================
     // SOLICITUD APROBADA
     // =========================================================
+
     public void enviarSolicitudAprobada(
             Solicitud solicitud
     ) {
-        Cliente cliente =
-                obtenerClienteValido(solicitud);
 
-        if (!tieneCorreo(cliente)) {
+        Cliente cliente =
+                obtenerClienteValido(
+                        solicitud
+                );
+
+
+        if (
+                !tieneCorreo(
+                        cliente
+                )
+        ) {
+
             System.err.println(
-                    "No se envió el correo de aprobación: " +
-                    "el cliente no tiene correo electrónico."
+                    "No se envió el correo de aprobación: "
+                            +
+                            "el cliente no tiene correo electrónico."
             );
+
             return;
         }
 
+
         String nombreCliente =
-                obtenerNombreCliente(cliente);
+                obtenerNombreCliente(
+                        cliente
+                );
+
 
         String codigoSolicitud =
-                obtenerCodigoSolicitud(solicitud);
+                obtenerCodigoSolicitud(
+                        solicitud
+                );
+
 
         String asunto =
-                "Solicitud de crédito aprobada - " +
-                codigoSolicitud +
-                " - Cooperativa 15 de Abril";
+                "Solicitud de crédito aprobada - "
+                        +
+                        codigoSolicitud
+                        +
+                        " - Cooperativa 15 de Abril";
+
 
         String mensaje =
-                "Estimado/a " + nombreCliente + ":\n\n" +
+                "Estimado/a "
+                        + nombreCliente
+                        + ":\n\n"
 
-                "Nos complace informarle que, una vez finalizado el " +
-                "proceso de análisis correspondiente, su solicitud de " +
-                "crédito ha sido APROBADA.\n\n" +
+                        + "Nos complace informarle que, una vez finalizado el "
+                        + "proceso de análisis correspondiente, su solicitud de "
+                        + "crédito ha sido APROBADA.\n\n"
 
-                "DETALLE DEL CRÉDITO\n" +
-                "----------------------------------------\n" +
+                        + "DETALLE DEL CRÉDITO\n"
+                        + "----------------------------------------\n"
 
-                "Código de solicitud: " +
-                codigoSolicitud + "\n" +
+                        + "Código de solicitud: "
+                        + codigoSolicitud
+                        + "\n"
 
-                "Tipo de crédito: " +
-                valorTexto(
-                        solicitud.getTipoCredito()
-                ) + "\n" +
+                        + "Tipo de crédito: "
+                        + valorTexto(
+                                solicitud.getTipoCredito()
+                        )
+                        + "\n"
 
-                "Monto solicitado: " +
-                formatearDinero(
-                        solicitud.getMonto()
-                ) + "\n" +
+                        + "Monto solicitado: "
+                        + formatearDinero(
+                                solicitud.getMonto()
+                        )
+                        + "\n"
 
-                "Plazo: " +
-                formatearPlazo(
-                        solicitud.getPlazoMeses()
-                ) + "\n" +
+                        + "Plazo: "
+                        + formatearPlazo(
+                                solicitud.getPlazoMeses()
+                        )
+                        + "\n"
 
-                "Destino del crédito: " +
-                valorTexto(
-                        solicitud.getDestinoCredito()
-                ) + "\n" +
+                        + "Destino del crédito: "
+                        + valorTexto(
+                                solicitud.getDestinoCredito()
+                        )
+                        + "\n"
 
-                "Estado: APROBADO\n" +
-                "----------------------------------------\n\n" +
+                        + "Estado: APROBADO\n"
+                        + "----------------------------------------\n\n"
 
-                "Para continuar con las siguientes gestiones " +
-                "relacionadas con su crédito, comuníquese o acérquese " +
-                "a la Cooperativa de Ahorro y Crédito 15 de Abril.\n\n" +
+                        + "Para continuar con las siguientes gestiones "
+                        + "relacionadas con su crédito, comuníquese o acérquese "
+                        + "a la Cooperativa de Ahorro y Crédito 15 de Abril.\n\n"
 
-                "Para cualquier consulta relacionada con este trámite, " +
-                "utilice como referencia el código " +
-                codigoSolicitud + ".\n\n" +
+                        + "Para cualquier consulta relacionada con este trámite, "
+                        + "utilice como referencia el código "
+                        + codigoSolicitud
+                        + ".\n\n"
 
-                "Agradecemos la confianza depositada en nuestra institución.\n\n" +
+                        + "Agradecemos la confianza depositada en nuestra institución.\n\n"
 
-                "Este es un mensaje automático. Por favor, no responda " +
-                "a este correo.\n\n" +
+                        + "Este es un mensaje automático. Por favor, no responda "
+                        + "a este correo.\n\n"
 
-                "Atentamente,\n" +
-                "Cooperativa de Ahorro y Crédito 15 de Abril\n" +
-                "Seguridad y confianza.";
+                        + "Atentamente,\n"
+                        + "Cooperativa de Ahorro y Crédito 15 de Abril\n"
+                        + "Seguridad y confianza.";
+
 
         enviarCorreo(
                 cliente.getCorreo(),
@@ -228,88 +343,120 @@ public class EmailService {
                 mensaje
         );
     }
+
 
     // =========================================================
     // SOLICITUD RECHAZADA
     // =========================================================
+
     public void enviarSolicitudRechazada(
             Solicitud solicitud
     ) {
-        Cliente cliente =
-                obtenerClienteValido(solicitud);
 
-        if (!tieneCorreo(cliente)) {
+        Cliente cliente =
+                obtenerClienteValido(
+                        solicitud
+                );
+
+
+        if (
+                !tieneCorreo(
+                        cliente
+                )
+        ) {
+
             System.err.println(
-                    "No se envió el correo de resultado: " +
-                    "el cliente no tiene correo electrónico."
+                    "No se envió el correo de resultado: "
+                            +
+                            "el cliente no tiene correo electrónico."
             );
+
             return;
         }
 
+
         String nombreCliente =
-                obtenerNombreCliente(cliente);
+                obtenerNombreCliente(
+                        cliente
+                );
+
 
         String codigoSolicitud =
-                obtenerCodigoSolicitud(solicitud);
+                obtenerCodigoSolicitud(
+                        solicitud
+                );
+
 
         String asunto =
-                "Resultado de su solicitud de crédito - " +
-                codigoSolicitud +
-                " - Cooperativa 15 de Abril";
+                "Resultado de su solicitud de crédito - "
+                        +
+                        codigoSolicitud
+                        +
+                        " - Cooperativa 15 de Abril";
+
 
         String mensaje =
-                "Estimado/a " + nombreCliente + ":\n\n" +
+                "Estimado/a "
+                        + nombreCliente
+                        + ":\n\n"
 
-                "Le informamos que, una vez finalizado el proceso de " +
-                "análisis correspondiente, su solicitud de crédito " +
-                "no ha sido aprobada.\n\n" +
+                        + "Le informamos que, una vez finalizado el proceso de "
+                        + "análisis correspondiente, su solicitud de crédito "
+                        + "no ha sido aprobada.\n\n"
 
-                "DETALLE DE LA SOLICITUD\n" +
-                "----------------------------------------\n" +
+                        + "DETALLE DE LA SOLICITUD\n"
+                        + "----------------------------------------\n"
 
-                "Código de solicitud: " +
-                codigoSolicitud + "\n" +
+                        + "Código de solicitud: "
+                        + codigoSolicitud
+                        + "\n"
 
-                "Tipo de crédito: " +
-                valorTexto(
-                        solicitud.getTipoCredito()
-                ) + "\n" +
+                        + "Tipo de crédito: "
+                        + valorTexto(
+                                solicitud.getTipoCredito()
+                        )
+                        + "\n"
 
-                "Monto solicitado: " +
-                formatearDinero(
-                        solicitud.getMonto()
-                ) + "\n" +
+                        + "Monto solicitado: "
+                        + formatearDinero(
+                                solicitud.getMonto()
+                        )
+                        + "\n"
 
-                "Plazo: " +
-                formatearPlazo(
-                        solicitud.getPlazoMeses()
-                ) + "\n" +
+                        + "Plazo: "
+                        + formatearPlazo(
+                                solicitud.getPlazoMeses()
+                        )
+                        + "\n"
 
-                "Destino del crédito: " +
-                valorTexto(
-                        solicitud.getDestinoCredito()
-                ) + "\n" +
+                        + "Destino del crédito: "
+                        + valorTexto(
+                                solicitud.getDestinoCredito()
+                        )
+                        + "\n"
 
-                "Estado: NO APROBADO\n" +
-                "----------------------------------------\n\n" +
+                        + "Estado: NO APROBADO\n"
+                        + "----------------------------------------\n\n"
 
-                "Si requiere información adicional sobre el proceso, " +
-                "puede comunicarse o acercarse a la Cooperativa de " +
-                "Ahorro y Crédito 15 de Abril.\n\n" +
+                        + "Si requiere información adicional sobre el proceso, "
+                        + "puede comunicarse o acercarse a la Cooperativa de "
+                        + "Ahorro y Crédito 15 de Abril.\n\n"
 
-                "Para cualquier consulta relacionada con este trámite, " +
-                "utilice como referencia el código " +
-                codigoSolicitud + ".\n\n" +
+                        + "Para cualquier consulta relacionada con este trámite, "
+                        + "utilice como referencia el código "
+                        + codigoSolicitud
+                        + ".\n\n"
 
-                "Agradecemos su interés y la confianza depositada " +
-                "en nuestra institución.\n\n" +
+                        + "Agradecemos su interés y la confianza depositada "
+                        + "en nuestra institución.\n\n"
 
-                "Este es un mensaje automático. Por favor, no responda " +
-                "a este correo.\n\n" +
+                        + "Este es un mensaje automático. Por favor, no responda "
+                        + "a este correo.\n\n"
 
-                "Atentamente,\n" +
-                "Cooperativa de Ahorro y Crédito 15 de Abril\n" +
-                "Seguridad y confianza.";
+                        + "Atentamente,\n"
+                        + "Cooperativa de Ahorro y Crédito 15 de Abril\n"
+                        + "Seguridad y confianza.";
+
 
         enviarCorreo(
                 cliente.getCorreo(),
@@ -318,127 +465,198 @@ public class EmailService {
         );
     }
 
+
     // =========================================================
     // OBTENER CLIENTE
     // =========================================================
+
     private Cliente obtenerClienteValido(
             Solicitud solicitud
     ) {
-        if (solicitud == null) {
+
+        if (
+                solicitud == null
+        ) {
+
             throw new IllegalArgumentException(
                     "La solicitud no puede ser nula."
             );
         }
 
-        if (solicitud.getCliente() == null) {
+
+        if (
+                solicitud.getCliente() == null
+        ) {
+
             throw new IllegalArgumentException(
                     "La solicitud no tiene un cliente asociado."
             );
         }
 
+
         return solicitud.getCliente();
     }
+
 
     // =========================================================
     // VALIDAR CORREO
     // =========================================================
+
     private boolean tieneCorreo(
             Cliente cliente
     ) {
-        return cliente.getCorreo() != null &&
-                !cliente.getCorreo()
+
+        return cliente.getCorreo() != null
+                &&
+                !cliente
+                        .getCorreo()
                         .trim()
                         .isEmpty();
     }
 
+
     // =========================================================
     // NOMBRE COMPLETO DEL CLIENTE
     // =========================================================
+
     private String obtenerNombreCliente(
             Cliente cliente
     ) {
+
         String nombres =
                 cliente.getNombres() != null
-                        ? cliente.getNombres().trim()
-                        : "";
+                        ?
+                        cliente
+                                .getNombres()
+                                .trim()
+                        :
+                        "";
+
 
         String apellidos =
                 cliente.getApellidos() != null
-                        ? cliente.getApellidos().trim()
-                        : "";
+                        ?
+                        cliente
+                                .getApellidos()
+                                .trim()
+                        :
+                        "";
+
 
         String nombreCompleto =
-                (nombres + " " + apellidos)
+                (
+                        nombres
+                                + " "
+                                + apellidos
+                )
                         .trim();
 
+
         return nombreCompleto.isEmpty()
-                ? "cliente"
-                : nombreCompleto;
+                ?
+                "cliente"
+                :
+                nombreCompleto;
     }
+
 
     // =========================================================
     // CÓDIGO DE SOLICITUD
     // =========================================================
+
     private String obtenerCodigoSolicitud(
             Solicitud solicitud
     ) {
+
         if (
-                solicitud.getCodigoSolicitud() == null ||
-                solicitud.getCodigoSolicitud().trim().isEmpty()
+                solicitud.getCodigoSolicitud() == null
+                        ||
+                        solicitud
+                                .getCodigoSolicitud()
+                                .trim()
+                                .isEmpty()
         ) {
+
             return "Sin código";
         }
 
-        return solicitud.getCodigoSolicitud().trim();
+
+        return solicitud
+                .getCodigoSolicitud()
+                .trim();
     }
+
 
     // =========================================================
     // FORMATEAR MONTO
-    // Solicitud utiliza Double para monto
     // =========================================================
+
     private String formatearDinero(
             Double monto
     ) {
-        if (monto == null) {
+
+        if (
+                monto == null
+        ) {
+
             return "No especificado";
         }
 
+
         NumberFormat formato =
-                NumberFormat.getCurrencyInstance(
-                        Locale.US
-                );
+                NumberFormat
+                        .getCurrencyInstance(
+                                Locale.US
+                        );
+
 
         return formato.format(
                 monto
         );
     }
 
+
     // =========================================================
     // FORMATEAR PLAZO
-    // Solicitud utiliza Integer para plazoMeses
     // =========================================================
+
     private String formatearPlazo(
             Integer plazoMeses
     ) {
-        if (plazoMeses == null) {
+
+        if (
+                plazoMeses == null
+        ) {
+
             return "No especificado";
         }
 
-        return plazoMeses + " meses";
+
+        return plazoMeses
+                +
+                " meses";
     }
+
 
     // =========================================================
     // TEXTO SEGURO
     // =========================================================
+
     private String valorTexto(
             String valor
     ) {
+
         if (
-                valor == null ||
-                valor.trim().isEmpty()
+                valor == null
+                        ||
+                        valor
+                                .trim()
+                                .isEmpty()
         ) {
+
             return "No especificado";
         }
+
 
         return valor.trim();
     }
