@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
+import { API_URL } from "../services/api";
 
 function Layout({ title, children }) {
   const navigate = useNavigate();
@@ -18,17 +19,23 @@ function Layout({ title, children }) {
   // =========================================================
   const [mostrarCambioPassword, setMostrarCambioPassword] =
     useState(false);
+
   const [passwordActual, setPasswordActual] = useState("");
   const [nuevaPassword, setNuevaPassword] = useState("");
   const [confirmarPassword, setConfirmarPassword] = useState("");
+
   const [mostrarPasswordActual, setMostrarPasswordActual] =
     useState(false);
+
   const [mostrarNuevaPassword, setMostrarNuevaPassword] =
     useState(false);
+
   const [mostrarConfirmacion, setMostrarConfirmacion] =
     useState(false);
+
   const [cambiandoPassword, setCambiandoPassword] =
     useState(false);
+
   const [errorPassword, setErrorPassword] = useState("");
   const [mensajePassword, setMensajePassword] = useState("");
 
@@ -36,9 +43,13 @@ function Layout({ title, children }) {
   // ESTADOS - NOTIFICACIONES
   // =========================================================
   const [notificaciones, setNotificaciones] = useState([]);
-  const [contadorNoLeidas, setContadorNoLeidas] = useState(0);
+
+  const [contadorNoLeidas, setContadorNoLeidas] =
+    useState(0);
+
   const [mostrarNotificaciones, setMostrarNotificaciones] =
     useState(false);
+
   const [cargandoNotificaciones, setCargandoNotificaciones] =
     useState(false);
 
@@ -47,12 +58,19 @@ function Layout({ title, children }) {
   // =========================================================
   // ESTADOS - TOAST
   // =========================================================
-  const [toastNotificacion, setToastNotificacion] = useState(null);
-  const [toastVisible, setToastVisible] = useState(false);
+  const [toastNotificacion, setToastNotificacion] =
+    useState(null);
+
+  const [toastVisible, setToastVisible] =
+    useState(false);
 
   const idsNotificacionesRef = useRef(new Set());
-  const primeraCargaNotificacionesRef = useRef(true);
+
+  const primeraCargaNotificacionesRef =
+    useRef(true);
+
   const toastTimeoutRef = useRef(null);
+
   const toastLimpiezaRef = useRef(null);
 
   // =========================================================
@@ -61,10 +79,12 @@ function Layout({ title, children }) {
   let usuario = null;
 
   try {
-    const usuarioGuardado = sessionStorage.getItem("usuario");
+    const usuarioGuardado =
+      sessionStorage.getItem("usuario");
 
     if (usuarioGuardado) {
-      usuario = JSON.parse(usuarioGuardado);
+      usuario =
+        JSON.parse(usuarioGuardado);
     }
   } catch (error) {
     console.error(
@@ -99,12 +119,14 @@ function Layout({ title, children }) {
     }
   };
 
-  const nombreRol = obtenerNombreRol(usuario?.rol);
+  const nombreRol =
+    obtenerNombreRol(usuario?.rol);
 
   // =========================================================
   // PERMISOS
   // =========================================================
-  const esAdmin = usuario?.rol === "ADMIN";
+  const esAdmin =
+    usuario?.rol === "ADMIN";
 
   // =========================================================
   // CERRAR SESIÓN
@@ -123,20 +145,27 @@ function Layout({ title, children }) {
   // =========================================================
   const cerrarToast = () => {
     if (toastTimeoutRef.current) {
-      clearTimeout(toastTimeoutRef.current);
+      clearTimeout(
+        toastTimeoutRef.current
+      );
+
       toastTimeoutRef.current = null;
     }
 
     if (toastLimpiezaRef.current) {
-      clearTimeout(toastLimpiezaRef.current);
+      clearTimeout(
+        toastLimpiezaRef.current
+      );
+
       toastLimpiezaRef.current = null;
     }
 
     setToastVisible(false);
 
-    toastLimpiezaRef.current = setTimeout(() => {
-      setToastNotificacion(null);
-    }, 350);
+    toastLimpiezaRef.current =
+      setTimeout(() => {
+        setToastNotificacion(null);
+      }, 350);
   };
 
   // =========================================================
@@ -144,226 +173,107 @@ function Layout({ title, children }) {
   // =========================================================
   const mostrarToast = (notificacion) => {
     if (toastTimeoutRef.current) {
-      clearTimeout(toastTimeoutRef.current);
+      clearTimeout(
+        toastTimeoutRef.current
+      );
     }
 
     if (toastLimpiezaRef.current) {
-      clearTimeout(toastLimpiezaRef.current);
+      clearTimeout(
+        toastLimpiezaRef.current
+      );
     }
 
-    setToastNotificacion(notificacion);
+    setToastNotificacion(
+      notificacion
+    );
+
     setToastVisible(true);
 
-    toastTimeoutRef.current = setTimeout(() => {
-      setToastVisible(false);
+    toastTimeoutRef.current =
+      setTimeout(() => {
+        setToastVisible(false);
 
-      toastLimpiezaRef.current = setTimeout(() => {
-        setToastNotificacion(null);
-      }, 350);
-    }, 3000);
+        toastLimpiezaRef.current =
+          setTimeout(() => {
+            setToastNotificacion(null);
+          }, 350);
+      }, 3000);
   };
 
   // =========================================================
   // NOTIFICACIONES - CONTADOR
   // =========================================================
-  const cargarContadorNotificaciones = async () => {
-    const token = sessionStorage.getItem("token");
+  const cargarContadorNotificaciones =
+    async () => {
+      const token =
+        sessionStorage.getItem("token");
 
-    if (!token) {
-      return;
-    }
+      if (!token) {
+        return;
+      }
 
-    try {
-      const response = await fetch(
-        "http://localhost:8080/api/notificaciones/contador",
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+      try {
+        const response =
+          await fetch(
+            `${API_URL}/notificaciones/contador`,
+            {
+              headers: {
+                Authorization:
+                  `Bearer ${token}`,
+              },
+            }
+          );
+
+        if (response.status === 401) {
+          cerrarSesion();
+          return;
         }
-      );
 
-      if (response.status === 401) {
-        cerrarSesion();
-        return;
+        if (!response.ok) {
+          return;
+        }
+
+        const datos =
+          await response.json();
+
+        setContadorNoLeidas(
+          Number(datos.noLeidas) || 0
+        );
+
+      } catch (error) {
+        console.error(
+          "Error al obtener contador de notificaciones:",
+          error
+        );
       }
-
-      if (!response.ok) {
-        return;
-      }
-
-      const datos = await response.json();
-
-      setContadorNoLeidas(Number(datos.noLeidas) || 0);
-    } catch (error) {
-      console.error(
-        "Error al obtener contador de notificaciones:",
-        error
-      );
-    }
-  };
+    };
 
   // =========================================================
   // CARGAR NOTIFICACIONES
   // =========================================================
-  const cargarNotificaciones = async () => {
-    const token = sessionStorage.getItem("token");
+  const cargarNotificaciones =
+    async () => {
+      const token =
+        sessionStorage.getItem("token");
 
-    if (!token) {
-      return;
-    }
-
-    try {
-      setCargandoNotificaciones(true);
-
-      const response = await fetch(
-        "http://localhost:8080/api/notificaciones",
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (response.status === 401) {
-        cerrarSesion();
+      if (!token) {
         return;
       }
 
-      if (!response.ok) {
-        throw new Error(
-          "No se pudieron obtener las notificaciones."
-        );
-      }
+      try {
+        setCargandoNotificaciones(true);
 
-      const datos = await response.json();
-
-      setNotificaciones(
-        Array.isArray(datos) ? datos : []
-      );
-    } catch (error) {
-      console.error(
-        "Error al cargar notificaciones:",
-        error
-      );
-    } finally {
-      setCargandoNotificaciones(false);
-    }
-  };
-
-  // =========================================================
-  // COMPROBAR NOTIFICACIONES NUEVAS PARA EL TOAST
-  // =========================================================
-  const comprobarNotificacionesNuevas = async () => {
-    const token = sessionStorage.getItem("token");
-
-    if (!token) {
-      return;
-    }
-
-    try {
-      const response = await fetch(
-        "http://localhost:8080/api/notificaciones",
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (response.status === 401) {
-        cerrarSesion();
-        return;
-      }
-
-      if (!response.ok) {
-        return;
-      }
-
-      const datos = await response.json();
-      const lista = Array.isArray(datos) ? datos : [];
-
-      // PRIMERA CARGA:
-      // Registramos las notificaciones existentes sin mostrar toast.
-      if (primeraCargaNotificacionesRef.current) {
-        idsNotificacionesRef.current = new Set(
-          lista.map((notificacion) => notificacion.id)
-        );
-
-        primeraCargaNotificacionesRef.current = false;
-
-        setNotificaciones(lista);
-
-        return;
-      }
-
-      // BUSCAR NOTIFICACIONES QUE NO EXISTÍAN ANTES
-      const nuevas = lista.filter(
-        (notificacion) =>
-          !idsNotificacionesRef.current.has(notificacion.id)
-      );
-
-      // ACTUALIZAR LOS IDs CONOCIDOS
-      lista.forEach((notificacion) => {
-        idsNotificacionesRef.current.add(notificacion.id);
-      });
-
-      // ACTUALIZAR LA LISTA DE LA CAMPANA
-      setNotificaciones(lista);
-
-      // ACTUALIZAR CONTADOR
-      setContadorNoLeidas(
-        lista.filter((notificacion) => !notificacion.leida).length
-      );
-
-      // MOSTRAR SOLO LA NOTIFICACIÓN MÁS RECIENTE
-      if (nuevas.length > 0) {
-        mostrarToast(nuevas[0]);
-      }
-    } catch (error) {
-      console.error(
-        "Error al comprobar nuevas notificaciones:",
-        error
-      );
-    }
-  };
-
-  // =========================================================
-  // ABRIR / CERRAR CAMPANA
-  // =========================================================
-  const alternarNotificaciones = async () => {
-    const nuevoEstado = !mostrarNotificaciones;
-
-    setMostrarNotificaciones(nuevoEstado);
-
-    if (nuevoEstado) {
-      await cargarNotificaciones();
-      await cargarContadorNotificaciones();
-    }
-  };
-
-  // =========================================================
-  // MARCAR UNA NOTIFICACIÓN COMO LEÍDA
-  // =========================================================
-  const abrirNotificacion = async (notificacion) => {
-    const token = sessionStorage.getItem("token");
-
-    if (!token) {
-      cerrarSesion();
-      return;
-    }
-
-    try {
-      if (!notificacion.leida) {
-        const response = await fetch(
-          `http://localhost:8080/api/notificaciones/${notificacion.id}/leer`,
-          {
-            method: "PUT",
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+        const response =
+          await fetch(
+            `${API_URL}/notificaciones`,
+            {
+              headers: {
+                Authorization:
+                  `Bearer ${token}`,
+              },
+            }
+          );
 
         if (response.status === 401) {
           cerrarSesion();
@@ -372,136 +282,365 @@ function Layout({ title, children }) {
 
         if (!response.ok) {
           throw new Error(
-            "No se pudo marcar la notificación como leída."
+            "No se pudieron obtener las notificaciones."
           );
         }
 
-        setNotificaciones((anteriores) =>
-          anteriores.map((item) =>
-            item.id === notificacion.id
-              ? {
-                  ...item,
-                  leida: true,
-                }
-              : item
-          )
+        const datos =
+          await response.json();
+
+        setNotificaciones(
+          Array.isArray(datos)
+            ? datos
+            : []
         );
 
-        setContadorNoLeidas((anterior) =>
-          Math.max(0, anterior - 1)
+      } catch (error) {
+        console.error(
+          "Error al cargar notificaciones:",
+          error
         );
-      }
 
-      cerrarToast();
-      setMostrarNotificaciones(false);
-
-      if (notificacion.ruta) {
-        navigate(notificacion.ruta);
+      } finally {
+        setCargandoNotificaciones(false);
       }
-    } catch (error) {
-      console.error(
-        "Error al abrir la notificación:",
-        error
-      );
-    }
-  };
+    };
 
   // =========================================================
-  // MARCAR TODAS COMO LEÍDAS
+  // COMPROBAR NOTIFICACIONES NUEVAS PARA EL TOAST
   // =========================================================
-  const marcarTodasComoLeidas = async () => {
-    const token = sessionStorage.getItem("token");
+  const comprobarNotificacionesNuevas =
+    async () => {
+      const token =
+        sessionStorage.getItem("token");
 
-    if (!token) {
-      cerrarSesion();
-      return;
-    }
+      if (!token) {
+        return;
+      }
 
-    try {
-      const response = await fetch(
-        "http://localhost:8080/api/notificaciones/leer-todas",
-        {
-          method: "PUT",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+      try {
+        const response =
+          await fetch(
+            `${API_URL}/notificaciones`,
+            {
+              headers: {
+                Authorization:
+                  `Bearer ${token}`,
+              },
+            }
+          );
+
+        if (response.status === 401) {
+          cerrarSesion();
+          return;
         }
+
+        if (!response.ok) {
+          return;
+        }
+
+        const datos =
+          await response.json();
+
+        const lista =
+          Array.isArray(datos)
+            ? datos
+            : [];
+
+        // PRIMERA CARGA:
+        // Registramos las notificaciones existentes
+        // sin mostrar toast.
+        if (
+          primeraCargaNotificacionesRef.current
+        ) {
+          idsNotificacionesRef.current =
+            new Set(
+              lista.map(
+                (notificacion) =>
+                  notificacion.id
+              )
+            );
+
+          primeraCargaNotificacionesRef.current =
+            false;
+
+          setNotificaciones(lista);
+
+          return;
+        }
+
+        // BUSCAR NOTIFICACIONES NUEVAS
+        const nuevas =
+          lista.filter(
+            (notificacion) =>
+              !idsNotificacionesRef.current
+                .has(
+                  notificacion.id
+                )
+          );
+
+        // ACTUALIZAR IDs CONOCIDOS
+        lista.forEach(
+          (notificacion) => {
+            idsNotificacionesRef.current
+              .add(
+                notificacion.id
+              );
+          }
+        );
+
+        // ACTUALIZAR LISTADO
+        setNotificaciones(lista);
+
+        // ACTUALIZAR CONTADOR
+        setContadorNoLeidas(
+          lista.filter(
+            (notificacion) =>
+              !notificacion.leida
+          ).length
+        );
+
+        // MOSTRAR TOAST
+        if (nuevas.length > 0) {
+          mostrarToast(
+            nuevas[0]
+          );
+        }
+
+      } catch (error) {
+        console.error(
+          "Error al comprobar nuevas notificaciones:",
+          error
+        );
+      }
+    };
+
+  // =========================================================
+  // ABRIR / CERRAR CAMPANA
+  // =========================================================
+  const alternarNotificaciones =
+    async () => {
+      const nuevoEstado =
+        !mostrarNotificaciones;
+
+      setMostrarNotificaciones(
+        nuevoEstado
       );
 
-      if (response.status === 401) {
+      if (nuevoEstado) {
+        await cargarNotificaciones();
+        await cargarContadorNotificaciones();
+      }
+    };
+
+  // =========================================================
+  // MARCAR UNA NOTIFICACIÓN COMO LEÍDA
+  // =========================================================
+  const abrirNotificacion =
+    async (notificacion) => {
+      const token =
+        sessionStorage.getItem("token");
+
+      if (!token) {
         cerrarSesion();
         return;
       }
 
-      if (!response.ok) {
-        throw new Error(
-          "No se pudieron marcar todas las notificaciones."
+      try {
+        if (!notificacion.leida) {
+          const response =
+            await fetch(
+              `${API_URL}/notificaciones/${notificacion.id}/leer`,
+              {
+                method: "PUT",
+
+                headers: {
+                  Authorization:
+                    `Bearer ${token}`,
+                },
+              }
+            );
+
+          if (response.status === 401) {
+            cerrarSesion();
+            return;
+          }
+
+          if (!response.ok) {
+            throw new Error(
+              "No se pudo marcar la notificación como leída."
+            );
+          }
+
+          setNotificaciones(
+            (anteriores) =>
+              anteriores.map(
+                (item) =>
+                  item.id ===
+                  notificacion.id
+                    ? {
+                        ...item,
+                        leida: true,
+                      }
+                    : item
+              )
+          );
+
+          setContadorNoLeidas(
+            (anterior) =>
+              Math.max(
+                0,
+                anterior - 1
+              )
+          );
+        }
+
+        cerrarToast();
+
+        setMostrarNotificaciones(
+          false
+        );
+
+        if (notificacion.ruta) {
+          navigate(
+            notificacion.ruta
+          );
+        }
+
+      } catch (error) {
+        console.error(
+          "Error al abrir la notificación:",
+          error
         );
       }
+    };
 
-      setNotificaciones((anteriores) =>
-        anteriores.map((item) => ({
-          ...item,
-          leida: true,
-        }))
-      );
+  // =========================================================
+  // MARCAR TODAS COMO LEÍDAS
+  // =========================================================
+  const marcarTodasComoLeidas =
+    async () => {
+      const token =
+        sessionStorage.getItem("token");
 
-      setContadorNoLeidas(0);
-    } catch (error) {
-      console.error(
-        "Error al marcar todas como leídas:",
-        error
-      );
-    }
-  };
+      if (!token) {
+        cerrarSesion();
+        return;
+      }
+
+      try {
+        const response =
+          await fetch(
+            `${API_URL}/notificaciones/leer-todas`,
+            {
+              method: "PUT",
+
+              headers: {
+                Authorization:
+                  `Bearer ${token}`,
+              },
+            }
+          );
+
+        if (response.status === 401) {
+          cerrarSesion();
+          return;
+        }
+
+        if (!response.ok) {
+          throw new Error(
+            "No se pudieron marcar todas las notificaciones."
+          );
+        }
+
+        setNotificaciones(
+          (anteriores) =>
+            anteriores.map(
+              (item) => ({
+                ...item,
+                leida: true,
+              })
+            )
+        );
+
+        setContadorNoLeidas(0);
+
+      } catch (error) {
+        console.error(
+          "Error al marcar todas como leídas:",
+          error
+        );
+      }
+    };
 
   // =========================================================
   // FORMATEAR FECHA DE NOTIFICACIÓN
   // =========================================================
-  const formatearFechaNotificacion = (fecha) => {
-    if (!fecha) {
-      return "";
-    }
+  const formatearFechaNotificacion =
+    (fecha) => {
+      if (!fecha) {
+        return "";
+      }
 
-    try {
-      return new Date(fecha).toLocaleString(
-        "es-EC",
-        {
-          dateStyle: "short",
-          timeStyle: "short",
-        }
-      );
-    } catch {
-      return fecha;
-    }
-  };
+      try {
+        return new Date(
+          fecha
+        ).toLocaleString(
+          "es-EC",
+          {
+            dateStyle: "short",
+            timeStyle: "short",
+          }
+        );
+
+      } catch {
+        return fecha;
+      }
+    };
 
   // =========================================================
   // COMPROBAR NOTIFICACIONES AUTOMÁTICAMENTE
   // =========================================================
   useEffect(() => {
-    const iniciarNotificaciones = async () => {
-      await cargarContadorNotificaciones();
-      await comprobarNotificacionesNuevas();
-    };
+    const iniciarNotificaciones =
+      async () => {
+        await cargarContadorNotificaciones();
+
+        await comprobarNotificacionesNuevas();
+      };
 
     iniciarNotificaciones();
 
     // Cada 5 segundos revisamos si llegó una nueva.
-    const intervalo = setInterval(async () => {
-      await cargarContadorNotificaciones();
-      await comprobarNotificacionesNuevas();
-    }, 5000);
+    const intervalo =
+      setInterval(
+        async () => {
+          await cargarContadorNotificaciones();
+
+          await comprobarNotificacionesNuevas();
+        },
+        5000
+      );
 
     return () => {
-      clearInterval(intervalo);
+      clearInterval(
+        intervalo
+      );
 
-      if (toastTimeoutRef.current) {
-        clearTimeout(toastTimeoutRef.current);
+      if (
+        toastTimeoutRef.current
+      ) {
+        clearTimeout(
+          toastTimeoutRef.current
+        );
       }
 
-      if (toastLimpiezaRef.current) {
-        clearTimeout(toastLimpiezaRef.current);
+      if (
+        toastLimpiezaRef.current
+      ) {
+        clearTimeout(
+          toastLimpiezaRef.current
+        );
       }
     };
   }, []);
@@ -510,14 +649,20 @@ function Layout({ title, children }) {
   // CERRAR NOTIFICACIONES AL HACER CLIC FUERA
   // =========================================================
   useEffect(() => {
-    const cerrarAlHacerClickFuera = (event) => {
-      if (
-        notificacionesRef.current &&
-        !notificacionesRef.current.contains(event.target)
-      ) {
-        setMostrarNotificaciones(false);
-      }
-    };
+    const cerrarAlHacerClickFuera =
+      (event) => {
+        if (
+          notificacionesRef.current &&
+          !notificacionesRef.current
+            .contains(
+              event.target
+            )
+        ) {
+          setMostrarNotificaciones(
+            false
+          );
+        }
+      };
 
     document.addEventListener(
       "mousedown",
@@ -535,25 +680,37 @@ function Layout({ title, children }) {
   // =========================================================
   // LIMPIAR FORMULARIO DE CONTRASEÑA
   // =========================================================
-  const limpiarFormularioPassword = () => {
-    setPasswordActual("");
-    setNuevaPassword("");
-    setConfirmarPassword("");
+  const limpiarFormularioPassword =
+    () => {
+      setPasswordActual("");
+      setNuevaPassword("");
+      setConfirmarPassword("");
 
-    setMostrarPasswordActual(false);
-    setMostrarNuevaPassword(false);
-    setMostrarConfirmacion(false);
+      setMostrarPasswordActual(
+        false
+      );
 
-    setErrorPassword("");
-    setMensajePassword("");
-  };
+      setMostrarNuevaPassword(
+        false
+      );
+
+      setMostrarConfirmacion(
+        false
+      );
+
+      setErrorPassword("");
+      setMensajePassword("");
+    };
 
   // =========================================================
   // ABRIR MODAL CONTRASEÑA
   // =========================================================
   const abrirCambioPassword = () => {
     limpiarFormularioPassword();
-    setMostrarCambioPassword(true);
+
+    setMostrarCambioPassword(
+      true
+    );
   };
 
   // =========================================================
@@ -564,158 +721,216 @@ function Layout({ title, children }) {
       return;
     }
 
-    setMostrarCambioPassword(false);
+    setMostrarCambioPassword(
+      false
+    );
+
     limpiarFormularioPassword();
   };
 
   // =========================================================
   // CAMBIAR CONTRASEÑA
   // =========================================================
-  const cambiarPassword = async (event) => {
-    event.preventDefault();
+  const cambiarPassword =
+    async (event) => {
+      event.preventDefault();
 
-    setErrorPassword("");
-    setMensajePassword("");
+      setErrorPassword("");
+      setMensajePassword("");
 
-    // CONTRASEÑA ACTUAL
-    if (!passwordActual.trim()) {
-      setErrorPassword(
-        "Ingresa tu contraseña actual."
-      );
-      return;
-    }
-
-    // NUEVA CONTRASEÑA
-    if (!nuevaPassword) {
-      setErrorPassword(
-        "Ingresa una nueva contraseña."
-      );
-      return;
-    }
-
-    if (nuevaPassword.length < 8) {
-      setErrorPassword(
-        "La nueva contraseña debe contener al menos 8 caracteres."
-      );
-      return;
-    }
-
-    // EVITAR MISMA CONTRASEÑA
-    if (passwordActual === nuevaPassword) {
-      setErrorPassword(
-        "La nueva contraseña debe ser diferente a la contraseña actual."
-      );
-      return;
-    }
-
-    // CONFIRMACIÓN
-    if (!confirmarPassword) {
-      setErrorPassword(
-        "Confirma la nueva contraseña."
-      );
-      return;
-    }
-
-    if (nuevaPassword !== confirmarPassword) {
-      setErrorPassword(
-        "Las nuevas contraseñas no coinciden."
-      );
-      return;
-    }
-
-    const token = sessionStorage.getItem("token");
-
-    if (!token) {
-      cerrarSesion();
-      return;
-    }
-
-    try {
-      setCambiandoPassword(true);
-
-      const response = await fetch(
-        "http://localhost:8080/api/usuarios/mi-password",
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            passwordActual,
-            nuevaPassword,
-          }),
-        }
-      );
-
-      // 401
-      if (response.status === 401) {
-        let datosError = null;
-
-        try {
-          datosError = await response.json();
-        } catch {
-          datosError = null;
-        }
-
-        if (
-          datosError?.mensaje
-            ?.toLowerCase()
-            .includes("contraseña actual")
-        ) {
-          setErrorPassword(datosError.mensaje);
-          return;
-        }
-
-        sessionStorage.removeItem("token");
-        sessionStorage.removeItem("usuario");
-
-        navigate("/", {
-          replace: true,
-        });
-
-        return;
-      }
-
-      // OTROS ERRORES
-      if (!response.ok) {
-        let datosError = null;
-
-        try {
-          datosError = await response.json();
-        } catch {
-          datosError = null;
-        }
-
+      // CONTRASEÑA ACTUAL
+      if (
+        !passwordActual.trim()
+      ) {
         setErrorPassword(
-          datosError?.mensaje ||
-            "No se pudo cambiar la contraseña."
+          "Ingresa tu contraseña actual."
         );
 
         return;
       }
 
-      // CORRECTO
-      setMensajePassword(
-        "Contraseña actualizada correctamente."
-      );
+      // NUEVA CONTRASEÑA
+      if (!nuevaPassword) {
+        setErrorPassword(
+          "Ingresa una nueva contraseña."
+        );
 
-      setPasswordActual("");
-      setNuevaPassword("");
-      setConfirmarPassword("");
-    } catch (error) {
-      console.error(
-        "Error al cambiar la contraseña:",
-        error
-      );
+        return;
+      }
 
-      setErrorPassword(
-        "No fue posible conectar con el servidor."
-      );
-    } finally {
-      setCambiandoPassword(false);
-    }
-  };
+      if (
+        nuevaPassword.length < 8
+      ) {
+        setErrorPassword(
+          "La nueva contraseña debe contener al menos 8 caracteres."
+        );
+
+        return;
+      }
+
+      // EVITAR MISMA CONTRASEÑA
+      if (
+        passwordActual ===
+        nuevaPassword
+      ) {
+        setErrorPassword(
+          "La nueva contraseña debe ser diferente a la contraseña actual."
+        );
+
+        return;
+      }
+
+      // CONFIRMACIÓN
+      if (!confirmarPassword) {
+        setErrorPassword(
+          "Confirma la nueva contraseña."
+        );
+
+        return;
+      }
+
+      if (
+        nuevaPassword !==
+        confirmarPassword
+      ) {
+        setErrorPassword(
+          "Las nuevas contraseñas no coinciden."
+        );
+
+        return;
+      }
+
+      const token =
+        sessionStorage.getItem(
+          "token"
+        );
+
+      if (!token) {
+        cerrarSesion();
+
+        return;
+      }
+
+      try {
+        setCambiandoPassword(
+          true
+        );
+
+        const response =
+          await fetch(
+            `${API_URL}/usuarios/mi-password`,
+            {
+              method: "PUT",
+
+              headers: {
+                "Content-Type":
+                  "application/json",
+
+                Authorization:
+                  `Bearer ${token}`,
+              },
+
+              body:
+                JSON.stringify({
+                  passwordActual,
+                  nuevaPassword,
+                }),
+            }
+          );
+
+        // 401
+        if (
+          response.status ===
+          401
+        ) {
+          let datosError = null;
+
+          try {
+            datosError =
+              await response.json();
+
+          } catch {
+            datosError = null;
+          }
+
+          if (
+            datosError
+              ?.mensaje
+              ?.toLowerCase()
+              .includes(
+                "contraseña actual"
+              )
+          ) {
+            setErrorPassword(
+              datosError.mensaje
+            );
+
+            return;
+          }
+
+          sessionStorage.removeItem(
+            "token"
+          );
+
+          sessionStorage.removeItem(
+            "usuario"
+          );
+
+          navigate(
+            "/",
+            {
+              replace: true,
+            }
+          );
+
+          return;
+        }
+
+        // OTROS ERRORES
+        if (!response.ok) {
+          let datosError = null;
+
+          try {
+            datosError =
+              await response.json();
+
+          } catch {
+            datosError = null;
+          }
+
+          setErrorPassword(
+            datosError?.mensaje ||
+              "No se pudo cambiar la contraseña."
+          );
+
+          return;
+        }
+
+        // CORRECTO
+        setMensajePassword(
+          "Contraseña actualizada correctamente."
+        );
+
+        setPasswordActual("");
+        setNuevaPassword("");
+        setConfirmarPassword("");
+
+      } catch (error) {
+        console.error(
+          "Error al cambiar la contraseña:",
+          error
+        );
+
+        setErrorPassword(
+          "No fue posible conectar con el servidor."
+        );
+
+      } finally {
+        setCambiandoPassword(
+          false
+        );
+      }
+    };
 
   // =========================================================
   // RENDER
@@ -805,7 +1020,9 @@ function Layout({ title, children }) {
         <button
           type="button"
           className="menu-item"
-          onClick={abrirCambioPassword}
+          onClick={
+            abrirCambioPassword
+          }
         >
           🔐 Cambiar contraseña
         </button>
@@ -823,15 +1040,20 @@ function Layout({ title, children }) {
           CONTENIDO
       ===================================================== */}
       <main className="content">
+
         {/* ===================================================
             TOPBAR
         =================================================== */}
         <div className="topbar">
+
           <div className="topbar-left">
+
             <button
               type="button"
               className="menu-toggle"
-              onClick={alternarMenu}
+              onClick={
+                alternarMenu
+              }
               aria-label={
                 menuAbierto
                   ? "Ocultar menú"
@@ -849,20 +1071,27 @@ function Layout({ title, children }) {
             <h1>
               {title}
             </h1>
+
           </div>
 
           <div className="topbar-right">
+
             {/* ===============================================
                 CAMPANA
             =============================================== */}
             <div
               className="notifications-wrapper"
-              ref={notificacionesRef}
+              ref={
+                notificacionesRef
+              }
             >
+
               <button
                 type="button"
                 className="notification-bell"
-                onClick={alternarNotificaciones}
+                onClick={
+                  alternarNotificaciones
+                }
                 aria-label="Notificaciones"
                 title="Notificaciones"
               >
@@ -870,13 +1099,15 @@ function Layout({ title, children }) {
                   🔔
                 </span>
 
-                {contadorNoLeidas > 0 && (
-                  <span className="notification-count">
-                    {contadorNoLeidas > 99
-                      ? "99+"
-                      : contadorNoLeidas}
-                  </span>
-                )}
+                {contadorNoLeidas >
+                  0 && (
+                    <span className="notification-count">
+                      {contadorNoLeidas >
+                      99
+                        ? "99+"
+                        : contadorNoLeidas}
+                    </span>
+                  )}
               </button>
 
               {/* =============================================
@@ -884,37 +1115,54 @@ function Layout({ title, children }) {
               ============================================= */}
               {mostrarNotificaciones && (
                 <div className="notifications-panel">
+
                   {/* CABECERA */}
                   <div className="notifications-header">
+
                     <div>
+
                       <h3>
                         Notificaciones
                       </h3>
 
                       <span>
-                        {contadorNoLeidas} sin leer
+                        {
+                          contadorNoLeidas
+                        }{" "}
+                        sin leer
                       </span>
+
                     </div>
 
-                    {contadorNoLeidas > 0 && (
-                      <button
-                        type="button"
-                        className="notifications-read-all"
-                        onClick={marcarTodasComoLeidas}
-                      >
-                        Marcar todas como leídas
-                      </button>
-                    )}
+                    {contadorNoLeidas >
+                      0 && (
+                        <button
+                          type="button"
+                          className="notifications-read-all"
+                          onClick={
+                            marcarTodasComoLeidas
+                          }
+                        >
+                          Marcar todas como leídas
+                        </button>
+                      )}
+
                   </div>
 
                   {/* LISTADO */}
                   <div className="notifications-list">
+
                     {cargandoNotificaciones ? (
+
                       <div className="notifications-empty">
                         Cargando notificaciones...
                       </div>
-                    ) : notificaciones.length === 0 ? (
+
+                    ) : notificaciones.length ===
+                      0 ? (
+
                       <div className="notifications-empty">
+
                         <span>
                           🔔
                         </span>
@@ -926,13 +1174,21 @@ function Layout({ title, children }) {
                         <p>
                           No tienes notificaciones por el momento.
                         </p>
+
                       </div>
+
                     ) : (
+
                       notificaciones.map(
-                        (notificacion) => (
+                        (
+                          notificacion
+                        ) => (
+
                           <button
                             type="button"
-                            key={notificacion.id}
+                            key={
+                              notificacion.id
+                            }
                             className={`notification-item ${
                               notificacion.leida
                                 ? "read"
@@ -944,20 +1200,25 @@ function Layout({ title, children }) {
                               )
                             }
                           >
+
                             {/* ICONO */}
                             <div className="notification-item-icon">
-                              {notificacion.tipo ===
-                              "DECISION"
-                                ? "⚖️"
-                                : notificacion.tipo ===
-                                    "EVALUACION"
-                                  ? "📊"
-                                  : "📝"}
+                              {
+                                notificacion.tipo ===
+                                "DECISION"
+                                  ? "⚖️"
+                                  : notificacion.tipo ===
+                                      "EVALUACION"
+                                    ? "📊"
+                                    : "📝"
+                              }
                             </div>
 
                             {/* TEXTO */}
                             <div className="notification-item-content">
+
                               <div className="notification-item-title">
+
                                 <strong>
                                   {
                                     notificacion.titulo
@@ -965,10 +1226,9 @@ function Layout({ title, children }) {
                                 </strong>
 
                                 {!notificacion.leida && (
-                                  <span
-                                    className="notification-unread-dot"
-                                  />
+                                  <span className="notification-unread-dot" />
                                 )}
+
                               </div>
 
                               <p>
@@ -978,24 +1238,34 @@ function Layout({ title, children }) {
                               </p>
 
                               <small>
-                                {formatearFechaNotificacion(
-                                  notificacion.fechaCreacion
-                                )}
+                                {
+                                  formatearFechaNotificacion(
+                                    notificacion.fechaCreacion
+                                  )
+                                }
                               </small>
+
                             </div>
+
                           </button>
+
                         )
                       )
+
                     )}
+
                   </div>
+
                 </div>
               )}
+
             </div>
 
             {/* ===============================================
                 USUARIO
             =============================================== */}
             <div className="user">
+
               <span>
                 👤 {nombreUsuario}
               </span>
@@ -1004,12 +1274,16 @@ function Layout({ title, children }) {
                 {" · "}
                 {nombreRol}
               </span>
+
             </div>
+
           </div>
+
         </div>
 
         {/* CONTENIDO DE CADA PÁGINA */}
         {children}
+
       </main>
 
       {/* =====================================================
@@ -1018,42 +1292,62 @@ function Layout({ title, children }) {
       {toastNotificacion && (
         <div
           className={`notification-toast ${
-            toastVisible ? "show" : "hide"
+            toastVisible
+              ? "show"
+              : "hide"
           }`}
           onClick={() =>
-            abrirNotificacion(toastNotificacion)
+            abrirNotificacion(
+              toastNotificacion
+            )
           }
           role="button"
           tabIndex={0}
           onKeyDown={(event) => {
             if (
-              event.key === "Enter" ||
-              event.key === " "
+              event.key ===
+                "Enter" ||
+              event.key ===
+                " "
             ) {
-              abrirNotificacion(toastNotificacion);
+              abrirNotificacion(
+                toastNotificacion
+              );
             }
           }}
         >
+
           {/* ICONO */}
           <div className="notification-toast-icon">
-            {toastNotificacion.tipo === "DECISION"
-              ? "⚖️"
-              : toastNotificacion.tipo === "EVALUACION"
-                ? "📊"
-                : toastNotificacion.tipo === "SOLICITUD"
-                  ? "📝"
-                  : "🔔"}
+            {
+              toastNotificacion.tipo ===
+              "DECISION"
+                ? "⚖️"
+                : toastNotificacion.tipo ===
+                    "EVALUACION"
+                  ? "📊"
+                  : toastNotificacion.tipo ===
+                      "SOLICITUD"
+                    ? "📝"
+                    : "🔔"
+            }
           </div>
 
           {/* CONTENIDO */}
           <div className="notification-toast-content">
+
             <strong>
-              {toastNotificacion.titulo}
+              {
+                toastNotificacion.titulo
+              }
             </strong>
 
             <p>
-              {toastNotificacion.mensaje}
+              {
+                toastNotificacion.mensaje
+              }
             </p>
+
           </div>
 
           {/* CERRAR */}
@@ -1062,6 +1356,7 @@ function Layout({ title, children }) {
             className="notification-toast-close"
             onClick={(event) => {
               event.stopPropagation();
+
               cerrarToast();
             }}
             aria-label="Cerrar notificación"
@@ -1069,6 +1364,7 @@ function Layout({ title, children }) {
           >
             ×
           </button>
+
         </div>
       )}
 
@@ -1079,18 +1375,24 @@ function Layout({ title, children }) {
         <div
           className="password-modal-overlay"
           onMouseDown={(event) => {
+
             if (
               event.target ===
               event.currentTarget
             ) {
               cerrarCambioPassword();
             }
+
           }}
         >
+
           <div className="password-modal">
+
             {/* CABECERA */}
             <div className="password-modal-header">
+
               <div>
+
                 <h2>
                   🔐 Cambiar contraseña
                 </h2>
@@ -1098,20 +1400,27 @@ function Layout({ title, children }) {
                 <p>
                   Actualiza la contraseña de tu cuenta.
                 </p>
+
               </div>
 
               <button
                 type="button"
                 className="password-modal-close"
-                onClick={cerrarCambioPassword}
-                disabled={cambiandoPassword}
+                onClick={
+                  cerrarCambioPassword
+                }
+                disabled={
+                  cambiandoPassword
+                }
               >
                 ×
               </button>
+
             </div>
 
             {/* INFORMACIÓN USUARIO */}
             <div className="password-user-info">
+
               <strong>
                 {nombreUsuario}
               </strong>
@@ -1119,27 +1428,35 @@ function Layout({ title, children }) {
               <span>
                 {nombreRol}
               </span>
+
             </div>
 
             {/* FORMULARIO */}
             <form
-              onSubmit={cambiarPassword}
+              onSubmit={
+                cambiarPassword
+              }
               className="password-form"
             >
+
               {/* CONTRASEÑA ACTUAL */}
               <div className="password-field">
+
                 <label>
                   Contraseña actual
                 </label>
 
                 <div className="password-input-container">
+
                   <input
                     type={
                       mostrarPasswordActual
                         ? "text"
                         : "password"
                     }
-                    value={passwordActual}
+                    value={
+                      passwordActual
+                    }
                     onChange={(event) =>
                       setPasswordActual(
                         event.target.value
@@ -1147,7 +1464,9 @@ function Layout({ title, children }) {
                     }
                     placeholder="Ingresa tu contraseña actual"
                     autoComplete="current-password"
-                    disabled={cambiandoPassword}
+                    disabled={
+                      cambiandoPassword
+                    }
                   />
 
                   <button
@@ -1160,27 +1479,35 @@ function Layout({ title, children }) {
                     }
                     tabIndex="-1"
                   >
-                    {mostrarPasswordActual
-                      ? "🙈"
-                      : "👁"}
+                    {
+                      mostrarPasswordActual
+                        ? "🙈"
+                        : "👁"
+                    }
                   </button>
+
                 </div>
+
               </div>
 
               {/* NUEVA CONTRASEÑA */}
               <div className="password-field">
+
                 <label>
                   Nueva contraseña
                 </label>
 
                 <div className="password-input-container">
+
                   <input
                     type={
                       mostrarNuevaPassword
                         ? "text"
                         : "password"
                     }
-                    value={nuevaPassword}
+                    value={
+                      nuevaPassword
+                    }
                     onChange={(event) =>
                       setNuevaPassword(
                         event.target.value
@@ -1188,7 +1515,9 @@ function Layout({ title, children }) {
                     }
                     placeholder="Mínimo 8 caracteres"
                     autoComplete="new-password"
-                    disabled={cambiandoPassword}
+                    disabled={
+                      cambiandoPassword
+                    }
                   />
 
                   <button
@@ -1201,27 +1530,35 @@ function Layout({ title, children }) {
                     }
                     tabIndex="-1"
                   >
-                    {mostrarNuevaPassword
-                      ? "🙈"
-                      : "👁"}
+                    {
+                      mostrarNuevaPassword
+                        ? "🙈"
+                        : "👁"
+                    }
                   </button>
+
                 </div>
+
               </div>
 
               {/* CONFIRMAR CONTRASEÑA */}
               <div className="password-field">
+
                 <label>
                   Confirmar nueva contraseña
                 </label>
 
                 <div className="password-input-container">
+
                   <input
                     type={
                       mostrarConfirmacion
                         ? "text"
                         : "password"
                     }
-                    value={confirmarPassword}
+                    value={
+                      confirmarPassword
+                    }
                     onChange={(event) =>
                       setConfirmarPassword(
                         event.target.value
@@ -1229,7 +1566,9 @@ function Layout({ title, children }) {
                     }
                     placeholder="Repite la nueva contraseña"
                     autoComplete="new-password"
-                    disabled={cambiandoPassword}
+                    disabled={
+                      cambiandoPassword
+                    }
                   />
 
                   <button
@@ -1242,17 +1581,20 @@ function Layout({ title, children }) {
                     }
                     tabIndex="-1"
                   >
-                    {mostrarConfirmacion
-                      ? "🙈"
-                      : "👁"}
+                    {
+                      mostrarConfirmacion
+                        ? "🙈"
+                        : "👁"
+                    }
                   </button>
+
                 </div>
+
               </div>
 
               {/* AYUDA */}
               <div className="password-help">
-                La nueva contraseña debe contener al menos 8
-                caracteres.
+                La nueva contraseña debe contener al menos 8 caracteres.
               </div>
 
               {/* ERROR */}
@@ -1271,11 +1613,16 @@ function Layout({ title, children }) {
 
               {/* BOTONES */}
               <div className="password-actions">
+
                 <button
                   type="button"
                   className="password-btn secondary"
-                  onClick={cerrarCambioPassword}
-                  disabled={cambiandoPassword}
+                  onClick={
+                    cerrarCambioPassword
+                  }
+                  disabled={
+                    cambiandoPassword
+                  }
                 >
                   Cancelar
                 </button>
@@ -1283,17 +1630,26 @@ function Layout({ title, children }) {
                 <button
                   type="submit"
                   className="password-btn primary"
-                  disabled={cambiandoPassword}
+                  disabled={
+                    cambiandoPassword
+                  }
                 >
-                  {cambiandoPassword
-                    ? "Actualizando..."
-                    : "Cambiar contraseña"}
+                  {
+                    cambiandoPassword
+                      ? "Actualizando..."
+                      : "Cambiar contraseña"
+                  }
                 </button>
+
               </div>
+
             </form>
+
           </div>
+
         </div>
       )}
+
     </div>
   );
 }
