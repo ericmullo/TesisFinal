@@ -589,6 +589,7 @@ export async function verificarDocumentacion(
 
 // CREAR EVALUACIÓN
 
+
 export async function crearEvaluacion(
   solicitudId
 ) {
@@ -600,14 +601,30 @@ export async function crearEvaluacion(
     }
   );
 
-
   if (!response.ok) {
 
+    let errorServidor = null;
+
+    try {
+      errorServidor =
+        await response.json();
+    } catch {
+      errorServidor = null;
+    }
+
+    console.error(
+      "Error del backend al crear evaluación:",
+      response.status,
+      errorServidor
+    );
+
     throw new Error(
-      "No se pudo crear la evaluación"
+      errorServidor?.mensaje ||
+      errorServidor?.message ||
+      errorServidor?.detail ||
+      `No se pudo crear la evaluación. Código HTTP: ${response.status}`
     );
   }
-
 
   return await response.json();
 }
