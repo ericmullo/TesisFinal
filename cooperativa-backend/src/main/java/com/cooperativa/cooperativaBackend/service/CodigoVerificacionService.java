@@ -109,8 +109,6 @@ public class CodigoVerificacionService {
             }
 
 
-            // El código anterior deja de ser válido.
-
             codigoAnterior.setUtilizado(true);
 
             codigoRepository.save(
@@ -230,6 +228,25 @@ public class CodigoVerificacionService {
             );
 
         } catch (Exception exception) {
+
+            System.err.println(
+                    "=============================================="
+            );
+
+            System.err.println(
+                    "ERROR REAL AL ENVIAR CORREO 2FA"
+            );
+
+            System.err.println(
+                    "=============================================="
+            );
+
+            exception.printStackTrace();
+
+            System.err.println(
+                    "=============================================="
+            );
+
 
             // Si el correo no pudo enviarse,
             // invalidamos el código que acabamos de guardar.
