@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import Layout from "../components/Layout";
-
-const API_URL = "http://localhost:8080/api";
+import { API_URL } from "../services/api";
 
 
 function Usuarios() {
