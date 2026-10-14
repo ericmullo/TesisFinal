@@ -4,44 +4,75 @@ import com.cooperativa.cooperativaBackend.model.Cliente;
 import com.cooperativa.cooperativaBackend.model.Solicitud;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClient;
 
+import java.nio.charset.StandardCharsets;
 import java.text.NumberFormat;
+import java.util.Base64;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+
 @Service
 public class EmailService {
 
-    private final RestClient restClient;
-    private final String apiKey;
+    private final RestClient oauthClient;
+    private final RestClient gmailClient;
+
+    private final String clientId;
+    private final String clientSecret;
+    private final String refreshToken;
     private final String remitente;
+
 
     // =========================================================
     // CONSTRUCTOR
     // =========================================================
 
     public EmailService(
-            @Value("${resend.api-key}") String apiKey,
-            @Value("${resend.from-email}") String remitente
+
+            @Value("${GMAIL_CLIENT_ID:}")
+            String clientId,
+
+            @Value("${GMAIL_CLIENT_SECRET:}")
+            String clientSecret,
+
+            @Value("${GMAIL_REFRESH_TOKEN:}")
+            String refreshToken,
+
+            @Value("${GMAIL_FROM_EMAIL:}")
+            String remitente
+
     ) {
 
-        this.restClient =
+        this.clientId = clientId;
+        this.clientSecret = clientSecret;
+        this.refreshToken = refreshToken;
+        this.remitente = remitente;
+
+
+        this.oauthClient =
                 RestClient
                         .builder()
                         .baseUrl(
-                                "https://api.resend.com"
+                                "https://oauth2.googleapis.com"
                         )
                         .build();
 
-        this.apiKey =
-                apiKey;
 
-        this.remitente =
-                remitente;
+        this.gmailClient =
+                RestClient
+                        .builder()
+                        .baseUrl(
+                                "https://gmail.googleapis.com"
+                        )
+                        .build();
     }
 
 
@@ -56,32 +87,48 @@ public class EmailService {
             String mensaje
     ) {
 
-        Map<String, Object> cuerpo =
-                Map.of(
-                        "from",
-                        "Cooperativa 15 de Abril <"
-                                + remitente
-                                + ">",
+        validarConfiguracionGmail();
 
-                        "to",
-                        List.of(
-                                destinatario
-                        ),
 
-                        "subject",
+        if (
+                destinatario == null
+                        ||
+                destinatario.isBlank()
+        ) {
+
+            throw new IllegalArgumentException(
+                    "El destinatario del correo es obligatorio."
+            );
+        }
+
+
+        String accessToken =
+                obtenerAccessToken();
+
+
+        String mensajeRaw =
+                construirMensajeRaw(
+                        destinatario,
                         asunto,
-
-                        "text",
                         mensaje
                 );
 
 
-        restClient
+        Map<String, String> cuerpo =
+                Map.of(
+                        "raw",
+                        mensajeRaw
+                );
+
+
+        gmailClient
                 .post()
-                .uri("/emails")
+                .uri(
+                        "/gmail/v1/users/me/messages/send"
+                )
                 .header(
-                        "Authorization",
-                        "Bearer " + apiKey
+                        HttpHeaders.AUTHORIZATION,
+                        "Bearer " + accessToken
                 )
                 .contentType(
                         MediaType.APPLICATION_JSON
@@ -91,6 +138,254 @@ public class EmailService {
                 )
                 .retrieve()
                 .toBodilessEntity();
+
+
+        System.out.println(
+                "Correo enviado correctamente a: "
+                        + destinatario
+        );
+    }
+
+
+    // =========================================================
+    // OBTENER ACCESS TOKEN UTILIZANDO REFRESH TOKEN
+    // =========================================================
+
+    private String obtenerAccessToken() {
+
+        MultiValueMap<String, String> formulario =
+                new LinkedMultiValueMap<>();
+
+
+        formulario.add(
+                "client_id",
+                clientId
+        );
+
+        formulario.add(
+                "client_secret",
+                clientSecret
+        );
+
+        formulario.add(
+                "refresh_token",
+                refreshToken
+        );
+
+        formulario.add(
+                "grant_type",
+                "refresh_token"
+        );
+
+
+        Map<?, ?> respuesta =
+                oauthClient
+                        .post()
+                        .uri(
+                                "/token"
+                        )
+                        .contentType(
+                                MediaType.APPLICATION_FORM_URLENCODED
+                        )
+                        .body(
+                                formulario
+                        )
+                        .retrieve()
+                        .body(
+                                Map.class
+                        );
+
+
+        if (
+                respuesta == null
+                        ||
+                respuesta.get(
+                        "access_token"
+                ) == null
+        ) {
+
+            throw new RuntimeException(
+                    "Google no devolvió un access token."
+            );
+        }
+
+
+        return respuesta
+                .get(
+                        "access_token"
+                )
+                .toString();
+    }
+
+
+    // =========================================================
+    // CONSTRUIR CORREO EN FORMATO MIME
+    // =========================================================
+
+    private String construirMensajeRaw(
+            String destinatario,
+            String asunto,
+            String mensaje
+    ) {
+
+        String destinatarioSeguro =
+                limpiarCabecera(
+                        destinatario
+                );
+
+
+        String asuntoCodificado =
+                codificarAsunto(
+                        asunto
+                );
+
+
+        String contenido =
+                "From: Cooperativa 15 de Abril <"
+                        + remitente
+                        + ">\r\n"
+
+                        + "To: "
+                        + destinatarioSeguro
+                        + "\r\n"
+
+                        + "Subject: "
+                        + asuntoCodificado
+                        + "\r\n"
+
+                        + "MIME-Version: 1.0\r\n"
+
+                        + "Content-Type: text/plain; charset=UTF-8\r\n"
+
+                        + "Content-Transfer-Encoding: 8bit\r\n"
+
+                        + "\r\n"
+
+                        + mensaje;
+
+
+        return Base64
+                .getUrlEncoder()
+                .withoutPadding()
+                .encodeToString(
+                        contenido.getBytes(
+                                StandardCharsets.UTF_8
+                        )
+                );
+    }
+
+
+    // =========================================================
+    // CODIFICAR ASUNTO UTF-8
+    // =========================================================
+
+    private String codificarAsunto(
+            String asunto
+    ) {
+
+        String asuntoSeguro =
+                asunto == null
+                        ?
+                        ""
+                        :
+                        asunto;
+
+
+        String asuntoBase64 =
+                Base64
+                        .getEncoder()
+                        .encodeToString(
+                                asuntoSeguro
+                                        .getBytes(
+                                                StandardCharsets.UTF_8
+                                        )
+                        );
+
+
+        return "=?UTF-8?B?"
+                + asuntoBase64
+                + "?=";
+    }
+
+
+    // =========================================================
+    // EVITAR SALTOS DE LÍNEA EN CABECERAS
+    // =========================================================
+
+    private String limpiarCabecera(
+            String valor
+    ) {
+
+        if (valor == null) {
+            return "";
+        }
+
+
+        return valor
+                .replace(
+                        "\r",
+                        ""
+                )
+                .replace(
+                        "\n",
+                        ""
+                )
+                .trim();
+    }
+
+
+    // =========================================================
+    // VALIDAR CONFIGURACIÓN DE GMAIL
+    // =========================================================
+
+    private void validarConfiguracionGmail() {
+
+        if (
+                clientId == null
+                        ||
+                clientId.isBlank()
+        ) {
+
+            throw new IllegalStateException(
+                    "No está configurada la variable GMAIL_CLIENT_ID."
+            );
+        }
+
+
+        if (
+                clientSecret == null
+                        ||
+                clientSecret.isBlank()
+        ) {
+
+            throw new IllegalStateException(
+                    "No está configurada la variable GMAIL_CLIENT_SECRET."
+            );
+        }
+
+
+        if (
+                refreshToken == null
+                        ||
+                refreshToken.isBlank()
+        ) {
+
+            throw new IllegalStateException(
+                    "No está configurada la variable GMAIL_REFRESH_TOKEN."
+            );
+        }
+
+
+        if (
+                remitente == null
+                        ||
+                remitente.isBlank()
+        ) {
+
+            throw new IllegalStateException(
+                    "No está configurada la variable GMAIL_FROM_EMAIL."
+            );
+        }
     }
 
 
@@ -474,9 +769,7 @@ public class EmailService {
             Solicitud solicitud
     ) {
 
-        if (
-                solicitud == null
-        ) {
+        if (solicitud == null) {
 
             throw new IllegalArgumentException(
                     "La solicitud no puede ser nula."
@@ -484,9 +777,7 @@ public class EmailService {
         }
 
 
-        if (
-                solicitud.getCliente() == null
-        ) {
+        if (solicitud.getCliente() == null) {
 
             throw new IllegalArgumentException(
                     "La solicitud no tiene un cliente asociado."
@@ -571,10 +862,10 @@ public class EmailService {
         if (
                 solicitud.getCodigoSolicitud() == null
                         ||
-                        solicitud
-                                .getCodigoSolicitud()
-                                .trim()
-                                .isEmpty()
+                solicitud
+                        .getCodigoSolicitud()
+                        .trim()
+                        .isEmpty()
         ) {
 
             return "Sin código";
@@ -595,9 +886,7 @@ public class EmailService {
             Double monto
     ) {
 
-        if (
-                monto == null
-        ) {
+        if (monto == null) {
 
             return "No especificado";
         }
@@ -624,9 +913,7 @@ public class EmailService {
             Integer plazoMeses
     ) {
 
-        if (
-                plazoMeses == null
-        ) {
+        if (plazoMeses == null) {
 
             return "No especificado";
         }
@@ -649,9 +936,9 @@ public class EmailService {
         if (
                 valor == null
                         ||
-                        valor
-                                .trim()
-                                .isEmpty()
+                valor
+                        .trim()
+                        .isEmpty()
         ) {
 
             return "No especificado";
