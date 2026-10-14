@@ -484,14 +484,15 @@ public class EmailService {
                         + "DOCUMENTACIÓN REQUERIDA\n\n"
 
                         + "Para continuar con el proceso de evaluación de su "
-                        + "solicitud, es necesario presentar la siguiente "
-                        + "documentación:\n\n"
+                        + "solicitud, es necesario acercarse con la siguiente documentacion 
+                        para que uno de nuestros ascesores pueda ingresarla al sistema "
+                        + "documentación necesaria:\n\n"
 
-                        + "1. Documento de identificación.\n"
-                        + "2. Documento de respaldo de ingresos.\n"
-                        + "3. Documento general requerido para la solicitud.\n\n"
+                        + "1. Original del Documento de identificación.\n"
+                        + "2. Original del Documento de respaldo de ingresos o prueba de ingresos.\n"
+                        + "3. Original de la encuesta llenada antes de la solicitud.\n\n"
 
-                        + "La documentación deberá ser entregada para que la "
+                        + "La documentación deberá ser entregada y escaneada para que la "
                         + "solicitud pueda continuar con el proceso de evaluación "
                         + "de riesgo crediticio.\n\n"
 
