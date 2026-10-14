@@ -14,7 +14,6 @@ import org.springframework.web.client.RestClient;
 import java.nio.charset.StandardCharsets;
 import java.text.NumberFormat;
 import java.util.Base64;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
@@ -148,7 +147,7 @@ public class EmailService {
 
 
     // =========================================================
-    // OBTENER ACCESS TOKEN UTILIZANDO REFRESH TOKEN
+    // OBTENER ACCESS TOKEN
     // =========================================================
 
     private String obtenerAccessToken() {
@@ -219,7 +218,7 @@ public class EmailService {
 
 
     // =========================================================
-    // CONSTRUIR CORREO EN FORMATO MIME
+    // CONSTRUIR CORREO MIME
     // =========================================================
 
     private String construirMensajeRaw(
@@ -309,7 +308,7 @@ public class EmailService {
 
 
     // =========================================================
-    // EVITAR SALTOS DE LÍNEA EN CABECERAS
+    // LIMPIAR CABECERAS
     // =========================================================
 
     private String limpiarCabecera(
@@ -317,6 +316,7 @@ public class EmailService {
     ) {
 
         if (valor == null) {
+
             return "";
         }
 
@@ -335,7 +335,7 @@ public class EmailService {
 
 
     // =========================================================
-    // VALIDAR CONFIGURACIÓN DE GMAIL
+    // VALIDAR CONFIGURACIÓN GMAIL
     // =========================================================
 
     private void validarConfiguracionGmail() {
@@ -390,7 +390,7 @@ public class EmailService {
 
 
     // =========================================================
-    // SOLICITUD DE CRÉDITO REGISTRADA
+    // SOLICITUD REGISTRADA
     // =========================================================
 
     public void enviarSolicitudRegistrada(
@@ -411,8 +411,7 @@ public class EmailService {
 
             System.err.println(
                     "No se envió el correo de solicitud registrada: "
-                            +
-                            "el cliente no tiene correo electrónico."
+                            + "el cliente no tiene correo electrónico."
             );
 
             return;
@@ -433,10 +432,8 @@ public class EmailService {
 
         String asunto =
                 "Solicitud de crédito registrada - "
-                        +
-                        codigoSolicitud
-                        +
-                        " - Cooperativa 15 de Abril";
+                        + codigoSolicitud
+                        + " - Cooperativa 15 de Abril";
 
 
         String mensaje =
@@ -479,22 +476,26 @@ public class EmailService {
                         + "\n"
 
                         + "Estado actual: Pendiente\n"
+
                         + "----------------------------------------\n\n"
 
                         + "DOCUMENTACIÓN REQUERIDA\n\n"
 
                         + "Para continuar con el proceso de evaluación de su "
-                        + "solicitud, es necesario acercarse con la siguiente documentacion 
-                        para que uno de nuestros ascesores pueda ingresarla al sistema "
-                        + "documentación necesaria:\n\n"
+                        + "solicitud, es necesario acercarse a la Cooperativa "
+                        + "con la siguiente documentación para que uno de nuestros "
+                        + "asesores pueda ingresarla al sistema:\n\n"
 
-                        + "1. Original del Documento de identificación.\n"
-                        + "2. Original del Documento de respaldo de ingresos o prueba de ingresos.\n"
+                        + "1. Original del documento de identificación.\n"
+
+                        + "2. Original del documento de respaldo de ingresos "
+                        + "o prueba de ingresos.\n"
+
                         + "3. Original de la encuesta llenada antes de la solicitud.\n\n"
 
-                        + "La documentación deberá ser entregada y escaneada para que la "
-                        + "solicitud pueda continuar con el proceso de evaluación "
-                        + "de riesgo crediticio.\n\n"
+                        + "La documentación deberá ser entregada y escaneada para "
+                        + "que la solicitud pueda continuar con el proceso de "
+                        + "evaluación de riesgo crediticio.\n\n"
 
                         + "Una vez completada la documentación requerida, "
                         + "la solicitud podrá avanzar a las siguientes etapas "
@@ -509,7 +510,9 @@ public class EmailService {
                         + "a este correo.\n\n"
 
                         + "Atentamente,\n"
+
                         + "Cooperativa de Ahorro y Crédito 15 de Abril\n"
+
                         + "Seguridad y confianza.";
 
 
@@ -543,8 +546,7 @@ public class EmailService {
 
             System.err.println(
                     "No se envió el correo de aprobación: "
-                            +
-                            "el cliente no tiene correo electrónico."
+                            + "el cliente no tiene correo electrónico."
             );
 
             return;
@@ -565,10 +567,8 @@ public class EmailService {
 
         String asunto =
                 "Solicitud de crédito aprobada - "
-                        +
-                        codigoSolicitud
-                        +
-                        " - Cooperativa 15 de Abril";
+                        + codigoSolicitud
+                        + " - Cooperativa 15 de Abril";
 
 
         String mensaje =
@@ -581,6 +581,7 @@ public class EmailService {
                         + "crédito ha sido APROBADA.\n\n"
 
                         + "DETALLE DEL CRÉDITO\n"
+
                         + "----------------------------------------\n"
 
                         + "Código de solicitud: "
@@ -612,6 +613,7 @@ public class EmailService {
                         + "\n"
 
                         + "Estado: APROBADO\n"
+
                         + "----------------------------------------\n\n"
 
                         + "Para continuar con las siguientes gestiones "
@@ -629,7 +631,9 @@ public class EmailService {
                         + "a este correo.\n\n"
 
                         + "Atentamente,\n"
+
                         + "Cooperativa de Ahorro y Crédito 15 de Abril\n"
+
                         + "Seguridad y confianza.";
 
 
@@ -663,8 +667,7 @@ public class EmailService {
 
             System.err.println(
                     "No se envió el correo de resultado: "
-                            +
-                            "el cliente no tiene correo electrónico."
+                            + "el cliente no tiene correo electrónico."
             );
 
             return;
@@ -685,10 +688,8 @@ public class EmailService {
 
         String asunto =
                 "Resultado de su solicitud de crédito - "
-                        +
-                        codigoSolicitud
-                        +
-                        " - Cooperativa 15 de Abril";
+                        + codigoSolicitud
+                        + " - Cooperativa 15 de Abril";
 
 
         String mensaje =
@@ -701,6 +702,7 @@ public class EmailService {
                         + "no ha sido aprobada.\n\n"
 
                         + "DETALLE DE LA SOLICITUD\n"
+
                         + "----------------------------------------\n"
 
                         + "Código de solicitud: "
@@ -732,6 +734,7 @@ public class EmailService {
                         + "\n"
 
                         + "Estado: NO APROBADO\n"
+
                         + "----------------------------------------\n\n"
 
                         + "Si requiere información adicional sobre el proceso, "
@@ -750,7 +753,9 @@ public class EmailService {
                         + "a este correo.\n\n"
 
                         + "Atentamente,\n"
+
                         + "Cooperativa de Ahorro y Crédito 15 de Abril\n"
+
                         + "Seguridad y confianza.";
 
 
@@ -853,7 +858,7 @@ public class EmailService {
 
 
     // =========================================================
-    // CÓDIGO DE SOLICITUD
+    // CÓDIGO SOLICITUD
     // =========================================================
 
     private String obtenerCodigoSolicitud(
@@ -921,8 +926,7 @@ public class EmailService {
 
 
         return plazoMeses
-                +
-                " meses";
+                + " meses";
     }
 
 
