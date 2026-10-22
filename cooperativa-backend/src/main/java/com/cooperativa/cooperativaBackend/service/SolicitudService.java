@@ -20,14 +20,20 @@ import java.time.LocalDateTime;
 import java.time.Year;
 import java.util.List;
 
+
 @Service
 public class SolicitudService {
 
     private final SolicitudRepository solicitudRepository;
+
     private final ClienteRepository clienteRepository;
+
     private final EvaluacionRiesgoRepository evaluacionRiesgoRepository;
+
     private final UsuarioRepository usuarioRepository;
+
     private final NotificacionService notificacionService;
+
     private final EmailService emailService;
 
 
@@ -115,23 +121,29 @@ public class SolicitudService {
                         );
 
 
-        // -----------------------------------------------------
-        // DATOS CONTROLADOS POR EL BACKEND
-        // -----------------------------------------------------
+        // =====================================================
+        // DATOS CONTROLADOS POR BACKEND
+        // =====================================================
 
-        solicitud.setId(null);
+        solicitud.setId(
+                null
+        );
+
 
         solicitud.setCliente(
                 cliente
         );
 
+
         solicitud.setEstado(
                 "Pendiente"
         );
 
+
         solicitud.setObservacionDecision(
                 null
         );
+
 
         solicitud.setFechaDecision(
                 null
@@ -139,7 +151,7 @@ public class SolicitudService {
 
 
         // =====================================================
-        // CLASIFICAR SEGMENTO / SUBSEGMENTO
+        // CLASIFICAR SUBSEGMENTO
         // =====================================================
 
         clasificarSubsegmentoCredito(
@@ -148,7 +160,7 @@ public class SolicitudService {
 
 
         // =====================================================
-        // GENERAR CÓDIGO DE SOLICITUD
+        // GENERAR CÓDIGO
         // =====================================================
 
         Long siguienteNumero =
@@ -170,7 +182,7 @@ public class SolicitudService {
 
 
         // =====================================================
-        // GUARDAR SOLICITUD
+        // GUARDAR
         // =====================================================
 
         Solicitud solicitudGuardada =
@@ -181,7 +193,7 @@ public class SolicitudService {
 
 
         // =====================================================
-        // NOTIFICAR NUEVA SOLICITUD
+        // NOTIFICACIONES
         // =====================================================
 
         notificarNuevaSolicitud(
@@ -190,7 +202,7 @@ public class SolicitudService {
 
 
         // =====================================================
-        // CORREO AL CLIENTE
+        // CORREO
         // =====================================================
 
         enviarCorreoSolicitudRegistrada(
@@ -236,7 +248,7 @@ public class SolicitudService {
 
 
         // =====================================================
-        // DATOS PERSONALES COMPLEMENTARIOS
+        // DATOS PERSONALES
         // =====================================================
 
         solicitud.setEstadoCivil(
@@ -363,15 +375,15 @@ public class SolicitudService {
 
 
         /*
-         * NO modificamos directamente:
+         * NO modificamos:
          *
-         * - codigoSolicitud
-         * - estado
-         * - observacionDecision
-         * - fechaDecision
+         * codigoSolicitud
+         * estado
+         * observacionDecision
+         * fechaDecision
          *
-         * La decisión final solamente puede realizarse
-         * mediante aprobarSolicitud() o rechazarSolicitud().
+         * La decisión final se realiza mediante
+         * aprobarSolicitud() o rechazarSolicitud().
          */
 
 
@@ -546,8 +558,8 @@ public class SolicitudService {
         } catch (Exception e) {
 
             /*
-             * El fallo del correo NO debe impedir
-             * que la solicitud quede registrada.
+             * Un fallo de correo no debe impedir
+             * guardar la solicitud.
              */
 
             System.err.println(
@@ -559,7 +571,7 @@ public class SolicitudService {
 
 
     // =========================================================
-    // CORREO - SOLICITUD APROBADA
+    // CORREO - APROBACIÓN
     // =========================================================
 
     private void enviarCorreoSolicitudAprobada(
@@ -589,7 +601,7 @@ public class SolicitudService {
 
 
     // =========================================================
-    // CORREO - SOLICITUD RECHAZADA
+    // CORREO - RECHAZO
     // =========================================================
 
     private void enviarCorreoSolicitudRechazada(
@@ -856,7 +868,7 @@ public class SolicitudService {
 
 
     // =========================================================
-    // OBTENER NOMBRE DEL CLIENTE
+    // OBTENER NOMBRE CLIENTE
     // =========================================================
 
     private String obtenerNombreCliente(
@@ -874,7 +886,8 @@ public class SolicitudService {
 
 
         Cliente cliente =
-                solicitud.getCliente();
+                solicitud
+                        .getCliente();
 
 
         String nombres =
@@ -919,7 +932,7 @@ public class SolicitudService {
 
 
     // =========================================================
-    // CLASIFICAR SEGMENTO / SUBSEGMENTO DE CRÉDITO
+    // CLASIFICAR SEGMENTO / SUBSEGMENTO
     // =========================================================
 
     private void clasificarSubsegmentoCredito(
@@ -1076,7 +1089,8 @@ public class SolicitudService {
 
 
             // -------------------------------------------------
-            // PRODUCTIVO EMPIEZA SOBRE USD 300.000
+            // PRODUCTIVO:
+            // MÁS DE USD 300.000
             // -------------------------------------------------
 
             if (
@@ -1091,11 +1105,11 @@ public class SolicitudService {
 
             // -------------------------------------------------
             // PRODUCTIVO PYMES
-            // MÁS DE USD 300.000 HASTA USD 1.000.000
+            // MÁS DE USD 300.000 HASTA USD 1.500.000
             // -------------------------------------------------
 
             if (
-                    ventasAnuales <= 1_000_000
+                    ventasAnuales <= 1_500_000
             ) {
 
                 solicitud.setSubsegmentoCredito(
@@ -1108,11 +1122,11 @@ public class SolicitudService {
 
             // -------------------------------------------------
             // PRODUCTIVO EMPRESARIAL
-            // MÁS DE USD 1.000.000 HASTA USD 5.000.000
+            // MÁS DE USD 1.500.000 HASTA USD 7.000.000
             // -------------------------------------------------
 
             if (
-                    ventasAnuales <= 5_000_000
+                    ventasAnuales <= 7_000_000
             ) {
 
                 solicitud.setSubsegmentoCredito(
@@ -1125,7 +1139,7 @@ public class SolicitudService {
 
             // -------------------------------------------------
             // PRODUCTIVO CORPORATIVO
-            // MÁS DE USD 5.000.000
+            // MÁS DE USD 7.000.000
             // -------------------------------------------------
 
             solicitud.setSubsegmentoCredito(
@@ -1157,7 +1171,6 @@ public class SolicitudService {
 
         // =====================================================
         // VIVIENDA
-        // COMPATIBILIDAD CON SOLICITUDES ANTERIORES
         // =====================================================
 
         if (

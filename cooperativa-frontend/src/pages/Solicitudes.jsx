@@ -354,7 +354,7 @@ export default function Solicitudes() {
 
 
     if (
-      ventas <= 1000000
+      ventas <= 1500000
     ) {
 
       return "Productivo PYMES";
@@ -362,7 +362,7 @@ export default function Solicitudes() {
 
 
     if (
-      ventas <= 5000000
+      ventas <= 7000000
     ) {
 
       return "Productivo Empresarial";

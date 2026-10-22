@@ -171,22 +171,8 @@ public class EvaluacionRiesgoService {
 
 
         // =====================================================
-        // NUEVO ESQUEMA DOCUMENTAL
+        // NUEVO ESQUEMA
         // =====================================================
-        //
-        // Documentos obligatorios actuales:
-        //
-        // 1. Cédula
-        // 2. Certificado de votación
-        // 3. Respaldo de ingresos o ventas
-        //
-        // Respaldo de activos es adicional.
-        //
-        // Los pasivos no requieren archivo en este módulo,
-        // porque posteriormente serán consultados mediante
-        // el Buró de Crédito.
-        // =====================================================
-
 
         boolean cedulaNueva =
                 existeTipoDocumento(
@@ -218,23 +204,8 @@ public class EvaluacionRiesgoService {
 
 
         // =====================================================
-        // COMPATIBILIDAD CON SOLICITUDES ANTERIORES
+        // COMPATIBILIDAD CON DOCUMENTOS ANTIGUOS
         // =====================================================
-        //
-        // Antes del cambio, el sistema exigía:
-        //
-        // - Identificación
-        // - Ingresos
-        // - General
-        //
-        // Si una solicitud antigua ya cuenta con esos tres
-        // documentos, permitimos que continúe el proceso.
-        //
-        // No reinterpretamos "General" como certificado de
-        // votación. Simplemente reconocemos el esquema
-        // documental anterior como un conjunto legado.
-        // =====================================================
-
 
         boolean identificacionAnterior =
                 existeTipoDocumento(
@@ -265,19 +236,9 @@ public class EvaluacionRiesgoService {
                 generalAnterior;
 
 
-        /*
-         * También permitimos documentos antiguos equivalentes
-         * para Cédula e Ingresos cuando ya existe el nuevo
-         * Certificado de votación.
-         *
-         * Ejemplo:
-         *
-         * Identificación
-         * Certificado de votación
-         * Ingresos
-         *
-         * también es válido.
-         */
+        // =====================================================
+        // COMPATIBILIDAD MIXTA
+        // =====================================================
 
         boolean cedulaCompatible =
                 cedulaNueva
@@ -373,7 +334,7 @@ public class EvaluacionRiesgoService {
 
 
         // -----------------------------------------------------
-        // 4. VALIDAR INFORMACIÓN FINANCIERA
+        // 4. VALIDAR DATOS
         // -----------------------------------------------------
 
         validarDatosSolicitud(
@@ -382,7 +343,7 @@ public class EvaluacionRiesgoService {
 
 
         // -----------------------------------------------------
-        // 5. CONVERTIR ANTIGÜEDAD LABORAL
+        // 5. CONVERTIR ANTIGÜEDAD
         // -----------------------------------------------------
 
         Double antiguedadLaboral =
@@ -393,12 +354,16 @@ public class EvaluacionRiesgoService {
 
 
         // -----------------------------------------------------
-        // 6. CONSTRUIR REQUEST PARA FASTAPI
+        // 6. CONSTRUIR REQUEST PARA FASTAPI V2
         // -----------------------------------------------------
 
         PrediccionRiesgoRequest request =
                 new PrediccionRiesgoRequest();
 
+
+        // =====================================================
+        // VARIABLES FINANCIERAS
+        // =====================================================
 
         request.setIngresosMensuales(
                 solicitud
@@ -424,11 +389,37 @@ public class EvaluacionRiesgoService {
         );
 
 
+        // =====================================================
+        // SEGMENTACIÓN DEL CRÉDITO
+        // =====================================================
+
         request.setTipoCredito(
-                solicitud
-                        .getTipoCredito()
+                normalizarTextoIa(
+                        solicitud
+                                .getTipoCredito()
+                )
         );
 
+
+        request.setSubsegmentoCredito(
+                normalizarTextoIa(
+                        solicitud
+                                .getSubsegmentoCredito()
+                )
+        );
+
+
+        request.setProductoCredito(
+                normalizarTextoIa(
+                        solicitud
+                                .getProductoCredito()
+                )
+        );
+
+
+        // =====================================================
+        // MONTO Y PLAZO
+        // =====================================================
 
         request.setMontoSolicitado(
                 solicitud
@@ -441,6 +432,39 @@ public class EvaluacionRiesgoService {
                         .getPlazoMeses()
         );
 
+
+        // =====================================================
+        // INFORMACIÓN ECONÓMICA NUEVA
+        // =====================================================
+
+        /*
+         * Para segmentos como Consumo, Vivienda o Educativo
+         * las ventas anuales pueden no aplicar.
+         *
+         * En ese caso enviamos 0.0 para mantener una entrada
+         * numérica consistente para el modelo.
+         */
+
+        request.setVentasAnuales(
+                solicitud.getVentasAnuales() == null
+                        ?
+                        0.0
+                        :
+                        solicitud.getVentasAnuales()
+        );
+
+
+        request.setFuentePago(
+                normalizarTextoIa(
+                        solicitud
+                                .getFuentePago()
+                )
+        );
+
+
+        // =====================================================
+        // ANTIGÜEDAD
+        // =====================================================
 
         request.setAntiguedadLaboralAnios(
                 antiguedadLaboral
@@ -459,7 +483,7 @@ public class EvaluacionRiesgoService {
 
 
         // -----------------------------------------------------
-        // 8. CREAR EVALUACIÓN CON EL RESULTADO DE LA IA
+        // 8. CREAR EVALUACIÓN
         // -----------------------------------------------------
 
         EvaluacionRiesgo evaluacion =
@@ -486,9 +510,8 @@ public class EvaluacionRiesgoService {
         /*
          * confianzaModelo permanece en null.
          *
-         * Actualmente el modelo no genera una métrica
-         * independiente que represente correctamente esta
-         * propiedad.
+         * El modelo actual no devuelve una métrica
+         * independiente para esta propiedad.
          */
 
 
@@ -524,7 +547,7 @@ public class EvaluacionRiesgoService {
 
 
         // -----------------------------------------------------
-        // 9. GUARDAR RESULTADO EN POSTGRESQL
+        // 9. GUARDAR EN POSTGRESQL
         // -----------------------------------------------------
 
         EvaluacionRiesgo evaluacionGuardada =
@@ -537,15 +560,6 @@ public class EvaluacionRiesgoService {
         // -----------------------------------------------------
         // 10. ACTUALIZAR ESTADO DE LA SOLICITUD
         // -----------------------------------------------------
-
-        /*
-         * Una vez que la evaluación de riesgo fue completada
-         * correctamente, la solicitud pasa automáticamente
-         * de "Pendiente" a "En evaluación".
-         *
-         * No se cambia el estado si la solicitud ya tiene
-         * una decisión final formal.
-         */
 
         if (
                 solicitud.getFechaDecision() == null
@@ -572,7 +586,7 @@ public class EvaluacionRiesgoService {
 
 
         // -----------------------------------------------------
-        // 11. NOTIFICAR EVALUACIÓN COMPLETADA
+        // 11. NOTIFICAR
         // -----------------------------------------------------
 
         notificarEvaluacionCompletada(
@@ -581,6 +595,28 @@ public class EvaluacionRiesgoService {
 
 
         return evaluacionGuardada;
+    }
+
+
+    // =========================================================
+    // NORMALIZAR TEXTO PARA LA IA
+    // =========================================================
+
+    private String normalizarTextoIa(
+            String valor
+    ) {
+
+        if (
+                valor == null
+                        ||
+                valor.isBlank()
+        ) {
+
+            return "No aplica";
+        }
+
+
+        return valor.trim();
     }
 
 
@@ -626,7 +662,7 @@ public class EvaluacionRiesgoService {
 
 
         // -----------------------------------------------------
-        // ADMINISTRADORES
+        // ADMIN
         // -----------------------------------------------------
 
         List<Usuario> administradores =
@@ -895,6 +931,16 @@ public class EvaluacionRiesgoService {
         }
 
 
+        if (
+                solicitud.getIngresosMensuales() < 0
+        ) {
+
+            throw new ValidacionException(
+                    "Los ingresos mensuales no pueden ser negativos."
+            );
+        }
+
+
         // -----------------------------------------------------
         // EGRESOS
         // -----------------------------------------------------
@@ -909,8 +955,18 @@ public class EvaluacionRiesgoService {
         }
 
 
+        if (
+                solicitud.getEgresosMensuales() < 0
+        ) {
+
+            throw new ValidacionException(
+                    "Los egresos mensuales no pueden ser negativos."
+            );
+        }
+
+
         // -----------------------------------------------------
-        // NIVEL DE ENDEUDAMIENTO
+        // ENDEUDAMIENTO
         // -----------------------------------------------------
 
         if (
@@ -919,6 +975,18 @@ public class EvaluacionRiesgoService {
 
             throw new ValidacionException(
                     "La solicitud no tiene nivel de endeudamiento."
+            );
+        }
+
+
+        if (
+                solicitud.getNivelEndeudamiento() < 0
+                        ||
+                solicitud.getNivelEndeudamiento() > 100
+        ) {
+
+            throw new ValidacionException(
+                    "El nivel de endeudamiento debe encontrarse entre 0 y 100."
             );
         }
 
@@ -985,16 +1053,18 @@ public class EvaluacionRiesgoService {
 
         if (
                 solicitud.getPlazoMeses() == null
+                        ||
+                solicitud.getPlazoMeses() <= 0
         ) {
 
             throw new ValidacionException(
-                    "La solicitud no tiene plazo."
+                    "La solicitud no tiene un plazo válido."
             );
         }
 
 
         // -----------------------------------------------------
-        // ANTIGÜEDAD LABORAL / ACTIVIDAD
+        // ANTIGÜEDAD
         // -----------------------------------------------------
 
         if (
@@ -1028,6 +1098,26 @@ public class EvaluacionRiesgoService {
 
                 throw new ValidacionException(
                         "La solicitud de Microcrédito no tiene ventas anuales registradas."
+                );
+            }
+
+
+            if (
+                    solicitud.getVentasAnuales() < 0
+            ) {
+
+                throw new ValidacionException(
+                        "Las ventas anuales no pueden ser negativas."
+                );
+            }
+
+
+            if (
+                    solicitud.getVentasAnuales() > 300000
+            ) {
+
+                throw new ValidacionException(
+                        "Las ventas anuales superan el rango de Microcrédito."
                 );
             }
 
@@ -1069,6 +1159,16 @@ public class EvaluacionRiesgoService {
 
 
             if (
+                    solicitud.getVentasAnuales() <= 300000
+            ) {
+
+                throw new ValidacionException(
+                        "Para crédito Productivo las ventas anuales deben superar los USD 300.000."
+                );
+            }
+
+
+            if (
                     solicitud.getActividadEconomica() == null
                             ||
                     solicitud
@@ -1093,16 +1193,6 @@ public class EvaluacionRiesgoService {
     ) {
 
         try {
-
-            /*
-             * Permite valores como:
-             *
-             * "4"
-             * "4.5"
-             * "4 años"
-             * "4.5 años"
-             * "4,5 años"
-             */
 
             String valorLimpio =
                     antiguedad
@@ -1151,24 +1241,31 @@ public class EvaluacionRiesgoService {
     ) {
 
         String segmento =
-                solicitud.getTipoCredito() == null
-                        ?
-                        "No determinado"
-                        :
-                        solicitud.getTipoCredito();
+                normalizarTextoIa(
+                        solicitud
+                                .getTipoCredito()
+                );
 
 
         String subsegmento =
-                solicitud.getSubsegmentoCredito() == null
-                        ||
-                solicitud
-                        .getSubsegmentoCredito()
-                        .isBlank()
-                        ?
-                        "No determinado"
-                        :
+                normalizarTextoIa(
                         solicitud
-                                .getSubsegmentoCredito();
+                                .getSubsegmentoCredito()
+                );
+
+
+        String producto =
+                normalizarTextoIa(
+                        solicitud
+                                .getProductoCredito()
+                );
+
+
+        String fuentePago =
+                normalizarTextoIa(
+                        solicitud
+                                .getFuentePago()
+                );
 
 
         return String.format(
@@ -1176,18 +1273,15 @@ public class EvaluacionRiesgoService {
                         + "El modelo estimó una probabilidad de mora de %.2f%% "
                         + "y un Score IA de %d/100. "
                         + "El nivel de riesgo asignado fue %s. "
-                        + "La solicitud pertenece al segmento %s "
-                        + "y al subsegmento %s. "
-                        + "La versión actual del modelo de IA considera "
-                        + "ingresos mensuales, egresos mensuales, "
-                        + "nivel de endeudamiento, capacidad de pago, "
-                        + "tipo de crédito, monto solicitado, plazo "
+                        + "La solicitud pertenece al segmento %s, "
+                        + "subsegmento %s y producto %s. "
+                        + "La evaluación considera ingresos mensuales, "
+                        + "egresos mensuales, nivel de endeudamiento, "
+                        + "capacidad de pago, segmento de crédito, "
+                        + "subsegmento, producto, monto solicitado, "
+                        + "plazo, ventas anuales, fuente de pago "
                         + "y antigüedad laboral o de la actividad. "
-                        + "La información adicional de actividad económica, "
-                        + "ventas anuales, producto de crédito y documentación "
-                        + "forma parte del análisis del proceso, aunque todavía "
-                        + "no se utiliza directamente como variable del modelo "
-                        + "Random Forest actual. "
+                        + "La fuente principal de pago registrada es %s. "
                         + "El resultado constituye una recomendación preliminar "
                         + "y no reemplaza la decisión del analista de crédito.",
 
@@ -1196,7 +1290,9 @@ public class EvaluacionRiesgoService {
                 respuesta.getScoreIa(),
                 respuesta.getNivelRiesgo(),
                 segmento,
-                subsegmento
+                subsegmento,
+                producto,
+                fuentePago
         );
     }
 }
