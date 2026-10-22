@@ -15,20 +15,28 @@ import com.cooperativa.cooperativaBackend.repository.DocumentoRepository;
 import com.cooperativa.cooperativaBackend.repository.EvaluacionRiesgoRepository;
 import com.cooperativa.cooperativaBackend.repository.SolicitudRepository;
 import com.cooperativa.cooperativaBackend.repository.UsuarioRepository;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+
 @Service
 public class EvaluacionRiesgoService {
 
     private final EvaluacionRiesgoRepository evaluacionRiesgoRepository;
+
     private final SolicitudRepository solicitudRepository;
+
     private final DocumentoRepository documentoRepository;
+
     private final IaRiesgoService iaRiesgoService;
+
     private final UsuarioRepository usuarioRepository;
+
     private final NotificacionService notificacionService;
+
 
     // =========================================================
     // CONSTRUCTOR
@@ -42,35 +50,56 @@ public class EvaluacionRiesgoService {
             UsuarioRepository usuarioRepository,
             NotificacionService notificacionService
     ) {
-        this.evaluacionRiesgoRepository = evaluacionRiesgoRepository;
-        this.solicitudRepository = solicitudRepository;
-        this.documentoRepository = documentoRepository;
-        this.iaRiesgoService = iaRiesgoService;
-        this.usuarioRepository = usuarioRepository;
-        this.notificacionService = notificacionService;
+
+        this.evaluacionRiesgoRepository =
+                evaluacionRiesgoRepository;
+
+        this.solicitudRepository =
+                solicitudRepository;
+
+        this.documentoRepository =
+                documentoRepository;
+
+        this.iaRiesgoService =
+                iaRiesgoService;
+
+        this.usuarioRepository =
+                usuarioRepository;
+
+        this.notificacionService =
+                notificacionService;
     }
+
 
     // =========================================================
     // OBTENER TODAS LAS EVALUACIONES
     // =========================================================
 
     public List<EvaluacionRiesgo> obtenerEvaluaciones() {
-        return evaluacionRiesgoRepository.findAll();
+
+        return evaluacionRiesgoRepository
+                .findAll();
     }
+
 
     // =========================================================
     // OBTENER EVALUACIÓN POR ID
     // =========================================================
 
-    public EvaluacionRiesgo obtenerEvaluacionPorId(Long id) {
+    public EvaluacionRiesgo obtenerEvaluacionPorId(
+            Long id
+    ) {
+
         return evaluacionRiesgoRepository
                 .findById(id)
                 .orElseThrow(() ->
                         new RecursoNoEncontradoException(
-                                "No se encontró la evaluación con ID: " + id
+                                "No se encontró la evaluación con ID: "
+                                        + id
                         )
                 );
     }
+
 
     // =========================================================
     // OBTENER EVALUACIONES DE UNA SOLICITUD
@@ -79,9 +108,13 @@ public class EvaluacionRiesgoService {
     public List<EvaluacionRiesgo> obtenerPorSolicitud(
             Long solicitudId
     ) {
+
         return evaluacionRiesgoRepository
-                .findBySolicitudId(solicitudId);
+                .findBySolicitudId(
+                        solicitudId
+                );
     }
+
 
     // =========================================================
     // OBTENER HISTORIAL DE EVALUACIONES DE UN CLIENTE
@@ -90,63 +123,192 @@ public class EvaluacionRiesgoService {
     public List<EvaluacionRiesgo> obtenerPorCliente(
             Long clienteId
     ) {
+
         return evaluacionRiesgoRepository
                 .findBySolicitudClienteIdOrderByFechaEvaluacionDesc(
                         clienteId
                 );
     }
 
+
     // =========================================================
-    // VERIFICAR DOCUMENTACIÓN
+    // VERIFICAR SI EXISTE UN TIPO DE DOCUMENTO
+    // =========================================================
+
+    private boolean existeTipoDocumento(
+            List<Documento> documentos,
+            String tipoDocumento
+    ) {
+
+        return documentos
+                .stream()
+                .anyMatch(
+                        documento ->
+                                documento.getTipoDocumento() != null
+                                        &&
+                                documento
+                                        .getTipoDocumento()
+                                        .equalsIgnoreCase(
+                                                tipoDocumento
+                                        )
+                );
+    }
+
+
+    // =========================================================
+    // VERIFICAR DOCUMENTACIÓN COMPLETA
     // =========================================================
 
     public boolean documentacionCompleta(
             Long solicitudId
     ) {
+
         List<Documento> documentos =
                 documentoRepository
-                        .findBySolicitudId(solicitudId);
-
-        boolean identificacion =
-                documentos.stream()
-                        .anyMatch(documento ->
-                                documento.getTipoDocumento() != null
-                                        && documento
-                                        .getTipoDocumento()
-                                        .equalsIgnoreCase(
-                                                "Identificación"
-                                        )
+                        .findBySolicitudId(
+                                solicitudId
                         );
 
-        boolean ingresos =
-                documentos.stream()
-                        .anyMatch(documento ->
-                                documento.getTipoDocumento() != null
-                                        && documento
-                                        .getTipoDocumento()
-                                        .equalsIgnoreCase(
-                                                "Ingresos"
-                                        )
-                        );
 
-        boolean general =
-                documentos.stream()
-                        .anyMatch(documento ->
-                                documento.getTipoDocumento() != null
-                                        && documento
-                                        .getTipoDocumento()
-                                        .equalsIgnoreCase(
-                                                "General"
-                                        )
-                        );
+        // =====================================================
+        // NUEVO ESQUEMA DOCUMENTAL
+        // =====================================================
+        //
+        // Documentos obligatorios actuales:
+        //
+        // 1. Cédula
+        // 2. Certificado de votación
+        // 3. Respaldo de ingresos o ventas
+        //
+        // Respaldo de activos es adicional.
+        //
+        // Los pasivos no requieren archivo en este módulo,
+        // porque posteriormente serán consultados mediante
+        // el Buró de Crédito.
+        // =====================================================
 
-        return identificacion
-                && ingresos
-                && general;
+
+        boolean cedulaNueva =
+                existeTipoDocumento(
+                        documentos,
+                        "Cédula"
+                );
+
+
+        boolean certificadoVotacion =
+                existeTipoDocumento(
+                        documentos,
+                        "Certificado de votación"
+                );
+
+
+        boolean respaldoIngresos =
+                existeTipoDocumento(
+                        documentos,
+                        "Respaldo de ingresos o ventas"
+                );
+
+
+        boolean documentacionNuevaCompleta =
+                cedulaNueva
+                        &&
+                certificadoVotacion
+                        &&
+                respaldoIngresos;
+
+
+        // =====================================================
+        // COMPATIBILIDAD CON SOLICITUDES ANTERIORES
+        // =====================================================
+        //
+        // Antes del cambio, el sistema exigía:
+        //
+        // - Identificación
+        // - Ingresos
+        // - General
+        //
+        // Si una solicitud antigua ya cuenta con esos tres
+        // documentos, permitimos que continúe el proceso.
+        //
+        // No reinterpretamos "General" como certificado de
+        // votación. Simplemente reconocemos el esquema
+        // documental anterior como un conjunto legado.
+        // =====================================================
+
+
+        boolean identificacionAnterior =
+                existeTipoDocumento(
+                        documentos,
+                        "Identificación"
+                );
+
+
+        boolean ingresosAnterior =
+                existeTipoDocumento(
+                        documentos,
+                        "Ingresos"
+                );
+
+
+        boolean generalAnterior =
+                existeTipoDocumento(
+                        documentos,
+                        "General"
+                );
+
+
+        boolean documentacionAnteriorCompleta =
+                identificacionAnterior
+                        &&
+                ingresosAnterior
+                        &&
+                generalAnterior;
+
+
+        /*
+         * También permitimos documentos antiguos equivalentes
+         * para Cédula e Ingresos cuando ya existe el nuevo
+         * Certificado de votación.
+         *
+         * Ejemplo:
+         *
+         * Identificación
+         * Certificado de votación
+         * Ingresos
+         *
+         * también es válido.
+         */
+
+        boolean cedulaCompatible =
+                cedulaNueva
+                        ||
+                identificacionAnterior;
+
+
+        boolean ingresosCompatible =
+                respaldoIngresos
+                        ||
+                ingresosAnterior;
+
+
+        boolean documentacionMixtaCompleta =
+                cedulaCompatible
+                        &&
+                certificadoVotacion
+                        &&
+                ingresosCompatible;
+
+
+        return documentacionNuevaCompleta
+                ||
+                documentacionAnteriorCompleta
+                ||
+                documentacionMixtaCompleta;
     }
 
+
     // =========================================================
-    // CREAR EVALUACIÓN UTILIZANDO LA IA
+    // CREAR EVALUACIÓN UTILIZANDO IA
     // =========================================================
 
     @Transactional
@@ -160,13 +322,16 @@ public class EvaluacionRiesgoService {
 
         Solicitud solicitud =
                 solicitudRepository
-                        .findById(solicitudId)
+                        .findById(
+                                solicitudId
+                        )
                         .orElseThrow(() ->
                                 new RecursoNoEncontradoException(
                                         "No se encontró la solicitud con ID: "
                                                 + solicitudId
                                 )
                         );
+
 
         // -----------------------------------------------------
         // 2. EVITAR EVALUACIONES DUPLICADAS
@@ -178,23 +343,34 @@ public class EvaluacionRiesgoService {
                                 solicitudId
                         );
 
-        if (!evaluacionesExistentes.isEmpty()) {
+
+        if (
+                !evaluacionesExistentes.isEmpty()
+        ) {
+
             throw new ReglaNegocioException(
                     "Esta solicitud ya cuenta con una evaluación de riesgo."
             );
         }
 
+
         // -----------------------------------------------------
         // 3. VERIFICAR DOCUMENTACIÓN
         // -----------------------------------------------------
 
-        if (!documentacionCompleta(
-                solicitudId
-        )) {
+        if (
+                !documentacionCompleta(
+                        solicitudId
+                )
+        ) {
+
             throw new ValidacionException(
-                    "La solicitud no tiene toda la documentación requerida."
+                    "La solicitud no tiene toda la documentación requerida. "
+                            + "Debe contar con cédula, certificado de votación "
+                            + "y respaldo de ingresos o ventas."
             );
         }
+
 
         // -----------------------------------------------------
         // 4. VALIDAR INFORMACIÓN FINANCIERA
@@ -203,6 +379,7 @@ public class EvaluacionRiesgoService {
         validarDatosSolicitud(
                 solicitud
         );
+
 
         // -----------------------------------------------------
         // 5. CONVERTIR ANTIGÜEDAD LABORAL
@@ -214,6 +391,7 @@ public class EvaluacionRiesgoService {
                                 .getAntiguedadLaboral()
                 );
 
+
         // -----------------------------------------------------
         // 6. CONSTRUIR REQUEST PARA FASTAPI
         // -----------------------------------------------------
@@ -221,37 +399,53 @@ public class EvaluacionRiesgoService {
         PrediccionRiesgoRequest request =
                 new PrediccionRiesgoRequest();
 
+
         request.setIngresosMensuales(
-                solicitud.getIngresosMensuales()
+                solicitud
+                        .getIngresosMensuales()
         );
+
 
         request.setEgresosMensuales(
-                solicitud.getEgresosMensuales()
+                solicitud
+                        .getEgresosMensuales()
         );
+
 
         request.setNivelEndeudamiento(
-                solicitud.getNivelEndeudamiento()
+                solicitud
+                        .getNivelEndeudamiento()
         );
+
 
         request.setCapacidadPago(
-                solicitud.getCapacidadPago()
+                solicitud
+                        .getCapacidadPago()
         );
+
 
         request.setTipoCredito(
-                solicitud.getTipoCredito()
+                solicitud
+                        .getTipoCredito()
         );
+
 
         request.setMontoSolicitado(
-                solicitud.getMonto()
+                solicitud
+                        .getMonto()
         );
 
+
         request.setPlazoMeses(
-                solicitud.getPlazoMeses()
+                solicitud
+                        .getPlazoMeses()
         );
+
 
         request.setAntiguedadLaboralAnios(
                 antiguedadLaboral
         );
+
 
         // -----------------------------------------------------
         // 7. LLAMAR AL MICROSERVICIO DE IA
@@ -263,6 +457,7 @@ public class EvaluacionRiesgoService {
                                 request
                         );
 
+
         // -----------------------------------------------------
         // 8. CREAR EVALUACIÓN CON EL RESULTADO DE LA IA
         // -----------------------------------------------------
@@ -270,41 +465,55 @@ public class EvaluacionRiesgoService {
         EvaluacionRiesgo evaluacion =
                 new EvaluacionRiesgo();
 
+
         evaluacion.setSolicitud(
                 solicitud
         );
 
+
         evaluacion.setScoreIa(
-                respuestaIa.getScoreIa()
+                respuestaIa
+                        .getScoreIa()
         );
 
+
         evaluacion.setProbabilidadMora(
-                respuestaIa.getProbabilidadMora()
+                respuestaIa
+                        .getProbabilidadMora()
         );
+
 
         /*
          * confianzaModelo permanece en null.
          *
-         * Actualmente nuestro modelo no genera una métrica
+         * Actualmente el modelo no genera una métrica
          * independiente que represente correctamente esta
          * propiedad.
          */
 
+
         evaluacion.setNivelRiesgo(
-                respuestaIa.getNivelRiesgo()
+                respuestaIa
+                        .getNivelRiesgo()
         );
+
 
         evaluacion.setRecomendacion(
-                respuestaIa.getRecomendacion()
+                respuestaIa
+                        .getRecomendacion()
         );
 
+
         evaluacion.setModeloUtilizado(
-                respuestaIa.getModelo()
+                respuestaIa
+                        .getModelo()
         );
+
 
         evaluacion.setEstado(
                 "Completada"
         );
+
 
         evaluacion.setExplicacion(
                 generarExplicacion(
@@ -313,14 +522,17 @@ public class EvaluacionRiesgoService {
                 )
         );
 
+
         // -----------------------------------------------------
-        // 9. GUARDAR RESULTADO EN ORACLE
+        // 9. GUARDAR RESULTADO EN POSTGRESQL
         // -----------------------------------------------------
 
         EvaluacionRiesgo evaluacionGuardada =
-                evaluacionRiesgoRepository.save(
-                        evaluacion
-                );
+                evaluacionRiesgoRepository
+                        .save(
+                                evaluacion
+                        );
+
 
         // -----------------------------------------------------
         // 10. ACTUALIZAR ESTADO DE LA SOLICITUD
@@ -346,14 +558,18 @@ public class EvaluacionRiesgoService {
                         solicitud.getEstado()
                 )
         ) {
+
             solicitud.setEstado(
                     "En evaluación"
             );
 
-            solicitudRepository.save(
-                    solicitud
-            );
+
+            solicitudRepository
+                    .save(
+                            solicitud
+                    );
         }
+
 
         // -----------------------------------------------------
         // 11. NOTIFICAR EVALUACIÓN COMPLETADA
@@ -363,8 +579,10 @@ public class EvaluacionRiesgoService {
                 evaluacionGuardada
         );
 
+
         return evaluacionGuardada;
     }
+
 
     // =========================================================
     // NOTIFICAR EVALUACIÓN COMPLETADA
@@ -373,22 +591,30 @@ public class EvaluacionRiesgoService {
     private void notificarEvaluacionCompletada(
             EvaluacionRiesgo evaluacion
     ) {
+
         Solicitud solicitud =
-                evaluacion.getSolicitud();
+                evaluacion
+                        .getSolicitud();
+
 
         String nombreCliente =
                 obtenerNombreCliente(
                         solicitud
                 );
 
+
         String nivelRiesgo =
                 evaluacion.getNivelRiesgo() == null
-                        || evaluacion
+                        ||
+                evaluacion
                         .getNivelRiesgo()
                         .isBlank()
-                        ? "No determinado"
-                        : evaluacion
-                        .getNivelRiesgo();
+                        ?
+                        "No determinado"
+                        :
+                        evaluacion
+                                .getNivelRiesgo();
+
 
         String mensaje =
                 "La evaluación de riesgo del cliente "
@@ -398,8 +624,9 @@ public class EvaluacionRiesgoService {
                         + nivelRiesgo
                         + ".";
 
+
         // -----------------------------------------------------
-        // ADMIN
+        // ADMINISTRADORES
         // -----------------------------------------------------
 
         List<Usuario> administradores =
@@ -408,11 +635,13 @@ public class EvaluacionRiesgoService {
                                 Rol.ADMIN
                         );
 
+
         for (
                 Usuario usuario
                 :
                 administradores
         ) {
+
             notificacionService
                     .crearNotificacion(
                             usuario.getId(),
@@ -424,6 +653,7 @@ public class EvaluacionRiesgoService {
                             "/evaluacion-riesgo"
                     );
         }
+
 
         // -----------------------------------------------------
         // ANALISTAS
@@ -435,11 +665,13 @@ public class EvaluacionRiesgoService {
                                 Rol.ANALISTA
                         );
 
+
         for (
                 Usuario usuario
                 :
                 analistas
         ) {
+
             notificacionService
                     .crearNotificacion(
                             usuario.getId(),
@@ -453,6 +685,7 @@ public class EvaluacionRiesgoService {
         }
     }
 
+
     // =========================================================
     // OBTENER NOMBRE DEL CLIENTE
     // =========================================================
@@ -460,41 +693,62 @@ public class EvaluacionRiesgoService {
     private String obtenerNombreCliente(
             Solicitud solicitud
     ) {
+
         if (
                 solicitud == null
                         ||
                 solicitud.getCliente() == null
         ) {
+
             return "Cliente";
         }
 
+
         Cliente cliente =
-                solicitud.getCliente();
+                solicitud
+                        .getCliente();
+
 
         String nombres =
                 cliente.getNombres() == null
-                        ? ""
-                        : cliente
-                        .getNombres()
-                        .trim();
+                        ?
+                        ""
+                        :
+                        cliente
+                                .getNombres()
+                                .trim();
+
 
         String apellidos =
                 cliente.getApellidos() == null
-                        ? ""
-                        : cliente
-                        .getApellidos()
-                        .trim();
+                        ?
+                        ""
+                        :
+                        cliente
+                                .getApellidos()
+                                .trim();
+
 
         String nombreCompleto =
-                (nombres + " " + apellidos)
+                (
+                        nombres
+                                + " "
+                                + apellidos
+                )
                         .trim();
 
-        if (nombreCompleto.isBlank()) {
+
+        if (
+                nombreCompleto.isBlank()
+        ) {
+
             return "Cliente";
         }
 
+
         return nombreCompleto;
     }
+
 
     // =========================================================
     // ACTUALIZAR EVALUACIÓN
@@ -504,64 +758,99 @@ public class EvaluacionRiesgoService {
             Long id,
             EvaluacionRiesgo datos
     ) {
+
         EvaluacionRiesgo evaluacion =
                 obtenerEvaluacionPorId(
                         id
                 );
 
-        if (datos.getScoreIa() != null) {
+
+        if (
+                datos.getScoreIa() != null
+        ) {
+
             evaluacion.setScoreIa(
                     datos.getScoreIa()
             );
         }
 
-        if (datos.getProbabilidadMora() != null) {
+
+        if (
+                datos.getProbabilidadMora() != null
+        ) {
+
             evaluacion.setProbabilidadMora(
                     datos.getProbabilidadMora()
             );
         }
 
-        if (datos.getConfianzaModelo() != null) {
+
+        if (
+                datos.getConfianzaModelo() != null
+        ) {
+
             evaluacion.setConfianzaModelo(
                     datos.getConfianzaModelo()
             );
         }
 
-        if (datos.getNivelRiesgo() != null) {
+
+        if (
+                datos.getNivelRiesgo() != null
+        ) {
+
             evaluacion.setNivelRiesgo(
                     datos.getNivelRiesgo()
             );
         }
 
-        if (datos.getRecomendacion() != null) {
+
+        if (
+                datos.getRecomendacion() != null
+        ) {
+
             evaluacion.setRecomendacion(
                     datos.getRecomendacion()
             );
         }
 
-        if (datos.getModeloUtilizado() != null) {
+
+        if (
+                datos.getModeloUtilizado() != null
+        ) {
+
             evaluacion.setModeloUtilizado(
                     datos.getModeloUtilizado()
             );
         }
 
-        if (datos.getEstado() != null) {
+
+        if (
+                datos.getEstado() != null
+        ) {
+
             evaluacion.setEstado(
                     datos.getEstado()
             );
         }
 
-        if (datos.getExplicacion() != null) {
+
+        if (
+                datos.getExplicacion() != null
+        ) {
+
             evaluacion.setExplicacion(
                     datos.getExplicacion()
             );
         }
+
 
         return evaluacionRiesgoRepository
                 .save(
                         evaluacion
                 );
     }
+
 
     // =========================================================
     // ELIMINAR EVALUACIÓN
@@ -570,16 +859,19 @@ public class EvaluacionRiesgoService {
     public void eliminarEvaluacion(
             Long id
     ) {
+
         EvaluacionRiesgo evaluacion =
                 obtenerEvaluacionPorId(
                         id
                 );
+
 
         evaluacionRiesgoRepository
                 .delete(
                         evaluacion
                 );
     }
+
 
     // =========================================================
     // VALIDAR DATOS DE LA SOLICITUD
@@ -593,41 +885,57 @@ public class EvaluacionRiesgoService {
         // INGRESOS
         // -----------------------------------------------------
 
-        if (solicitud.getIngresosMensuales() == null) {
+        if (
+                solicitud.getIngresosMensuales() == null
+        ) {
+
             throw new ValidacionException(
                     "La solicitud no tiene ingresos mensuales."
             );
         }
 
+
         // -----------------------------------------------------
         // EGRESOS
         // -----------------------------------------------------
 
-        if (solicitud.getEgresosMensuales() == null) {
+        if (
+                solicitud.getEgresosMensuales() == null
+        ) {
+
             throw new ValidacionException(
                     "La solicitud no tiene egresos mensuales."
             );
         }
 
+
         // -----------------------------------------------------
         // NIVEL DE ENDEUDAMIENTO
         // -----------------------------------------------------
 
-        if (solicitud.getNivelEndeudamiento() == null) {
+        if (
+                solicitud.getNivelEndeudamiento() == null
+        ) {
+
             throw new ValidacionException(
                     "La solicitud no tiene nivel de endeudamiento."
             );
         }
 
+
         // -----------------------------------------------------
         // CAPACIDAD DE PAGO
         // -----------------------------------------------------
 
-        if (solicitud.getCapacidadPago() == null) {
+        if (
+                solicitud.getCapacidadPago() == null
+        ) {
+
             throw new ValidacionException(
                     "La solicitud no tiene capacidad de pago."
             );
         }
+
 
         // -----------------------------------------------------
         // TIPO DE CRÉDITO
@@ -636,47 +944,145 @@ public class EvaluacionRiesgoService {
         if (
                 solicitud.getTipoCredito() == null
                         ||
-                solicitud.getTipoCredito().isBlank()
+                solicitud
+                        .getTipoCredito()
+                        .isBlank()
         ) {
+
             throw new ValidacionException(
                     "La solicitud no tiene tipo de crédito."
             );
         }
 
+
         // -----------------------------------------------------
         // MONTO
         // -----------------------------------------------------
 
-        if (solicitud.getMonto() == null) {
+        if (
+                solicitud.getMonto() == null
+        ) {
+
             throw new ValidacionException(
                     "La solicitud no tiene monto solicitado."
             );
         }
 
+
+        if (
+                solicitud.getMonto() <= 0
+        ) {
+
+            throw new ValidacionException(
+                    "El monto solicitado debe ser mayor a cero."
+            );
+        }
+
+
         // -----------------------------------------------------
         // PLAZO
         // -----------------------------------------------------
 
-        if (solicitud.getPlazoMeses() == null) {
+        if (
+                solicitud.getPlazoMeses() == null
+        ) {
+
             throw new ValidacionException(
                     "La solicitud no tiene plazo."
             );
         }
 
+
         // -----------------------------------------------------
-        // ANTIGÜEDAD LABORAL
+        // ANTIGÜEDAD LABORAL / ACTIVIDAD
         // -----------------------------------------------------
 
         if (
                 solicitud.getAntiguedadLaboral() == null
                         ||
-                solicitud.getAntiguedadLaboral().isBlank()
+                solicitud
+                        .getAntiguedadLaboral()
+                        .isBlank()
         ) {
+
             throw new ValidacionException(
-                    "La solicitud no tiene antigüedad laboral."
+                    "La solicitud no tiene antigüedad laboral o de la actividad."
             );
         }
+
+
+        // -----------------------------------------------------
+        // MICROCRÉDITO
+        // -----------------------------------------------------
+
+        if (
+                "Microcrédito"
+                        .equalsIgnoreCase(
+                                solicitud.getTipoCredito()
+                        )
+        ) {
+
+            if (
+                    solicitud.getVentasAnuales() == null
+            ) {
+
+                throw new ValidacionException(
+                        "La solicitud de Microcrédito no tiene ventas anuales registradas."
+                );
+            }
+
+
+            if (
+                    solicitud.getActividadEconomica() == null
+                            ||
+                    solicitud
+                            .getActividadEconomica()
+                            .isBlank()
+            ) {
+
+                throw new ValidacionException(
+                        "La solicitud de Microcrédito no tiene actividad económica registrada."
+                );
+            }
+        }
+
+
+        // -----------------------------------------------------
+        // PRODUCTIVO
+        // -----------------------------------------------------
+
+        if (
+                "Productivo"
+                        .equalsIgnoreCase(
+                                solicitud.getTipoCredito()
+                        )
+        ) {
+
+            if (
+                    solicitud.getVentasAnuales() == null
+            ) {
+
+                throw new ValidacionException(
+                        "La solicitud de crédito Productivo no tiene ventas anuales registradas."
+                );
+            }
+
+
+            if (
+                    solicitud.getActividadEconomica() == null
+                            ||
+                    solicitud
+                            .getActividadEconomica()
+                            .isBlank()
+            ) {
+
+                throw new ValidacionException(
+                        "La solicitud de crédito Productivo no tiene actividad económica registrada."
+                );
+            }
+        }
     }
+
 
     // =========================================================
     // CONVERTIR ANTIGÜEDAD LABORAL
@@ -685,6 +1091,7 @@ public class EvaluacionRiesgoService {
     private Double convertirAntiguedadLaboral(
             String antiguedad
     ) {
+
         try {
 
             /*
@@ -709,21 +1116,30 @@ public class EvaluacionRiesgoService {
                                     ""
                             );
 
-            if (valorLimpio.isBlank()) {
+
+            if (
+                    valorLimpio.isBlank()
+            ) {
+
                 throw new NumberFormatException();
             }
+
 
             return Double.parseDouble(
                     valorLimpio
             );
 
-        } catch (NumberFormatException e) {
+        } catch (
+                NumberFormatException e
+        ) {
+
             throw new ValidacionException(
-                    "La antigüedad laboral no tiene un formato válido: "
+                    "La antigüedad laboral o de la actividad no tiene un formato válido: "
                             + antiguedad
             );
         }
     }
+
 
     // =========================================================
     // GENERAR EXPLICACIÓN
@@ -733,22 +1149,54 @@ public class EvaluacionRiesgoService {
             Solicitud solicitud,
             PrediccionRiesgoResponse respuesta
     ) {
+
+        String segmento =
+                solicitud.getTipoCredito() == null
+                        ?
+                        "No determinado"
+                        :
+                        solicitud.getTipoCredito();
+
+
+        String subsegmento =
+                solicitud.getSubsegmentoCredito() == null
+                        ||
+                solicitud
+                        .getSubsegmentoCredito()
+                        .isBlank()
+                        ?
+                        "No determinado"
+                        :
+                        solicitud
+                                .getSubsegmentoCredito();
+
+
         return String.format(
                 "La evaluación fue realizada mediante el modelo %s. "
                         + "El modelo estimó una probabilidad de mora de %.2f%% "
                         + "y un Score IA de %d/100. "
                         + "El nivel de riesgo asignado fue %s. "
-                        + "La evaluación considera ingresos mensuales, "
-                        + "egresos mensuales, nivel de endeudamiento, "
-                        + "capacidad de pago, tipo de crédito, monto solicitado, "
-                        + "plazo y antigüedad laboral. "
+                        + "La solicitud pertenece al segmento %s "
+                        + "y al subsegmento %s. "
+                        + "La versión actual del modelo de IA considera "
+                        + "ingresos mensuales, egresos mensuales, "
+                        + "nivel de endeudamiento, capacidad de pago, "
+                        + "tipo de crédito, monto solicitado, plazo "
+                        + "y antigüedad laboral o de la actividad. "
+                        + "La información adicional de actividad económica, "
+                        + "ventas anuales, producto de crédito y documentación "
+                        + "forma parte del análisis del proceso, aunque todavía "
+                        + "no se utiliza directamente como variable del modelo "
+                        + "Random Forest actual. "
                         + "El resultado constituye una recomendación preliminar "
                         + "y no reemplaza la decisión del analista de crédito.",
 
                 respuesta.getModelo(),
                 respuesta.getProbabilidadMora(),
                 respuesta.getScoreIa(),
-                respuesta.getNivelRiesgo()
+                respuesta.getNivelRiesgo(),
+                segmento,
+                subsegmento
         );
     }
 }

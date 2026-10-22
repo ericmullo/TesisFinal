@@ -30,6 +30,7 @@ public class SolicitudService {
     private final NotificacionService notificacionService;
     private final EmailService emailService;
 
+
     // =========================================================
     // CONSTRUCTOR
     // =========================================================
@@ -42,38 +43,59 @@ public class SolicitudService {
             NotificacionService notificacionService,
             EmailService emailService
     ) {
-        this.solicitudRepository = solicitudRepository;
-        this.clienteRepository = clienteRepository;
-        this.evaluacionRiesgoRepository = evaluacionRiesgoRepository;
-        this.usuarioRepository = usuarioRepository;
-        this.notificacionService = notificacionService;
-        this.emailService = emailService;
+
+        this.solicitudRepository =
+                solicitudRepository;
+
+        this.clienteRepository =
+                clienteRepository;
+
+        this.evaluacionRiesgoRepository =
+                evaluacionRiesgoRepository;
+
+        this.usuarioRepository =
+                usuarioRepository;
+
+        this.notificacionService =
+                notificacionService;
+
+        this.emailService =
+                emailService;
     }
+
 
     // =========================================================
     // OBTENER TODAS
     // =========================================================
 
     public List<Solicitud> obtenerSolicitudes() {
-        return solicitudRepository.findAll();
+
+        return solicitudRepository
+                .findAll();
     }
+
 
     // =========================================================
     // OBTENER POR ID
     // =========================================================
 
-    public Solicitud obtenerSolicitudPorId(Long id) {
+    public Solicitud obtenerSolicitudPorId(
+            Long id
+    ) {
+
         return solicitudRepository
                 .findById(id)
                 .orElseThrow(() ->
                         new RecursoNoEncontradoException(
-                                "Solicitud no encontrada con ID: " + id
+                                "Solicitud no encontrada con ID: "
+                                        + id
                         )
                 );
     }
 
+
     // =========================================================
-    // CREAR
+    // CREAR SOLICITUD
     // =========================================================
 
     @Transactional
@@ -81,33 +103,49 @@ public class SolicitudService {
             Long clienteId,
             Solicitud solicitud
     ) {
+
         Cliente cliente =
                 clienteRepository
                         .findById(clienteId)
                         .orElseThrow(() ->
                                 new RecursoNoEncontradoException(
-                                        "Cliente no encontrado con ID: " + clienteId
+                                        "Cliente no encontrado con ID: "
+                                                + clienteId
                                 )
                         );
 
-        /*
-         * Una solicitud nueva:
-         *
-         * - No puede traer un ID manual.
-         * - No puede traer un código manual.
-         * - Siempre empieza Pendiente.
-         * - No puede tener decisión final.
-         */
+
+        // -----------------------------------------------------
+        // DATOS CONTROLADOS POR EL BACKEND
+        // -----------------------------------------------------
 
         solicitud.setId(null);
 
-        solicitud.setCliente(cliente);
+        solicitud.setCliente(
+                cliente
+        );
 
-        solicitud.setEstado("Pendiente");
+        solicitud.setEstado(
+                "Pendiente"
+        );
 
-        solicitud.setObservacionDecision(null);
+        solicitud.setObservacionDecision(
+                null
+        );
 
-        solicitud.setFechaDecision(null);
+        solicitud.setFechaDecision(
+                null
+        );
+
+
+        // =====================================================
+        // CLASIFICAR SEGMENTO / SUBSEGMENTO
+        // =====================================================
+
+        clasificarSubsegmentoCredito(
+                solicitud
+        );
+
 
         // =====================================================
         // GENERAR CÓDIGO DE SOLICITUD
@@ -117,6 +155,7 @@ public class SolicitudService {
                 solicitudRepository
                         .obtenerSiguienteCodigoSolicitud();
 
+
         String codigoSolicitud =
                 String.format(
                         "SOL-%d-%06d",
@@ -124,32 +163,31 @@ public class SolicitudService {
                         siguienteNumero
                 );
 
-        /*
-         * El código enviado desde frontend/Postman se ignora.
-         * El backend siempre genera el código oficial.
-         */
 
         solicitud.setCodigoSolicitud(
                 codigoSolicitud
         );
+
 
         // =====================================================
         // GUARDAR SOLICITUD
         // =====================================================
 
         Solicitud solicitudGuardada =
-                solicitudRepository.save(
-                        solicitud
-                );
+                solicitudRepository
+                        .save(
+                                solicitud
+                        );
+
 
         // =====================================================
         // NOTIFICAR NUEVA SOLICITUD
-        // ADMIN + ANALISTA
         // =====================================================
 
         notificarNuevaSolicitud(
                 solicitudGuardada
         );
+
 
         // =====================================================
         // CORREO AL CLIENTE
@@ -159,123 +197,195 @@ public class SolicitudService {
                 solicitudGuardada
         );
 
+
         return solicitudGuardada;
     }
 
+
     // =========================================================
-    // ACTUALIZAR
+    // ACTUALIZAR SOLICITUD
     // =========================================================
 
+    @Transactional
     public Solicitud actualizarSolicitud(
             Long id,
             Long clienteId,
             Solicitud datosActualizados
     ) {
+
         Solicitud solicitud =
                 solicitudRepository
                         .findById(id)
                         .orElseThrow(() ->
                                 new RecursoNoEncontradoException(
-                                        "Solicitud no encontrada con ID: " + id
+                                        "Solicitud no encontrada con ID: "
+                                                + id
                                 )
                         );
+
 
         Cliente cliente =
                 clienteRepository
                         .findById(clienteId)
                         .orElseThrow(() ->
                                 new RecursoNoEncontradoException(
-                                        "Cliente no encontrado con ID: " + clienteId
+                                        "Cliente no encontrado con ID: "
+                                                + clienteId
                                 )
                         );
+
 
         // =====================================================
         // DATOS PERSONALES COMPLEMENTARIOS
         // =====================================================
 
         solicitud.setEstadoCivil(
-                datosActualizados.getEstadoCivil()
+                datosActualizados
+                        .getEstadoCivil()
         );
+
 
         solicitud.setOcupacion(
-                datosActualizados.getOcupacion()
+                datosActualizados
+                        .getOcupacion()
         );
 
+
         solicitud.setDireccion(
-                datosActualizados.getDireccion()
+                datosActualizados
+                        .getDireccion()
         );
+
 
         // =====================================================
         // INFORMACIÓN FINANCIERA
         // =====================================================
 
         solicitud.setIngresosMensuales(
-                datosActualizados.getIngresosMensuales()
+                datosActualizados
+                        .getIngresosMensuales()
         );
+
 
         solicitud.setEgresosMensuales(
-                datosActualizados.getEgresosMensuales()
+                datosActualizados
+                        .getEgresosMensuales()
         );
+
 
         solicitud.setNivelEndeudamiento(
-                datosActualizados.getNivelEndeudamiento()
+                datosActualizados
+                        .getNivelEndeudamiento()
         );
+
 
         solicitud.setEmpresa(
-                datosActualizados.getEmpresa()
+                datosActualizados
+                        .getEmpresa()
         );
+
 
         solicitud.setAntiguedadLaboral(
-                datosActualizados.getAntiguedadLaboral()
+                datosActualizados
+                        .getAntiguedadLaboral()
         );
 
+
         solicitud.setCapacidadPago(
-                datosActualizados.getCapacidadPago()
+                datosActualizados
+                        .getCapacidadPago()
         );
+
+
+        // =====================================================
+        // INFORMACIÓN ECONÓMICA
+        // =====================================================
+
+        solicitud.setVentasAnuales(
+                datosActualizados
+                        .getVentasAnuales()
+        );
+
+
+        solicitud.setActividadEconomica(
+                datosActualizados
+                        .getActividadEconomica()
+        );
+
+
+        solicitud.setFuentePago(
+                datosActualizados
+                        .getFuentePago()
+        );
+
 
         // =====================================================
         // INFORMACIÓN DEL CRÉDITO
         // =====================================================
 
         solicitud.setTipoCredito(
-                datosActualizados.getTipoCredito()
+                datosActualizados
+                        .getTipoCredito()
         );
+
+
+        solicitud.setProductoCredito(
+                datosActualizados
+                        .getProductoCredito()
+        );
+
 
         solicitud.setMonto(
-                datosActualizados.getMonto()
+                datosActualizados
+                        .getMonto()
         );
+
 
         solicitud.setPlazoMeses(
-                datosActualizados.getPlazoMeses()
+                datosActualizados
+                        .getPlazoMeses()
         );
+
 
         solicitud.setDestinoCredito(
-                datosActualizados.getDestinoCredito()
+                datosActualizados
+                        .getDestinoCredito()
         );
 
+
+        // =====================================================
+        // RECALCULAR SUBSEGMENTO
+        // =====================================================
+
+        clasificarSubsegmentoCredito(
+                solicitud
+        );
+
+
         /*
-         * NO modificamos:
+         * NO modificamos directamente:
          *
          * - codigoSolicitud
          * - estado
          * - observacionDecision
          * - fechaDecision
          *
-         * Por lo tanto, el código de solicitud no puede
-         * modificarse mediante una actualización normal.
-         *
          * La decisión final solamente puede realizarse
          * mediante aprobarSolicitud() o rechazarSolicitud().
          */
+
 
         solicitud.setCliente(
                 cliente
         );
 
-        return solicitudRepository.save(
-                solicitud
-        );
+
+        return solicitudRepository
+                .save(
+                        solicitud
+                );
     }
+
 
     // =========================================================
     // APROBAR SOLICITUD
@@ -286,51 +396,64 @@ public class SolicitudService {
             Long id,
             String observacion
     ) {
+
         Solicitud solicitud =
                 obtenerSolicitudPorId(
                         id
                 );
 
+
         verificarEvaluacionCompletada(
                 id
         );
+
 
         validarObservacion(
                 observacion
         );
 
+
         verificarSinDecisionFinal(
                 solicitud
         );
+
 
         solicitud.setEstado(
                 "Aprobado"
         );
 
+
         solicitud.setObservacionDecision(
                 observacion.trim()
         );
+
 
         solicitud.setFechaDecision(
                 LocalDateTime.now()
         );
 
+
         Solicitud solicitudGuardada =
-                solicitudRepository.save(
-                        solicitud
-                );
+                solicitudRepository
+                        .save(
+                                solicitud
+                        );
+
 
         notificarDecisionSolicitud(
                 solicitudGuardada,
                 "APROBADA"
         );
 
+
         enviarCorreoSolicitudAprobada(
                 solicitudGuardada
         );
 
+
         return solicitudGuardada;
     }
+
 
     // =========================================================
     // RECHAZAR SOLICITUD
@@ -341,51 +464,64 @@ public class SolicitudService {
             Long id,
             String observacion
     ) {
+
         Solicitud solicitud =
                 obtenerSolicitudPorId(
                         id
                 );
 
+
         verificarEvaluacionCompletada(
                 id
         );
+
 
         validarObservacion(
                 observacion
         );
 
+
         verificarSinDecisionFinal(
                 solicitud
         );
+
 
         solicitud.setEstado(
                 "Rechazado"
         );
 
+
         solicitud.setObservacionDecision(
                 observacion.trim()
         );
+
 
         solicitud.setFechaDecision(
                 LocalDateTime.now()
         );
 
+
         Solicitud solicitudGuardada =
-                solicitudRepository.save(
-                        solicitud
-                );
+                solicitudRepository
+                        .save(
+                                solicitud
+                        );
+
 
         notificarDecisionSolicitud(
                 solicitudGuardada,
                 "RECHAZADA"
         );
 
+
         enviarCorreoSolicitudRechazada(
                 solicitudGuardada
         );
 
+
         return solicitudGuardada;
     }
+
 
     // =========================================================
     // CORREO - SOLICITUD REGISTRADA
@@ -394,10 +530,14 @@ public class SolicitudService {
     private void enviarCorreoSolicitudRegistrada(
             Solicitud solicitud
     ) {
+
         try {
-            emailService.enviarSolicitudRegistrada(
-                    solicitud
-            );
+
+            emailService
+                    .enviarSolicitudRegistrada(
+                            solicitud
+                    );
+
 
             System.out.println(
                     "Correo de solicitud registrada enviado correctamente."
@@ -406,8 +546,8 @@ public class SolicitudService {
         } catch (Exception e) {
 
             /*
-             * El fallo del correo NO debe impedir que
-             * la solicitud quede registrada.
+             * El fallo del correo NO debe impedir
+             * que la solicitud quede registrada.
              */
 
             System.err.println(
@@ -417,6 +557,7 @@ public class SolicitudService {
         }
     }
 
+
     // =========================================================
     // CORREO - SOLICITUD APROBADA
     // =========================================================
@@ -424,21 +565,20 @@ public class SolicitudService {
     private void enviarCorreoSolicitudAprobada(
             Solicitud solicitud
     ) {
+
         try {
-            emailService.enviarSolicitudAprobada(
-                    solicitud
-            );
+
+            emailService
+                    .enviarSolicitudAprobada(
+                            solicitud
+                    );
+
 
             System.out.println(
                     "Correo de aprobación enviado correctamente."
             );
 
         } catch (Exception e) {
-
-            /*
-             * El fallo del correo NO debe revertir
-             * la decisión de aprobación.
-             */
 
             System.err.println(
                     "No se pudo enviar el correo de aprobación: "
@@ -447,6 +587,7 @@ public class SolicitudService {
         }
     }
 
+
     // =========================================================
     // CORREO - SOLICITUD RECHAZADA
     // =========================================================
@@ -454,21 +595,20 @@ public class SolicitudService {
     private void enviarCorreoSolicitudRechazada(
             Solicitud solicitud
     ) {
+
         try {
-            emailService.enviarSolicitudRechazada(
-                    solicitud
-            );
+
+            emailService
+                    .enviarSolicitudRechazada(
+                            solicitud
+                    );
+
 
             System.out.println(
                     "Correo de rechazo enviado correctamente."
             );
 
         } catch (Exception e) {
-
-            /*
-             * El fallo del correo NO debe revertir
-             * la decisión de rechazo.
-             */
 
             System.err.println(
                     "No se pudo enviar el correo de rechazo: "
@@ -477,6 +617,7 @@ public class SolicitudService {
         }
     }
 
+
     // =========================================================
     // NOTIFICAR NUEVA SOLICITUD
     // =========================================================
@@ -484,13 +625,17 @@ public class SolicitudService {
     private void notificarNuevaSolicitud(
             Solicitud solicitud
     ) {
+
         String nombreCliente =
                 obtenerNombreCliente(
                         solicitud
                 );
 
+
         String codigo =
-                solicitud.getCodigoSolicitud();
+                solicitud
+                        .getCodigoSolicitud();
+
 
         String mensaje =
                 "Se registró la solicitud "
@@ -499,8 +644,9 @@ public class SolicitudService {
                         + nombreCliente
                         + ".";
 
+
         // =====================================================
-        // ADMIN
+        // ADMINISTRADORES
         // =====================================================
 
         List<Usuario> administradores =
@@ -509,7 +655,13 @@ public class SolicitudService {
                                 Rol.ADMIN
                         );
 
-        for (Usuario usuario : administradores) {
+
+        for (
+                Usuario usuario
+                :
+                administradores
+        ) {
+
             notificacionService
                     .crearNotificacion(
                             usuario.getId(),
@@ -521,6 +673,7 @@ public class SolicitudService {
                             "/solicitudes"
                     );
         }
+
 
         // =====================================================
         // ANALISTAS
@@ -532,7 +685,13 @@ public class SolicitudService {
                                 Rol.ANALISTA
                         );
 
-        for (Usuario usuario : analistas) {
+
+        for (
+                Usuario usuario
+                :
+                analistas
+        ) {
+
             notificacionService
                     .crearNotificacion(
                             usuario.getId(),
@@ -546,6 +705,7 @@ public class SolicitudService {
         }
     }
 
+
     // =========================================================
     // NOTIFICAR DECISIÓN FINAL
     // =========================================================
@@ -554,24 +714,33 @@ public class SolicitudService {
             Solicitud solicitud,
             String decision
     ) {
+
         String nombreCliente =
                 obtenerNombreCliente(
                         solicitud
                 );
 
+
         String codigo =
-                solicitud.getCodigoSolicitud();
+                solicitud
+                        .getCodigoSolicitud();
+
 
         String titulo;
+
         String mensaje;
 
+
         if (
-                "APROBADA".equalsIgnoreCase(
-                        decision
-                )
+                "APROBADA"
+                        .equalsIgnoreCase(
+                                decision
+                        )
         ) {
+
             titulo =
                     "Solicitud aprobada";
+
 
             mensaje =
                     "La solicitud "
@@ -585,6 +754,7 @@ public class SolicitudService {
             titulo =
                     "Solicitud rechazada";
 
+
             mensaje =
                     "La solicitud "
                             + codigo
@@ -593,8 +763,9 @@ public class SolicitudService {
                             + " fue rechazada.";
         }
 
+
         // =====================================================
-        // ADMIN
+        // ADMINISTRADORES
         // =====================================================
 
         List<Usuario> administradores =
@@ -603,7 +774,13 @@ public class SolicitudService {
                                 Rol.ADMIN
                         );
 
-        for (Usuario usuario : administradores) {
+
+        for (
+                Usuario usuario
+                :
+                administradores
+        ) {
+
             notificacionService
                     .crearNotificacion(
                             usuario.getId(),
@@ -615,6 +792,7 @@ public class SolicitudService {
                             "/evaluacion-riesgo"
                     );
         }
+
 
         // =====================================================
         // ANALISTAS
@@ -626,7 +804,13 @@ public class SolicitudService {
                                 Rol.ANALISTA
                         );
 
-        for (Usuario usuario : analistas) {
+
+        for (
+                Usuario usuario
+                :
+                analistas
+        ) {
+
             notificacionService
                     .crearNotificacion(
                             usuario.getId(),
@@ -638,6 +822,7 @@ public class SolicitudService {
                             "/evaluacion-riesgo"
                     );
         }
+
 
         // =====================================================
         // GERENCIA
@@ -649,7 +834,13 @@ public class SolicitudService {
                                 Rol.GERENCIA
                         );
 
-        for (Usuario usuario : gerencia) {
+
+        for (
+                Usuario usuario
+                :
+                gerencia
+        ) {
+
             notificacionService
                     .crearNotificacion(
                             usuario.getId(),
@@ -663,6 +854,7 @@ public class SolicitudService {
         }
     }
 
+
     // =========================================================
     // OBTENER NOMBRE DEL CLIENTE
     // =========================================================
@@ -670,37 +862,347 @@ public class SolicitudService {
     private String obtenerNombreCliente(
             Solicitud solicitud
     ) {
+
         if (
                 solicitud == null
                         ||
                 solicitud.getCliente() == null
         ) {
+
             return "Cliente";
         }
+
 
         Cliente cliente =
                 solicitud.getCliente();
 
+
         String nombres =
                 cliente.getNombres() == null
-                        ? ""
-                        : cliente.getNombres().trim();
+                        ?
+                        ""
+                        :
+                        cliente
+                                .getNombres()
+                                .trim();
+
 
         String apellidos =
                 cliente.getApellidos() == null
-                        ? ""
-                        : cliente.getApellidos().trim();
+                        ?
+                        ""
+                        :
+                        cliente
+                                .getApellidos()
+                                .trim();
+
 
         String nombreCompleto =
-                (nombres + " " + apellidos)
+                (
+                        nombres
+                                + " "
+                                + apellidos
+                )
                         .trim();
 
-        if (nombreCompleto.isBlank()) {
+
+        if (
+                nombreCompleto.isBlank()
+        ) {
+
             return "Cliente";
         }
 
+
         return nombreCompleto;
     }
+
+
+    // =========================================================
+    // CLASIFICAR SEGMENTO / SUBSEGMENTO DE CRÉDITO
+    // =========================================================
+
+    private void clasificarSubsegmentoCredito(
+            Solicitud solicitud
+    ) {
+
+        if (
+                solicitud.getTipoCredito() == null
+                        ||
+                solicitud
+                        .getTipoCredito()
+                        .isBlank()
+        ) {
+
+            throw new ValidacionException(
+                    "Debe seleccionar un tipo de crédito."
+            );
+        }
+
+
+        String tipoCredito =
+                solicitud
+                        .getTipoCredito()
+                        .trim();
+
+
+        // =====================================================
+        // CONSUMO
+        // =====================================================
+
+        if (
+                tipoCredito
+                        .equalsIgnoreCase(
+                                "Consumo"
+                        )
+        ) {
+
+            solicitud.setSubsegmentoCredito(
+                    "Consumo"
+            );
+
+            return;
+        }
+
+
+        // =====================================================
+        // MICROCRÉDITO
+        // =====================================================
+
+        if (
+                tipoCredito
+                        .equalsIgnoreCase(
+                                "Microcrédito"
+                        )
+        ) {
+
+            Double ventasAnuales =
+                    solicitud
+                            .getVentasAnuales();
+
+
+            if (
+                    ventasAnuales == null
+                            ||
+                    ventasAnuales < 0
+            ) {
+
+                throw new ValidacionException(
+                        "Para Microcrédito debe ingresar las ventas anuales del solicitante."
+                );
+            }
+
+
+            // -------------------------------------------------
+            // HASTA USD 20.000
+            // -------------------------------------------------
+
+            if (
+                    ventasAnuales <= 20_000
+            ) {
+
+                solicitud.setSubsegmentoCredito(
+                        "Microcrédito Minorista"
+                );
+
+                return;
+            }
+
+
+            // -------------------------------------------------
+            // MÁS DE USD 20.000 HASTA USD 120.000
+            // -------------------------------------------------
+
+            if (
+                    ventasAnuales <= 120_000
+            ) {
+
+                solicitud.setSubsegmentoCredito(
+                        "Microcrédito de Acumulación Simple"
+                );
+
+                return;
+            }
+
+
+            // -------------------------------------------------
+            // MÁS DE USD 120.000 HASTA USD 300.000
+            // -------------------------------------------------
+
+            if (
+                    ventasAnuales <= 300_000
+            ) {
+
+                solicitud.setSubsegmentoCredito(
+                        "Microcrédito de Acumulación Ampliada"
+                );
+
+                return;
+            }
+
+
+            throw new ValidacionException(
+                    "Las ventas anuales superan el límite correspondiente a Microcrédito."
+            );
+        }
+
+
+        // =====================================================
+        // PRODUCTIVO
+        // =====================================================
+
+        if (
+                tipoCredito
+                        .equalsIgnoreCase(
+                                "Productivo"
+                        )
+        ) {
+
+            Double ventasAnuales =
+                    solicitud
+                            .getVentasAnuales();
+
+
+            if (
+                    ventasAnuales == null
+                            ||
+                    ventasAnuales < 0
+            ) {
+
+                throw new ValidacionException(
+                        "Para crédito Productivo debe ingresar las ventas anuales."
+                );
+            }
+
+
+            // -------------------------------------------------
+            // PRODUCTIVO EMPIEZA SOBRE USD 300.000
+            // -------------------------------------------------
+
+            if (
+                    ventasAnuales <= 300_000
+            ) {
+
+                throw new ValidacionException(
+                        "Para crédito Productivo las ventas anuales deben superar los USD 300.000."
+                );
+            }
+
+
+            // -------------------------------------------------
+            // PRODUCTIVO PYMES
+            // MÁS DE USD 300.000 HASTA USD 1.000.000
+            // -------------------------------------------------
+
+            if (
+                    ventasAnuales <= 1_000_000
+            ) {
+
+                solicitud.setSubsegmentoCredito(
+                        "Productivo PYMES"
+                );
+
+                return;
+            }
+
+
+            // -------------------------------------------------
+            // PRODUCTIVO EMPRESARIAL
+            // MÁS DE USD 1.000.000 HASTA USD 5.000.000
+            // -------------------------------------------------
+
+            if (
+                    ventasAnuales <= 5_000_000
+            ) {
+
+                solicitud.setSubsegmentoCredito(
+                        "Productivo Empresarial"
+                );
+
+                return;
+            }
+
+
+            // -------------------------------------------------
+            // PRODUCTIVO CORPORATIVO
+            // MÁS DE USD 5.000.000
+            // -------------------------------------------------
+
+            solicitud.setSubsegmentoCredito(
+                    "Productivo Corporativo"
+            );
+
+            return;
+        }
+
+
+        // =====================================================
+        // INMOBILIARIO
+        // =====================================================
+
+        if (
+                tipoCredito
+                        .equalsIgnoreCase(
+                                "Inmobiliario"
+                        )
+        ) {
+
+            solicitud.setSubsegmentoCredito(
+                    "Inmobiliario"
+            );
+
+            return;
+        }
+
+
+        // =====================================================
+        // VIVIENDA
+        // COMPATIBILIDAD CON SOLICITUDES ANTERIORES
+        // =====================================================
+
+        if (
+                tipoCredito
+                        .equalsIgnoreCase(
+                                "Vivienda"
+                        )
+        ) {
+
+            solicitud.setSubsegmentoCredito(
+                    "Vivienda"
+            );
+
+            return;
+        }
+
+
+        // =====================================================
+        // EDUCATIVO
+        // =====================================================
+
+        if (
+                tipoCredito
+                        .equalsIgnoreCase(
+                                "Educativo"
+                        )
+        ) {
+
+            solicitud.setSubsegmentoCredito(
+                    "Educativo"
+            );
+
+            return;
+        }
+
+
+        // =====================================================
+        // REGISTROS ANTIGUOS / OTROS
+        // =====================================================
+
+        solicitud.setSubsegmentoCredito(
+                null
+        );
+    }
+
 
     // =========================================================
     // VALIDAR OBSERVACIÓN
@@ -709,26 +1211,32 @@ public class SolicitudService {
     private void validarObservacion(
             String observacion
     ) {
+
         if (
                 observacion == null
                         ||
                 observacion.isBlank()
         ) {
+
             throw new ValidacionException(
                     "Debe ingresar una observación para registrar la decisión."
             );
         }
 
+
         if (
                 observacion
                         .trim()
-                        .length() < 5
+                        .length()
+                        < 5
         ) {
+
             throw new ValidacionException(
                     "La observación debe contener al menos 5 caracteres."
             );
         }
     }
+
 
     // =========================================================
     // VERIFICAR QUE NO EXISTA DECISIÓN FINAL
@@ -737,24 +1245,29 @@ public class SolicitudService {
     private void verificarSinDecisionFinal(
             Solicitud solicitud
     ) {
+
         if (
                 solicitud.getFechaDecision() != null
                         &&
                 (
-                        "Aprobado".equalsIgnoreCase(
-                                solicitud.getEstado()
-                        )
+                        "Aprobado"
+                                .equalsIgnoreCase(
+                                        solicitud.getEstado()
+                                )
                                 ||
-                        "Rechazado".equalsIgnoreCase(
-                                solicitud.getEstado()
-                        )
+                        "Rechazado"
+                                .equalsIgnoreCase(
+                                        solicitud.getEstado()
+                                )
                 )
         ) {
+
             throw new ReglaNegocioException(
                     "Esta solicitud ya tiene una decisión final registrada."
             );
         }
     }
+
 
     // =========================================================
     // VERIFICAR EVALUACIÓN IA COMPLETADA
@@ -763,17 +1276,23 @@ public class SolicitudService {
     private void verificarEvaluacionCompletada(
             Long solicitudId
     ) {
+
         List<EvaluacionRiesgo> evaluaciones =
                 evaluacionRiesgoRepository
                         .findBySolicitudId(
                                 solicitudId
                         );
 
-        if (evaluaciones.isEmpty()) {
+
+        if (
+                evaluaciones.isEmpty()
+        ) {
+
             throw new ValidacionException(
                     "La solicitud todavía no tiene una evaluación de riesgo."
             );
         }
+
 
         boolean completada =
                 evaluaciones
@@ -789,27 +1308,35 @@ public class SolicitudService {
                                                 )
                         );
 
-        if (!completada) {
+
+        if (
+                !completada
+        ) {
+
             throw new ValidacionException(
                     "La evaluación de riesgo todavía no ha sido completada."
             );
         }
     }
 
+
     // =========================================================
-    // ELIMINAR
+    // ELIMINAR SOLICITUD
     // =========================================================
 
     public void eliminarSolicitud(
             Long id
     ) {
+
         Solicitud solicitud =
                 obtenerSolicitudPorId(
                         id
                 );
 
-        solicitudRepository.delete(
-                solicitud
-        );
+
+        solicitudRepository
+                .delete(
+                        solicitud
+                );
     }
 }

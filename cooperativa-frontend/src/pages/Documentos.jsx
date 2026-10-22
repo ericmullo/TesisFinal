@@ -9,195 +9,351 @@ import {
   obtenerUrlArchivoDocumento
 } from "../services/api";
 
+
 export default function Documentos() {
+
   // =========================================================
   // USUARIO Y PERMISOS
   // =========================================================
+
   let usuario = null;
 
   try {
+
     const usuarioGuardado =
       sessionStorage.getItem("usuario");
 
     if (usuarioGuardado) {
+
       usuario =
-        JSON.parse(usuarioGuardado);
+        JSON.parse(
+          usuarioGuardado
+        );
     }
+
   } catch (error) {
+
     console.error(
       "Error al obtener usuario:",
       error
     );
   }
 
+
   const puedeModificar =
     usuario?.rol === "ADMIN" ||
     usuario?.rol === "ANALISTA";
 
+
   const esGerencia =
     usuario?.rol === "GERENCIA";
+
 
   // =========================================================
   // ESTADOS
   // =========================================================
-  const [solicitudes, setSolicitudes] =
-    useState([]);
+
+  const [
+    solicitudes,
+    setSolicitudes
+  ] = useState([]);
+
 
   const [
     solicitudSeleccionada,
     setSolicitudSeleccionada
   ] = useState(null);
 
-  const [documentos, setDocumentos] =
-    useState([]);
 
-  const [cargando, setCargando] =
-    useState(false);
+  const [
+    documentos,
+    setDocumentos
+  ] = useState([]);
 
-  const [subiendo, setSubiendo] =
-    useState(false);
+
+  const [
+    cargando,
+    setCargando
+  ] = useState(false);
+
+
+  const [
+    subiendo,
+    setSubiendo
+  ] = useState(false);
+
 
   const [
     abriendoDocumento,
     setAbriendoDocumento
   ] = useState(null);
 
+
   // =========================================================
   // DOCUMENTOS OBLIGATORIOS
   // =========================================================
+
   const documentosObligatorios = [
-    "Identificación",
-    "Ingresos",
-    "General"
+    "Cédula",
+    "Certificado de votación",
+    "Respaldo de ingresos o ventas"
   ];
 
+
   // =========================================================
-  // CALCULAR DOCUMENTACIÓN COMPLETA
+  // DOCUMENTOS ADICIONALES
   // =========================================================
+
+  const documentosAdicionales = [
+    "Respaldo de activos"
+  ];
+
+
+  // =========================================================
+  // TIPOS CARGADOS
+  // =========================================================
+
   const tiposCargados =
     documentos.map(
       (documento) =>
         documento.tipoDocumento
     );
 
+
+  // =========================================================
+  // COMPATIBILIDAD CON DOCUMENTOS ANTERIORES
+  // =========================================================
+
+  const documentoCargado = (
+    tipoNuevo
+  ) => {
+
+    if (
+      tiposCargados.includes(
+        tipoNuevo
+      )
+    ) {
+
+      return true;
+    }
+
+
+    /*
+     * Permite que documentos cargados
+     * antes de esta actualización continúen
+     * siendo reconocidos parcialmente.
+     */
+
+    if (
+      tipoNuevo === "Cédula" &&
+      tiposCargados.includes(
+        "Identificación"
+      )
+    ) {
+
+      return true;
+    }
+
+
+    if (
+      tipoNuevo ===
+        "Respaldo de ingresos o ventas" &&
+      tiposCargados.includes(
+        "Ingresos"
+      )
+    ) {
+
+      return true;
+    }
+
+
+    return false;
+  };
+
+
+  // =========================================================
+  // CALCULAR DOCUMENTACIÓN COMPLETA
+  // =========================================================
+
   const documentosFaltantes =
     documentosObligatorios.filter(
       (tipo) =>
-        !tiposCargados.includes(tipo)
+        !documentoCargado(
+          tipo
+        )
     );
+
 
   const documentosCompletados =
     documentosObligatorios.length -
     documentosFaltantes.length;
 
+
   const documentacionCompleta =
     documentosFaltantes.length === 0;
 
+
   const porcentajeDocumentacion =
-    (
-      documentosCompletados /
-      documentosObligatorios.length
-    ) * 100;
+    documentosObligatorios.length > 0
+      ? (
+          documentosCompletados /
+          documentosObligatorios.length
+        ) * 100
+      : 0;
+
 
   // =========================================================
   // CARGAR SOLICITUDES
   // =========================================================
+
   useEffect(() => {
+
     cargarSolicitudes();
+
   }, []);
 
-  const cargarSolicitudes = async () => {
-    try {
-      const datos =
-        await obtenerSolicitudes();
 
-      setSolicitudes(datos);
-    } catch (error) {
-      console.error(
-        "Error al cargar solicitudes:",
-        error
-      );
+  const cargarSolicitudes =
+    async () => {
 
-      alert(
-        "No se pudieron cargar las solicitudes."
-      );
-    }
-  };
+      try {
+
+        const datos =
+          await obtenerSolicitudes();
+
+
+        setSolicitudes(
+          datos
+        );
+
+      } catch (error) {
+
+        console.error(
+          "Error al cargar solicitudes:",
+          error
+        );
+
+
+        alert(
+          "No se pudieron cargar las solicitudes."
+        );
+      }
+    };
+
 
   // =========================================================
   // SELECCIONAR SOLICITUD
   // =========================================================
+
   const seleccionarSolicitud =
     async (e) => {
+
       const id =
         e.target.value;
 
+
       if (!id) {
+
         setSolicitudSeleccionada(
           null
         );
 
-        setDocumentos([]);
+        setDocumentos(
+          []
+        );
+
         return;
       }
+
 
       const solicitud =
         solicitudes.find(
           (solicitud) =>
-            String(solicitud.id) ===
-            String(id)
+            String(
+              solicitud.id
+            ) ===
+            String(
+              id
+            )
         );
 
+
       if (!solicitud) {
+
         return;
       }
+
 
       setSolicitudSeleccionada(
         solicitud
       );
+
 
       await cargarDocumentos(
         solicitud.id
       );
     };
 
+
   // =========================================================
   // CARGAR DOCUMENTOS
   // =========================================================
+
   const cargarDocumentos =
     async (solicitudId) => {
+
       try {
-        setCargando(true);
+
+        setCargando(
+          true
+        );
+
 
         const datos =
           await obtenerDocumentosPorSolicitud(
             solicitudId
           );
 
-        setDocumentos(datos);
+
+        setDocumentos(
+          datos
+        );
+
       } catch (error) {
+
         console.error(
           "Error al cargar documentos:",
           error
         );
 
-        setDocumentos([]);
+
+        setDocumentos(
+          []
+        );
+
       } finally {
-        setCargando(false);
+
+        setCargando(
+          false
+        );
       }
     };
+
 
   // =========================================================
   // SUBIR DOCUMENTO
   // =========================================================
+
   const agregarArchivo =
     async (
       tipoDocumento,
       archivo
     ) => {
-      // Protección adicional en frontend.
-      // El backend sigue siendo la autoridad real.
-      if (!puedeModificar) {
+
+      if (
+        !puedeModificar
+      ) {
+
         alert(
           "No tiene permisos para cargar documentos."
         );
@@ -205,7 +361,11 @@ export default function Documentos() {
         return;
       }
 
-      if (!solicitudSeleccionada) {
+
+      if (
+        !solicitudSeleccionada
+      ) {
+
         alert(
           "Primero debe seleccionar una solicitud."
         );
@@ -213,15 +373,23 @@ export default function Documentos() {
         return;
       }
 
-      if (!archivo) {
+
+      if (
+        !archivo
+      ) {
+
         return;
       }
 
-      // =======================================================
+
+      // =====================================================
       // VALIDAR EXTENSIÓN
-      // =======================================================
+      // =====================================================
+
       const nombre =
-        archivo.name.toLowerCase();
+        archivo.name
+          .toLowerCase();
+
 
       const permitido =
         nombre.endsWith(".pdf") ||
@@ -229,7 +397,11 @@ export default function Documentos() {
         nombre.endsWith(".jpeg") ||
         nombre.endsWith(".png");
 
-      if (!permitido) {
+
+      if (
+        !permitido
+      ) {
+
         alert(
           "Solo se permiten archivos PDF, JPG, JPEG o PNG."
         );
@@ -237,13 +409,22 @@ export default function Documentos() {
         return;
       }
 
-      // =======================================================
-      // VALIDAR TAMAÑO - 10 MB
-      // =======================================================
-      const maximo =
-        10 * 1024 * 1024;
 
-      if (archivo.size > maximo) {
+      // =====================================================
+      // VALIDAR TAMAÑO - 10 MB
+      // =====================================================
+
+      const maximo =
+        10 *
+        1024 *
+        1024;
+
+
+      if (
+        archivo.size >
+        maximo
+      ) {
+
         alert(
           "El archivo no puede superar los 10 MB."
         );
@@ -251,8 +432,13 @@ export default function Documentos() {
         return;
       }
 
+
       try {
-        setSubiendo(true);
+
+        setSubiendo(
+          true
+        );
+
 
         await subirDocumento(
           solicitudSeleccionada.id,
@@ -260,33 +446,48 @@ export default function Documentos() {
           archivo
         );
 
+
         await cargarDocumentos(
           solicitudSeleccionada.id
         );
 
+
         alert(
           "Documento cargado correctamente."
         );
+
       } catch (error) {
+
         console.error(
           "Error al subir documento:",
           error
         );
 
+
         alert(
           "No se pudo cargar el documento."
         );
+
       } finally {
-        setSubiendo(false);
+
+        setSubiendo(
+          false
+        );
       }
     };
+
 
   // =========================================================
   // ELIMINAR DOCUMENTO
   // =========================================================
+
   const eliminar =
     async (documento) => {
-      if (!puedeModificar) {
+
+      if (
+        !puedeModificar
+      ) {
+
         alert(
           "No tiene permisos para eliminar documentos."
         );
@@ -294,34 +495,49 @@ export default function Documentos() {
         return;
       }
 
+
       const confirmar =
         window.confirm(
           `¿Está seguro de eliminar "${documento.nombreArchivo}"?\n\nEsta acción eliminará también el archivo almacenado.`
         );
 
-      if (!confirmar) {
+
+      if (
+        !confirmar
+      ) {
+
         return;
       }
 
+
       try {
+
         await eliminarDocumento(
           documento.id
         );
 
-        if (solicitudSeleccionada) {
+
+        if (
+          solicitudSeleccionada
+        ) {
+
           await cargarDocumentos(
             solicitudSeleccionada.id
           );
         }
 
+
         alert(
           "Documento eliminado correctamente."
         );
+
       } catch (error) {
+
         console.error(
           "Error al eliminar documento:",
           error
         );
+
 
         alert(
           "No se pudo eliminar el documento."
@@ -329,64 +545,78 @@ export default function Documentos() {
       }
     };
 
+
   // =========================================================
   // VER DOCUMENTO PROTEGIDO CON JWT
   // =========================================================
+
   const verDocumento =
     async (documento) => {
+
       try {
+
         setAbriendoDocumento(
           documento.id
         );
+
 
         const token =
           sessionStorage.getItem(
             "token"
           );
 
-        if (!token) {
+
+        if (
+          !token
+        ) {
+
           alert(
             "La sesión ha expirado. Inicie sesión nuevamente."
           );
+
 
           sessionStorage.removeItem(
             "usuario"
           );
 
-          window.location.href = "/";
+
+          window.location.href =
+            "/";
+
+
           return;
         }
+
 
         const url =
           obtenerUrlArchivoDocumento(
             documento.id
           );
 
-        /*
-         * No usamos directamente:
-         *
-         * window.open(url)
-         *
-         * porque el endpoint de documentos
-         * está protegido con JWT.
-         *
-         * Primero solicitamos el archivo
-         * enviando Authorization: Bearer ...
-         */
+
         const response =
           await fetch(
             url,
             {
               method: "GET",
+
               headers: {
+
                 Authorization:
                   `Bearer ${token}`
               }
             }
           );
 
-        // Token inválido o vencido
-        if (response.status === 401) {
+
+        // ===================================================
+        // TOKEN VENCIDO
+        // ===================================================
+
+        if (
+          response.status === 401
+        ) {
+
           sessionStorage.removeItem(
             "token"
           );
@@ -395,16 +625,28 @@ export default function Documentos() {
             "usuario"
           );
 
+
           alert(
             "Su sesión ha expirado. Inicie sesión nuevamente."
           );
 
-          window.location.href = "/";
+
+          window.location.href =
+            "/";
+
+
           return;
         }
 
-        // Usuario autenticado sin permiso
-        if (response.status === 403) {
+
+        // ===================================================
+        // SIN PERMISOS
+        // ===================================================
+
+        if (
+          response.status === 403
+        ) {
+
           alert(
             "No tiene permisos para visualizar este documento."
           );
@@ -412,17 +654,26 @@ export default function Documentos() {
           return;
         }
 
-        if (!response.ok) {
+
+        if (
+          !response.ok
+        ) {
+
           throw new Error(
             `Error HTTP ${response.status}`
           );
         }
 
+
         const blob =
           await response.blob();
 
+
         const urlTemporal =
-          URL.createObjectURL(blob);
+          URL.createObjectURL(
+            blob
+          );
+
 
         const nuevaVentana =
           window.open(
@@ -431,16 +682,16 @@ export default function Documentos() {
             "noopener,noreferrer"
           );
 
-        /*
-         * Si el navegador bloquea la nueva
-         * pestaña, abrimos usando
-         * un enlace temporal.
-         */
-        if (!nuevaVentana) {
+
+        if (
+          !nuevaVentana
+        ) {
+
           const enlace =
             document.createElement(
               "a"
             );
+
 
           enlace.href =
             urlTemporal;
@@ -451,72 +702,102 @@ export default function Documentos() {
           enlace.rel =
             "noopener noreferrer";
 
+
           document.body.appendChild(
             enlace
           );
 
+
           enlace.click();
+
 
           document.body.removeChild(
             enlace
           );
         }
 
-        /*
-         * Dejamos unos segundos para que
-         * la pestaña cargue el Blob antes
-         * de liberar la URL temporal.
-         */
-        setTimeout(() => {
-          URL.revokeObjectURL(
-            urlTemporal
-          );
-        }, 60000);
+
+        setTimeout(
+          () => {
+
+            URL.revokeObjectURL(
+              urlTemporal
+            );
+
+          },
+          60000
+        );
+
       } catch (error) {
+
         console.error(
           "Error al abrir documento:",
           error
         );
 
+
         alert(
           "No se pudo abrir el documento."
         );
+
       } finally {
+
         setAbriendoDocumento(
           null
         );
       }
     };
 
+
   // =========================================================
   // OBTENER FORMATO
   // =========================================================
+
   const obtenerFormato =
     (nombreArchivo) => {
-      if (!nombreArchivo) {
+
+      if (
+        !nombreArchivo
+      ) {
+
         return "-";
       }
+
 
       const partes =
-        nombreArchivo.split(".");
+        nombreArchivo.split(
+          "."
+        );
 
-      if (partes.length < 2) {
+
+      if (
+        partes.length < 2
+      ) {
+
         return "-";
       }
+
 
       return partes
         .pop()
         .toUpperCase();
     };
 
+
   // =========================================================
   // FORMATEAR FECHA
   // =========================================================
+
   const formatearFecha =
     (fecha) => {
-      if (!fecha) {
+
+      if (
+        !fecha
+      ) {
+
         return "-";
       }
+
 
       return new Date(
         fecha
@@ -525,59 +806,136 @@ export default function Documentos() {
       );
     };
 
+
   // =========================================================
   // NOMBRE DEL CLIENTE
   // =========================================================
+
   const obtenerNombreCliente =
     () => {
+
       if (
         !solicitudSeleccionada
           ?.cliente
       ) {
+
         return "-";
       }
+
 
       const cliente =
         solicitudSeleccionada
           .cliente;
 
+
       return `${cliente.nombres || ""} ${cliente.apellidos || ""}`.trim();
     };
+
+
+  // =========================================================
+  // DESCRIPCIÓN DEL SEGMENTO
+  // =========================================================
+
+  const obtenerDescripcionSegmento =
+    () => {
+
+      if (
+        !solicitudSeleccionada
+      ) {
+
+        return "";
+      }
+
+
+      const tipo =
+        solicitudSeleccionada
+          .tipoCredito;
+
+
+      if (
+        tipo === "Consumo"
+      ) {
+
+        return "El respaldo debe demostrar los ingresos fijos utilizados para pagar el crédito.";
+      }
+
+
+      if (
+        tipo === "Microcrédito"
+      ) {
+
+        return "El respaldo debe permitir verificar los ingresos o ventas generadas por el negocio.";
+      }
+
+
+      if (
+        tipo === "Productivo"
+      ) {
+
+        return "El respaldo debe permitir verificar las ventas y la actividad productiva de la empresa o negocio.";
+      }
+
+
+      if (
+        tipo === "Inmobiliario" ||
+        tipo === "Vivienda"
+      ) {
+
+        return "Además de los documentos básicos, pueden adjuntarse respaldos relacionados con el inmueble.";
+      }
+
+
+      return "Adjunte documentación que permita respaldar la información económica declarada.";
+    };
+
 
   // =========================================================
   // RETURN
   // =========================================================
+
   return (
+
     <Layout title="Carga de Documentos">
+
       {/* =====================================================
           SELECCIÓN DE SOLICITUD
       ===================================================== */}
+
       <section className="panel">
+
         <h2 className="section-title">
           Seleccionar solicitud
         </h2>
 
+
         <div className="form-grid">
+
           <div className="form-group full">
+
             <label>
               Solicitud de crédito
             </label>
 
+
             <select
               value={
                 solicitudSeleccionada
-                  ?.id || ""
+                  ?.id ||
+                ""
               }
               onChange={
                 seleccionarSolicitud
               }
             >
+
               <option value="">
                 Seleccione una solicitud
               </option>
 
+
               {solicitudes.map(
                 (solicitud) => (
+
                   <option
                     key={
                       solicitud.id
@@ -586,7 +944,10 @@ export default function Documentos() {
                       solicitud.id
                     }
                   >
-                    {solicitud.codigoSolicitud || "Sin código"}
+
+                    {solicitud.codigoSolicitud ||
+                      "Sin código"}
+
                     {" - "}
 
                     {solicitud.cliente
@@ -596,23 +957,34 @@ export default function Documentos() {
                     {" - "}
 
                     {solicitud.tipoCredito ||
-                      "Sin tipo"}
+                      "Sin segmento"}
+
                   </option>
+
                 )
               )}
+
             </select>
+
           </div>
+
         </div>
+
       </section>
+
 
       {/* =====================================================
           AVISO GERENCIA
       ===================================================== */}
+
       {esGerencia && (
+
         <section className="panel">
+
           <div
             style={{
-              padding: "14px 16px",
+              padding:
+                "14px 16px",
               background:
                 "#f4f8f5",
               borderLeft:
@@ -621,52 +993,132 @@ export default function Documentos() {
                 "6px"
             }}
           >
+
             👁️{" "}
+
             <strong>
               Modo consulta:
             </strong>{" "}
 
-            Gerencia puede revisar la
-            documentación asociada a las
-            solicitudes y visualizar los
-            archivos cargados, pero no
-            puede subir ni eliminar
-            documentos.
+            Gerencia puede revisar la documentación asociada a las
+            solicitudes y visualizar los archivos cargados, pero no
+            puede subir ni eliminar documentos.
+
           </div>
+
         </section>
+
       )}
+
+
+      {/* =====================================================
+          INFORMACIÓN DE LA SOLICITUD
+      ===================================================== */}
+
+      {solicitudSeleccionada && (
+
+        <section className="panel">
+
+          <h2 className="section-title">
+            Información de la solicitud
+          </h2>
+
+
+          <div className="info-box">
+
+            Solicitud:{" "}
+
+            <strong>
+              {solicitudSeleccionada
+                .codigoSolicitud ||
+                "Sin código"}
+            </strong>
+
+
+            {" | "}
+
+
+            Cliente:{" "}
+
+            <strong>
+              {obtenerNombreCliente()}
+            </strong>
+
+
+            {" | "}
+
+
+            Segmento:{" "}
+
+            <strong>
+              {solicitudSeleccionada
+                .tipoCredito ||
+                "-"}
+            </strong>
+
+
+            {solicitudSeleccionada
+              .subsegmentoCredito && (
+
+              <>
+
+                {" | "}
+
+                Subsegmento:{" "}
+
+                <strong>
+                  {solicitudSeleccionada
+                    .subsegmentoCredito}
+                </strong>
+
+              </>
+
+            )}
+
+          </div>
+
+
+          <div
+            className="info-box"
+            style={{
+              marginTop:
+                "12px"
+            }}
+          >
+
+            💡{" "}
+
+            {obtenerDescripcionSegmento()}
+
+          </div>
+
+        </section>
+
+      )}
+
 
       {/* =====================================================
           DOCUMENTOS DEL SOLICITANTE
       ===================================================== */}
+
       <section className="panel">
+
         <h2 className="section-title">
           Documentos del solicitante
         </h2>
 
-        {/* ===================================================
-            INFORMACIÓN DE LA SOLICITUD
-        =================================================== */}
+
         {solicitudSeleccionada ? (
+
           <>
+
+            {/* ===============================================
+                ESTADO DOCUMENTACIÓN
+            =============================================== */}
+
             <div className="info-box">
-              Solicitud:{" "}
 
-              <strong>
-                {solicitudSeleccionada.codigoSolicitud || "Sin código"}
-              </strong>
-
-              {" | "}
-
-              Cliente:{" "}
-
-              <strong>
-                {obtenerNombreCliente()}
-              </strong>
-
-              {" | "}
-
-              Documentación:{" "}
+              Estado de documentación:{" "}
 
               <strong
                 className={
@@ -675,29 +1127,44 @@ export default function Documentos() {
                     : "docs-pendientes"
                 }
               >
+
                 {documentacionCompleta
                   ? "Completa"
                   : "Pendiente"}
+
               </strong>
+
             </div>
 
+
             {/* ===============================================
-                PROGRESO DE DOCUMENTACIÓN
+                PROGRESO
             =============================================== */}
+
             <div className="document-progress">
+
               <div className="document-progress-header">
+
                 <span>
-                  Documentación requerida
+                  Documentación obligatoria
                 </span>
 
+
                 <strong>
+
                   {documentosCompletados}
+
                   /
+
                   {documentosObligatorios.length}
+
                 </strong>
+
               </div>
 
+
               <div className="document-progress-bar">
+
                 <div
                   className="document-progress-value"
                   style={{
@@ -705,179 +1172,362 @@ export default function Documentos() {
                       `${porcentajeDocumentacion}%`
                   }}
                 />
+
               </div>
 
+
               {documentacionCompleta ? (
+
                 <div className="document-complete-message">
-                  ✅ Documentación completa. La solicitud está lista
-                  para continuar con la evaluación de riesgo.
+
+                  ✅ Documentación básica completa. La solicitud puede
+                  continuar al proceso de evaluación de riesgo.
+
                 </div>
+
               ) : (
+
                 <div className="document-missing">
+
                   <strong>
                     Documentos pendientes:
                   </strong>
 
+
                   {documentosFaltantes.map(
                     (tipo) => (
-                      <span key={tipo}>
+
+                      <span
+                        key={
+                          tipo
+                        }
+                      >
                         • {tipo}
                       </span>
+
                     )
                   )}
+
                 </div>
+
               )}
+
             </div>
+
           </>
+
         ) : (
+
           <div className="info-box">
-            Seleccione una solicitud para consultar sus documentos.
+
+            Seleccione una solicitud para consultar y cargar sus documentos.
+
           </div>
+
         )}
+
 
         {/* ===================================================
-            TARJETAS DE CARGA
-            SOLO ADMIN / ANALISTA
+            DOCUMENTOS OBLIGATORIOS
         =================================================== */}
+
         {puedeModificar && (
-          <div className="upload-grid">
-            {/* DOCUMENTO GENERAL */}
-            <UploadCard
-              icon="📄"
-              title="Documento general"
-              text="Adjuntar documentos generales relacionados con la solicitud."
-              accept=".pdf,.jpg,.jpeg,.png"
-              label={
-                tiposCargados.includes(
-                  "General"
-                )
-                  ? "Agregar otro archivo"
-                  : "Seleccionar archivo"
-              }
-              completed={
-                tiposCargados.includes(
-                  "General"
-                )
-              }
-              disabled={
-                !solicitudSeleccionada ||
-                subiendo
-              }
-              onFile={(archivo) =>
-                agregarArchivo(
-                  "General",
-                  archivo
-                )
-              }
-            />
 
-            {/* IDENTIFICACIÓN */}
-            <UploadCard
-              icon="🪪"
-              title="Cédula"
-              text="Adjuntar imagen o PDF de la cédula del cliente."
-              accept=".pdf,.jpg,.jpeg,.png"
-              label={
-                tiposCargados.includes(
-                  "Identificación"
-                )
-                  ? "Agregar otro archivo"
-                  : "Seleccionar cédula"
-              }
-              completed={
-                tiposCargados.includes(
-                  "Identificación"
-                )
-              }
-              disabled={
-                !solicitudSeleccionada ||
-                subiendo
-              }
-              onFile={(archivo) =>
-                agregarArchivo(
-                  "Identificación",
-                  archivo
-                )
-              }
-            />
+          <>
 
-            {/* INGRESOS */}
-            <UploadCard
-              icon="💼"
-              title="Certificado laboral"
-              text="Adjuntar certificado laboral o respaldo de ingresos."
-              accept=".pdf,.jpg,.jpeg,.png"
-              label={
-                tiposCargados.includes(
-                  "Ingresos"
-                )
-                  ? "Agregar otro archivo"
-                  : "Seleccionar archivo"
-              }
-              completed={
-                tiposCargados.includes(
-                  "Ingresos"
-                )
-              }
-              disabled={
-                !solicitudSeleccionada ||
-                subiendo
-              }
-              onFile={(archivo) =>
-                agregarArchivo(
-                  "Ingresos",
-                  archivo
-                )
-              }
-            />
-          </div>
+            <h3
+              style={{
+                marginTop:
+                  "24px",
+                marginBottom:
+                  "12px"
+              }}
+            >
+              Documentos obligatorios
+            </h3>
+
+
+            <div className="upload-grid">
+
+              {/* =============================================
+                  CÉDULA
+              ============================================= */}
+
+              <UploadCard
+                icon="🪪"
+                title="Copia de cédula"
+                text="Adjuntar una copia legible de la cédula de identidad del solicitante."
+                accept=".pdf,.jpg,.jpeg,.png"
+                label={
+                  documentoCargado(
+                    "Cédula"
+                  )
+                    ? "Agregar otra copia"
+                    : "Seleccionar cédula"
+                }
+                completed={
+                  documentoCargado(
+                    "Cédula"
+                  )
+                }
+                disabled={
+                  !solicitudSeleccionada ||
+                  subiendo
+                }
+                onFile={
+                  (archivo) =>
+                    agregarArchivo(
+                      "Cédula",
+                      archivo
+                    )
+                }
+              />
+
+
+              {/* =============================================
+                  CERTIFICADO DE VOTACIÓN
+              ============================================= */}
+
+              <UploadCard
+                icon="🗳️"
+                title="Certificado de votación"
+                text="Adjuntar una copia legible del certificado de votación vigente del solicitante."
+                accept=".pdf,.jpg,.jpeg,.png"
+                label={
+                  documentoCargado(
+                    "Certificado de votación"
+                  )
+                    ? "Agregar otro certificado"
+                    : "Seleccionar certificado"
+                }
+                completed={
+                  documentoCargado(
+                    "Certificado de votación"
+                  )
+                }
+                disabled={
+                  !solicitudSeleccionada ||
+                  subiendo
+                }
+                onFile={
+                  (archivo) =>
+                    agregarArchivo(
+                      "Certificado de votación",
+                      archivo
+                    )
+                }
+              />
+
+
+              {/* =============================================
+                  RESPALDO INGRESOS / VENTAS
+              ============================================= */}
+
+              <UploadCard
+                icon="💼"
+                title="Respaldo de ingresos o ventas"
+                text={
+                  solicitudSeleccionada
+                    ?.tipoCredito ===
+                    "Microcrédito" ||
+                  solicitudSeleccionada
+                    ?.tipoCredito ===
+                    "Productivo"
+
+                    ? "Adjuntar documentos que permitan comprobar las ventas o ingresos de la actividad económica."
+
+                    : "Adjuntar certificado laboral, rol de pagos u otro documento que permita comprobar los ingresos."
+                }
+                accept=".pdf,.jpg,.jpeg,.png"
+                label={
+                  documentoCargado(
+                    "Respaldo de ingresos o ventas"
+                  )
+                    ? "Agregar otro respaldo"
+                    : "Seleccionar respaldo"
+                }
+                completed={
+                  documentoCargado(
+                    "Respaldo de ingresos o ventas"
+                  )
+                }
+                disabled={
+                  !solicitudSeleccionada ||
+                  subiendo
+                }
+                onFile={
+                  (archivo) =>
+                    agregarArchivo(
+                      "Respaldo de ingresos o ventas",
+                      archivo
+                    )
+                }
+              />
+
+            </div>
+
+
+            {/* =================================================
+                DOCUMENTOS ADICIONALES
+            ================================================= */}
+
+            <h3
+              style={{
+                marginTop:
+                  "30px",
+                marginBottom:
+                  "6px"
+              }}
+            >
+              Documentación de respaldo de activos
+            </h3>
+
+
+            <p
+              style={{
+                marginTop:
+                  0,
+                marginBottom:
+                  "15px"
+              }}
+            >
+
+              Estos documentos permiten justificar los activos o patrimonio
+              declarados por el solicitante. Se pueden cargar varios archivos.
+
+            </p>
+
+
+            <div className="upload-grid">
+
+              <UploadCard
+                icon="🏦"
+                title="Respaldo de activos"
+                text="Ejemplos: certificado o estado de cuenta bancario, pago predial, documento de vehículo u otro respaldo patrimonial."
+                accept=".pdf,.jpg,.jpeg,.png"
+                label={
+                  documentoCargado(
+                    "Respaldo de activos"
+                  )
+                    ? "Agregar otro respaldo"
+                    : "Seleccionar respaldo"
+                }
+                completed={
+                  documentoCargado(
+                    "Respaldo de activos"
+                  )
+                }
+                disabled={
+                  !solicitudSeleccionada ||
+                  subiendo
+                }
+                onFile={
+                  (archivo) =>
+                    agregarArchivo(
+                      "Respaldo de activos",
+                      archivo
+                    )
+                }
+              />
+
+            </div>
+
+
+            <div
+              className="info-box"
+              style={{
+                marginTop:
+                  "20px"
+              }}
+            >
+
+              ℹ️ <strong>Pasivos:</strong>{" "}
+              no se solicita documentación específica en esta sección.
+              La información de obligaciones y endeudamiento será obtenida
+              mediante la herramienta de Buró de Crédito.
+
+            </div>
+
+          </>
+
         )}
+
 
         {/* ===================================================
             MENSAJE SUBIENDO
         =================================================== */}
+
         {puedeModificar &&
           subiendo && (
-            <div className="document-upload-message">
-              ⏳ Subiendo documento...
-            </div>
-          )}
+
+          <div className="document-upload-message">
+
+            ⏳ Subiendo documento...
+
+          </div>
+
+        )}
+
       </section>
+
 
       {/* =====================================================
           LISTA DE DOCUMENTOS
       ===================================================== */}
+
       <section className="panel">
+
         <div className="document-list-header">
+
           <div>
+
             <h2 className="section-title">
               Lista de documentos cargados
             </h2>
 
+
             {solicitudSeleccionada && (
+
               <p className="document-list-subtitle">
+
                 Documentos correspondientes a la solicitud{" "}
+
                 <strong>
-                  {solicitudSeleccionada.codigoSolicitud || "Sin código"}
+
+                  {solicitudSeleccionada
+                    .codigoSolicitud ||
+                    "Sin código"}
+
                 </strong>
+
               </p>
+
             )}
+
           </div>
 
+
           <div className="document-count">
+
             Total:{" "}
 
             <strong>
               {documentos.length}
             </strong>
+
           </div>
+
         </div>
 
+
         {/* ===================================================
-            NO HAY SOLICITUD SELECCIONADA
+            SIN SOLICITUD
         =================================================== */}
+
         {!solicitudSeleccionada ? (
+
           <div className="document-empty">
+
             <span>
               📁
             </span>
@@ -889,12 +1539,18 @@ export default function Documentos() {
             <p>
               Los documentos asociados aparecerán aquí.
             </p>
+
           </div>
+
+
         ) : cargando ? (
+
           /* =================================================
              CARGANDO
           ================================================= */
+
           <div className="document-empty">
+
             <span>
               ⏳
             </span>
@@ -902,12 +1558,18 @@ export default function Documentos() {
             <h3>
               Cargando documentos...
             </h3>
+
           </div>
+
+
         ) : documentos.length === 0 ? (
+
           /* =================================================
              SIN DOCUMENTOS
           ================================================= */
+
           <div className="document-empty">
+
             <span>
               📄
             </span>
@@ -917,19 +1579,30 @@ export default function Documentos() {
             </h3>
 
             <p>
+
               {puedeModificar
                 ? "Utilice las opciones superiores para adjuntar documentos."
                 : "Esta solicitud todavía no tiene documentos registrados."}
+
             </p>
+
           </div>
+
+
         ) : (
+
           /* =================================================
-             TABLA DE DOCUMENTOS
+             TABLA
           ================================================= */
+
           <div className="table-container">
+
             <table className="table">
+
               <thead>
+
                 <tr>
+
                   <th>
                     Documento
                   </th>
@@ -953,55 +1626,71 @@ export default function Documentos() {
                   <th>
                     Acciones
                   </th>
+
                 </tr>
+
               </thead>
 
+
               <tbody>
+
                 {documentos.map(
                   (documento) => (
+
                     <tr
                       key={
                         documento.id
                       }
                     >
-                      {/* DOCUMENTO */}
+
                       <td>
+
                         <strong>
                           {documento.nombreArchivo}
                         </strong>
+
                       </td>
 
-                      {/* TIPO */}
+
                       <td>
                         {documento.tipoDocumento}
                       </td>
 
-                      {/* FORMATO */}
+
                       <td>
+
                         {obtenerFormato(
                           documento.nombreArchivo
                         )}
+
                       </td>
 
-                      {/* FECHA */}
+
                       <td>
+
                         {formatearFecha(
                           documento.fechaCarga
                         )}
+
                       </td>
 
-                      {/* ESTADO */}
+
                       <td>
+
                         <span className="status uploaded">
+
                           {documento.estado ||
                             "Cargado"}
+
                         </span>
+
                       </td>
 
-                      {/* ACCIONES */}
+
                       <td>
+
                         <div className="document-actions">
-                          {/* VER - TODOS LOS ROLES */}
+
                           <button
                             type="button"
                             className="btn-small btn-view"
@@ -1009,49 +1698,67 @@ export default function Documentos() {
                               abriendoDocumento ===
                               documento.id
                             }
-                            onClick={() =>
-                              verDocumento(
-                                documento
-                              )
+                            onClick={
+                              () =>
+                                verDocumento(
+                                  documento
+                                )
                             }
                           >
+
                             {abriendoDocumento ===
                             documento.id
                               ? "⏳ Abriendo..."
                               : "👁 Ver"}
+
                           </button>
 
-                          {/* ELIMINAR - ADMIN / ANALISTA */}
+
                           {puedeModificar && (
+
                             <button
                               type="button"
                               className="btn-small btn-delete"
-                              onClick={() =>
-                                eliminar(
-                                  documento
-                                )
+                              onClick={
+                                () =>
+                                  eliminar(
+                                    documento
+                                  )
                               }
                             >
                               🗑️ Eliminar
                             </button>
+
                           )}
+
                         </div>
+
                       </td>
+
                     </tr>
+
                   )
                 )}
+
               </tbody>
+
             </table>
+
           </div>
+
         )}
+
       </section>
+
     </Layout>
   );
 }
 
+
 // ===========================================================
 // COMPONENTE TARJETA DE CARGA
 // ===========================================================
+
 function UploadCard({
   icon,
   title,
@@ -1062,57 +1769,82 @@ function UploadCard({
   disabled,
   completed
 }) {
+
   const seleccionarArchivo =
     (e) => {
+
       const archivo =
         e.target.files?.[0];
 
-      if (archivo) {
-        onFile(archivo);
+
+      if (
+        archivo
+      ) {
+
+        onFile(
+          archivo
+        );
       }
 
+
       /*
-       * Permite seleccionar nuevamente
-       * el mismo archivo.
+       * Permite volver a seleccionar
+       * el mismo archivo posteriormente.
        */
-      e.target.value = "";
+
+      e.target.value =
+        "";
     };
 
+
   return (
+
     <div
-      className={`upload-card ${
-        disabled
-          ? "upload-card-disabled"
-          : ""
-      } ${
-        completed
-          ? "upload-card-completed"
-          : ""
-      }`}
+      className={
+        `upload-card ${
+          disabled
+            ? "upload-card-disabled"
+            : ""
+        } ${
+          completed
+            ? "upload-card-completed"
+            : ""
+        }`
+      }
     >
-      {/* =====================================================
-          INDICADOR COMPLETADO
-      ===================================================== */}
+
       {completed && (
+
         <div className="upload-completed-badge">
+
           ✓ Cargado
+
         </div>
+
       )}
 
+
       <div className="upload-icon">
+
         {icon}
+
       </div>
+
 
       <h3>
         {title}
       </h3>
 
+
       <p>
         {text}
       </p>
 
+
       <label className="upload-btn">
+
         {label}
+
 
         <input
           type="file"
@@ -1122,7 +1854,9 @@ function UploadCard({
             seleccionarArchivo
           }
         />
+
       </label>
+
     </div>
   );
 }
