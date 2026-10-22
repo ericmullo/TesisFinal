@@ -7,6 +7,7 @@ from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import (
     accuracy_score,
+    balanced_accuracy_score,
     classification_report,
     confusion_matrix,
     roc_auc_score
@@ -20,13 +21,20 @@ from sklearn.preprocessing import OneHotEncoder
 # RUTAS
 # ============================================================
 
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = (
+    Path(__file__)
+    .resolve()
+    .parent
+    .parent
+)
+
 
 DATASET_PATH = (
     BASE_DIR
     / "data"
-    / "dataset_riesgo_crediticio_sintetico.csv"
+    / "dataset_riesgo_crediticio_sintetico_v2.csv"
 )
+
 
 MODEL_PATH = (
     BASE_DIR
@@ -36,97 +44,39 @@ MODEL_PATH = (
 
 
 # ============================================================
-# CARGAR DATASET
+# VARIABLES DEL MODELO
 # ============================================================
 
-print("\n========================================")
-print(" CARGANDO DATASET")
-print("========================================\n")
+FEATURES = [
 
-df = pd.read_csv(DATASET_PATH)
-
-print("Cantidad de registros:", len(df))
-
-print("\nPrimeros registros:")
-print(df.head())
-
-
-# ============================================================
-# VARIABLES DE ENTRADA
-# ============================================================
-
-features = [
     "ingresos_mensuales",
+
     "egresos_mensuales",
+
     "nivel_endeudamiento",
+
     "capacidad_pago",
+
     "tipo_credito",
+
+    "subsegmento_credito",
+
+    "producto_credito",
+
     "monto_solicitado",
+
     "plazo_meses",
+
+    "ventas_anuales",
+
+    "fuente_pago",
+
     "antiguedad_laboral_anios"
 ]
 
 
-# ============================================================
-# VARIABLE OBJETIVO
-# ============================================================
-
-target = "mora"
-
-
-X = df[features]
-
-y = df[target]
-
-
-# ============================================================
-# DISTRIBUCIÓN
-# ============================================================
-
-print("\n========================================")
-print(" DISTRIBUCIÓN DE MORA")
-print("========================================\n")
-
-print(y.value_counts())
-
-print("\nPorcentajes:")
-
-print(
-    y.value_counts(normalize=True)
-    * 100
-)
-
-
-# ============================================================
-# DIVIDIR DATASET
-# ============================================================
-
-X_train, X_test, y_train, y_test = (
-    train_test_split(
-        X,
-        y,
-
-        test_size=0.20,
-
-        random_state=42,
-
-        stratify=y
-    )
-)
-
-
-print("\n========================================")
-print(" DIVISIÓN DEL DATASET")
-print("========================================\n")
-
-print(
-    "Registros para entrenamiento:",
-    len(X_train)
-)
-
-print(
-    "Registros para prueba:",
-    len(X_test)
+TARGET = (
+    "mora"
 )
 
 
@@ -134,24 +84,268 @@ print(
 # VARIABLES NUMÉRICAS
 # ============================================================
 
-numeric_features = [
+NUMERIC_FEATURES = [
+
     "ingresos_mensuales",
+
     "egresos_mensuales",
+
     "nivel_endeudamiento",
+
     "capacidad_pago",
+
     "monto_solicitado",
+
     "plazo_meses",
+
+    "ventas_anuales",
+
     "antiguedad_laboral_anios"
 ]
 
 
 # ============================================================
-# VARIABLE CATEGÓRICA
+# VARIABLES CATEGÓRICAS
 # ============================================================
 
-categorical_features = [
-    "tipo_credito"
+CATEGORICAL_FEATURES = [
+
+    "tipo_credito",
+
+    "subsegmento_credito",
+
+    "producto_credito",
+
+    "fuente_pago"
 ]
+
+
+# ============================================================
+# VALIDAR DATASET
+# ============================================================
+
+if (
+    not DATASET_PATH.exists()
+):
+
+    raise FileNotFoundError(
+        "No se encontró el dataset v2. "
+        "Ejecute primero: "
+        "python training/generate_dataset.py"
+    )
+
+
+# ============================================================
+# CARGAR DATASET
+# ============================================================
+
+print(
+    "\n========================================"
+)
+
+print(
+    " CARGANDO DATASET V2"
+)
+
+print(
+    "========================================\n"
+)
+
+
+df = pd.read_csv(
+    DATASET_PATH
+)
+
+
+# ============================================================
+# VALIDAR COLUMNAS
+# ============================================================
+
+columnas_requeridas = (
+    FEATURES
+    +
+    [
+        TARGET
+    ]
+)
+
+
+columnas_faltantes = [
+
+    columna
+
+    for columna
+    in columnas_requeridas
+
+    if columna
+    not in df.columns
+]
+
+
+if (
+    columnas_faltantes
+):
+
+    raise ValueError(
+        "Faltan columnas requeridas en el dataset: "
+        +
+        ", ".join(
+            columnas_faltantes
+        )
+    )
+
+
+# ============================================================
+# VALIDAR NULOS
+# ============================================================
+
+if (
+    df[
+        columnas_requeridas
+    ]
+    .isnull()
+    .any()
+    .any()
+):
+
+    raise ValueError(
+        "El dataset contiene valores nulos "
+        "en columnas utilizadas por el modelo."
+    )
+
+
+# ============================================================
+# VALIDAR CLASES
+# ============================================================
+
+clases = set(
+    df[
+        TARGET
+    ]
+    .unique()
+)
+
+
+if (
+    clases != {0, 1}
+):
+
+    raise ValueError(
+        "La variable objetivo 'mora' debe contener "
+        "exactamente las clases 0 y 1."
+    )
+
+
+print(
+    f"Cantidad de registros: {len(df)}"
+)
+
+
+print(
+    "\nDistribución de mora:"
+)
+
+
+print(
+    df[
+        TARGET
+    ]
+    .value_counts()
+)
+
+
+print(
+    "\nPorcentaje de mora:"
+)
+
+
+print(
+    (
+        df[
+            TARGET
+        ]
+        .value_counts(
+            normalize=True
+        )
+        *
+        100
+    )
+    .round(
+        2
+    )
+)
+
+
+# ============================================================
+# X / Y
+# ============================================================
+
+X = (
+    df[
+        FEATURES
+    ]
+    .copy()
+)
+
+
+y = (
+    df[
+        TARGET
+    ]
+    .copy()
+)
+
+
+# ============================================================
+# DIVISIÓN ENTRENAMIENTO / PRUEBA
+# ============================================================
+
+(
+    X_train,
+    X_test,
+    y_train,
+    y_test
+) = train_test_split(
+
+    X,
+
+    y,
+
+    test_size=0.20,
+
+    random_state=42,
+
+    stratify=y
+)
+
+
+print(
+    "\n========================================"
+)
+
+print(
+    " DIVISIÓN DEL DATASET"
+)
+
+print(
+    "========================================\n"
+)
+
+
+print(
+    "Registros para entrenamiento:",
+    len(
+        X_train
+    )
+)
+
+
+print(
+    "Registros para prueba:",
+    len(
+        X_test
+    )
+)
 
 
 # ============================================================
@@ -159,43 +353,49 @@ categorical_features = [
 # ============================================================
 
 preprocessor = ColumnTransformer(
+
     transformers=[
 
         (
             "categorical",
+
             OneHotEncoder(
                 handle_unknown="ignore"
             ),
-            categorical_features
+
+            CATEGORICAL_FEATURES
         ),
 
         (
             "numeric",
-            "passthrough",
-            numeric_features
-        )
 
+            "passthrough",
+
+            NUMERIC_FEATURES
+        )
     ]
 )
 
 
 # ============================================================
-# RANDOM FOREST
+# RANDOM FOREST V2
 # ============================================================
 
 random_forest = RandomForestClassifier(
 
-    n_estimators=300,
+    n_estimators=400,
 
-    max_depth=10,
+    max_depth=12,
 
-    min_samples_split=5,
+    min_samples_split=6,
 
-    min_samples_leaf=2,
+    min_samples_leaf=3,
 
     class_weight="balanced",
 
-    random_state=42
+    random_state=42,
+
+    n_jobs=-1
 )
 
 
@@ -204,6 +404,7 @@ random_forest = RandomForestClassifier(
 # ============================================================
 
 model = Pipeline(
+
     steps=[
 
         (
@@ -215,23 +416,32 @@ model = Pipeline(
             "classifier",
             random_forest
         )
-
     ]
 )
 
 
 # ============================================================
-# ENTRENAR
+# ENTRENAMIENTO
 # ============================================================
 
-print("\n========================================")
-print(" ENTRENANDO RANDOM FOREST")
-print("========================================\n")
+print(
+    "\n========================================"
+)
+
+print(
+    " ENTRENANDO RANDOM FOREST V2"
+)
+
+print(
+    "========================================\n"
+)
+
 
 model.fit(
     X_train,
     y_train
 )
+
 
 print(
     "Entrenamiento completado correctamente."
@@ -239,7 +449,7 @@ print(
 
 
 # ============================================================
-# HACER PREDICCIONES SOBRE LOS DATOS DE PRUEBA
+# PREDICCIONES
 # ============================================================
 
 predicciones = model.predict(
@@ -264,6 +474,14 @@ accuracy = accuracy_score(
 )
 
 
+balanced_accuracy = (
+    balanced_accuracy_score(
+        y_test,
+        predicciones
+    )
+)
+
+
 auc = roc_auc_score(
     y_test,
     probabilidades
@@ -276,13 +494,30 @@ matriz = confusion_matrix(
 )
 
 
-print("\n========================================")
-print(" RESULTADOS DEL MODELO")
-print("========================================\n")
+# ============================================================
+# MOSTRAR RESULTADOS
+# ============================================================
+
+print(
+    "\n========================================"
+)
+
+print(
+    " RESULTADOS DEL MODELO V2"
+)
+
+print(
+    "========================================\n"
+)
 
 
 print(
     f"Accuracy: {accuracy:.4f}"
+)
+
+
+print(
+    f"Balanced Accuracy: {balanced_accuracy:.4f}"
 )
 
 
@@ -295,7 +530,10 @@ print(
     "\nMatriz de confusión:"
 )
 
-print(matriz)
+
+print(
+    matriz
+)
 
 
 print(
@@ -305,9 +543,87 @@ print(
 
 print(
     classification_report(
+
         y_test,
+
         predicciones,
-        digits=4
+
+        digits=4,
+
+        zero_division=0
+    )
+)
+
+
+# ============================================================
+# IMPORTANCIA DE VARIABLES
+# ============================================================
+
+preprocessor_entrenado = (
+    model
+    .named_steps[
+        "preprocessor"
+    ]
+)
+
+
+clasificador_entrenado = (
+    model
+    .named_steps[
+        "classifier"
+    ]
+)
+
+
+nombres_variables = (
+    preprocessor_entrenado
+    .get_feature_names_out()
+)
+
+
+importancias = (
+    clasificador_entrenado
+    .feature_importances_
+)
+
+
+tabla_importancias = (
+    pd.DataFrame(
+        {
+            "variable":
+                nombres_variables,
+
+            "importancia":
+                importancias
+        }
+    )
+    .sort_values(
+        by="importancia",
+        ascending=False
+    )
+)
+
+
+print(
+    "\n========================================"
+)
+
+print(
+    " VARIABLES MÁS IMPORTANTES"
+)
+
+print(
+    "========================================\n"
+)
+
+
+print(
+    tabla_importancias
+    .head(
+        20
+    )
+    .to_string(
+        index=False
     )
 )
 
@@ -317,20 +633,32 @@ print(
 # ============================================================
 
 MODEL_PATH.parent.mkdir(
+
     parents=True,
+
     exist_ok=True
 )
 
 
 joblib.dump(
+
     model,
+
     MODEL_PATH
 )
 
 
-print("\n========================================")
-print(" MODELO GUARDADO")
-print("========================================\n")
+print(
+    "\n========================================"
+)
+
+print(
+    " MODELO V2 GUARDADO"
+)
+
+print(
+    "========================================\n"
+)
 
 
 print(
@@ -339,5 +667,5 @@ print(
 
 
 print(
-    "\nEl modelo ya está listo para realizar predicciones."
+    "\nEl modelo está listo para ser usado por FastAPI."
 )
