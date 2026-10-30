@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientResponseException;
 
 import java.nio.charset.StandardCharsets;
 import java.text.NumberFormat;
@@ -50,10 +51,15 @@ public class EmailService {
 
     ) {
 
-        this.clientId = clientId;
-        this.clientSecret = clientSecret;
-        this.refreshToken = refreshToken;
-        this.remitente = remitente;
+        /*
+         * IMPORTANTE:
+         * trim() elimina espacios o saltos de línea accidentales
+         * al copiar las variables en Render.
+         */
+        this.clientId = limpiarVariable(clientId);
+        this.clientSecret = limpiarVariable(clientSecret);
+        this.refreshToken = limpiarVariable(refreshToken);
+        this.remitente = limpiarVariable(remitente);
 
 
         this.oauthClient =
@@ -72,6 +78,100 @@ public class EmailService {
                                 "https://gmail.googleapis.com"
                         )
                         .build();
+
+
+        // Diagnóstico seguro al iniciar el backend.
+        imprimirDiagnosticoConfiguracion();
+    }
+
+
+    // =========================================================
+    // LIMPIAR VARIABLES DE ENTORNO
+    // =========================================================
+
+    private String limpiarVariable(String valor) {
+
+        if (valor == null) {
+            return "";
+        }
+
+        return valor.trim();
+    }
+
+
+    // =========================================================
+    // DEBUG SEGURO DE CONFIGURACIÓN
+    // NO IMPRIME SECRETOS
+    // =========================================================
+
+    private void imprimirDiagnosticoConfiguracion() {
+
+        System.out.println();
+        System.out.println("==========================================");
+        System.out.println("        DEBUG CONFIGURACION GMAIL");
+        System.out.println("==========================================");
+
+        System.out.println(
+                "GMAIL_CLIENT_ID cargado: "
+                        + !clientId.isBlank()
+        );
+
+        System.out.println(
+                "GMAIL_CLIENT_ID longitud: "
+                        + clientId.length()
+        );
+
+        System.out.println(
+                "GMAIL_CLIENT_SECRET cargado: "
+                        + !clientSecret.isBlank()
+        );
+
+        System.out.println(
+                "GMAIL_CLIENT_SECRET longitud: "
+                        + clientSecret.length()
+        );
+
+        System.out.println(
+                "GMAIL_REFRESH_TOKEN cargado: "
+                        + !refreshToken.isBlank()
+        );
+
+        System.out.println(
+                "GMAIL_REFRESH_TOKEN longitud: "
+                        + refreshToken.length()
+        );
+
+        System.out.println(
+                "Refresh token empieza con 1//: "
+                        + refreshToken.startsWith("1//")
+        );
+
+        System.out.println(
+                "Refresh token contiene espacios: "
+                        + refreshToken.contains(" ")
+        );
+
+        System.out.println(
+                "Refresh token contiene salto de linea: "
+                        + (
+                        refreshToken.contains("\n")
+                                ||
+                        refreshToken.contains("\r")
+                )
+        );
+
+        System.out.println(
+                "GMAIL_FROM_EMAIL cargado: "
+                        + !remitente.isBlank()
+        );
+
+        System.out.println(
+                "GMAIL_FROM_EMAIL: "
+                        + remitente
+        );
+
+        System.out.println("==========================================");
+        System.out.println();
     }
 
 
@@ -101,6 +201,13 @@ public class EmailService {
         }
 
 
+        System.out.println();
+        System.out.println("==========================================");
+        System.out.println("INICIANDO ENVIO DE CORREO");
+        System.out.println("Destinatario: " + destinatario);
+        System.out.println("==========================================");
+
+
         String accessToken =
                 obtenerAccessToken();
 
@@ -120,29 +227,77 @@ public class EmailService {
                 );
 
 
-        gmailClient
-                .post()
-                .uri(
-                        "/gmail/v1/users/me/messages/send"
-                )
-                .header(
-                        HttpHeaders.AUTHORIZATION,
-                        "Bearer " + accessToken
-                )
-                .contentType(
-                        MediaType.APPLICATION_JSON
-                )
-                .body(
-                        cuerpo
-                )
-                .retrieve()
-                .toBodilessEntity();
+        try {
+
+            gmailClient
+                    .post()
+                    .uri(
+                            "/gmail/v1/users/me/messages/send"
+                    )
+                    .header(
+                            HttpHeaders.AUTHORIZATION,
+                            "Bearer " + accessToken
+                    )
+                    .contentType(
+                            MediaType.APPLICATION_JSON
+                    )
+                    .body(
+                            cuerpo
+                    )
+                    .retrieve()
+                    .toBodilessEntity();
 
 
-        System.out.println(
-                "Correo enviado correctamente a: "
-                        + destinatario
-        );
+            System.out.println(
+                    "✅ Correo enviado correctamente a: "
+                            + destinatario
+            );
+
+        } catch (RestClientResponseException e) {
+
+            System.err.println();
+            System.err.println("==========================================");
+            System.err.println("ERROR AL ENVIAR CORREO CON GMAIL API");
+            System.err.println("==========================================");
+
+            System.err.println(
+                    "HTTP Status: "
+                            + e.getStatusCode()
+            );
+
+            System.err.println(
+                    "Respuesta Gmail:"
+            );
+
+            System.err.println(
+                    e.getResponseBodyAsString()
+            );
+
+            System.err.println("==========================================");
+            System.err.println();
+
+            throw e;
+
+        } catch (Exception e) {
+
+            System.err.println();
+            System.err.println("==========================================");
+            System.err.println("ERROR GENERAL AL ENVIAR CORREO");
+            System.err.println("==========================================");
+
+            System.err.println(
+                    e.getClass().getName()
+            );
+
+            System.err.println(
+                    e.getMessage()
+            );
+
+            System.err.println("==========================================");
+            System.err.println();
+
+            throw e;
+        }
     }
 
 
@@ -151,6 +306,40 @@ public class EmailService {
     // =========================================================
 
     private String obtenerAccessToken() {
+
+        validarConfiguracionGmail();
+
+
+        System.out.println();
+        System.out.println("==========================================");
+        System.out.println("SOLICITANDO ACCESS TOKEN A GOOGLE");
+        System.out.println("==========================================");
+
+        System.out.println(
+                "Client ID presente: "
+                        + !clientId.isBlank()
+        );
+
+        System.out.println(
+                "Client Secret presente: "
+                        + !clientSecret.isBlank()
+        );
+
+        System.out.println(
+                "Refresh Token presente: "
+                        + !refreshToken.isBlank()
+        );
+
+        System.out.println(
+                "Refresh empieza con 1//: "
+                        + refreshToken.startsWith("1//")
+        );
+
+        System.out.println(
+                "Refresh longitud: "
+                        + refreshToken.length()
+        );
+
 
         MultiValueMap<String, String> formulario =
                 new LinkedMultiValueMap<>();
@@ -177,43 +366,144 @@ public class EmailService {
         );
 
 
-        Map<?, ?> respuesta =
-                oauthClient
-                        .post()
-                        .uri(
-                                "/token"
-                        )
-                        .contentType(
-                                MediaType.APPLICATION_FORM_URLENCODED
-                        )
-                        .body(
-                                formulario
-                        )
-                        .retrieve()
-                        .body(
-                                Map.class
-                        );
+        try {
+
+            Map<?, ?> respuesta =
+                    oauthClient
+                            .post()
+                            .uri(
+                                    "/token"
+                            )
+                            .contentType(
+                                    MediaType.APPLICATION_FORM_URLENCODED
+                            )
+                            .body(
+                                    formulario
+                            )
+                            .retrieve()
+                            .body(
+                                    Map.class
+                            );
 
 
-        if (
-                respuesta == null
-                        ||
-                respuesta.get(
-                        "access_token"
-                ) == null
-        ) {
+            if (
+                    respuesta == null
+                            ||
+                    respuesta.get(
+                            "access_token"
+                    ) == null
+            ) {
 
-            throw new RuntimeException(
-                    "Google no devolvió un access token."
+                System.err.println(
+                        "❌ Google respondió, pero no devolvió access_token."
+                );
+
+                throw new RuntimeException(
+                        "Google no devolvió un access token."
+                );
+            }
+
+
+            String accessToken =
+                    respuesta
+                            .get(
+                                    "access_token"
+                            )
+                            .toString();
+
+
+            System.out.println(
+                    "✅ ACCESS TOKEN OBTENIDO CORRECTAMENTE"
             );
+
+            System.out.println(
+                    "Access token longitud: "
+                            + accessToken.length()
+            );
+
+            System.out.println("==========================================");
+            System.out.println();
+
+
+            return accessToken;
+
+        } catch (RestClientResponseException e) {
+
+            System.err.println();
+            System.err.println("==========================================");
+            System.err.println("❌ ERROR AL RENOVAR ACCESS TOKEN");
+            System.err.println("==========================================");
+
+            System.err.println(
+                    "HTTP Status: "
+                            + e.getStatusCode()
+            );
+
+            System.err.println(
+                    "Respuesta EXACTA de Google:"
+            );
+
+            System.err.println(
+                    e.getResponseBodyAsString()
+            );
+
+            System.err.println();
+            System.err.println(
+                    "Client ID presente: "
+                            + !clientId.isBlank()
+            );
+
+            System.err.println(
+                    "Client Secret presente: "
+                            + !clientSecret.isBlank()
+            );
+
+            System.err.println(
+                    "Refresh presente: "
+                            + !refreshToken.isBlank()
+            );
+
+            System.err.println(
+                    "Refresh empieza con 1//: "
+                            + refreshToken.startsWith("1//")
+            );
+
+            System.err.println(
+                    "Refresh longitud: "
+                            + refreshToken.length()
+            );
+
+            System.err.println("==========================================");
+            System.err.println();
+
+            /*
+             * IMPORTANTE:
+             * No imprimimos clientSecret ni refreshToken completos.
+             */
+            throw e;
+
+        } catch (Exception e) {
+
+            System.err.println();
+            System.err.println("==========================================");
+            System.err.println("❌ ERROR GENERAL OAUTH GOOGLE");
+            System.err.println("==========================================");
+
+            System.err.println(
+                    "Tipo: "
+                            + e.getClass().getName()
+            );
+
+            System.err.println(
+                    "Mensaje: "
+                            + e.getMessage()
+            );
+
+            System.err.println("==========================================");
+            System.err.println();
+
+            throw e;
         }
-
-
-        return respuesta
-                .get(
-                        "access_token"
-                )
-                .toString();
     }
 
 
