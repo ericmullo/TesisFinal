@@ -1071,19 +1071,27 @@ export default function EvaluacionRiesgo() {
                   </History>
 
                   <History
+                    title="Subsegmento de crédito"
+                  >
+                    {solicitudSeleccionada
+                      .subsegmentoCredito ||
+                      "No registrado"}
+                  </History>
+
+                  <History
+                    title="Producto de crédito"
+                  >
+                    {solicitudSeleccionada
+                      .productoCredito ||
+                      "No registrado"}
+                  </History>
+
+                  <History
                     title="Monto solicitado"
                   >
                     {formatearDinero(
                       solicitudSeleccionada.monto
                     )}
-                  </History>
-
-                  <History
-                    title="Antigüedad laboral"
-                  >
-                    {solicitudSeleccionada
-                      .antiguedadLaboral ||
-                      "No registrada"}
                   </History>
 
                   <History
@@ -1093,6 +1101,33 @@ export default function EvaluacionRiesgo() {
                       .plazoMeses
                       ? `${solicitudSeleccionada.plazoMeses} meses`
                       : "No registrado"}
+                  </History>
+
+                  <History
+                    title="Ventas anuales"
+                  >
+                    {solicitudSeleccionada
+                      .ventasAnuales != null
+                      ? formatearDinero(
+                          solicitudSeleccionada.ventasAnuales
+                        )
+                      : "No aplica"}
+                  </History>
+
+                  <History
+                    title="Fuente de pago"
+                  >
+                    {solicitudSeleccionada
+                      .fuentePago ||
+                      "No registrada"}
+                  </History>
+
+                  <History
+                    title="Antigüedad laboral"
+                  >
+                    {solicitudSeleccionada
+                      .antiguedadLaboral ||
+                      "No registrada"}
                   </History>
                 </div>
               </div>
@@ -1205,8 +1240,12 @@ export default function EvaluacionRiesgo() {
                   "Nivel de endeudamiento",
                   "Capacidad de pago",
                   "Tipo de crédito",
+                  "Subsegmento de crédito",
+                  "Producto de crédito",
                   "Monto solicitado",
                   "Plazo del crédito",
+                  "Ventas anuales",
+                  "Fuente de pago",
                   "Antigüedad laboral"
                 ].map(
                   (variable) => (
