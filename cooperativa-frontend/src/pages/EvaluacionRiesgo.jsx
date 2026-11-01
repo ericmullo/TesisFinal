@@ -678,6 +678,26 @@ export default function EvaluacionRiesgo() {
         </div>
       </section>
 
+      {solicitudSeleccionada && !cargando && evaluacion && (
+        <section className="risk-overview" aria-label="Resumen de la evaluación">
+          <div>
+            <span className="risk-overview-label">Resultado de la evaluación</span>
+            <strong>{scoreIa} <small>/ 100</small></strong>
+            <span>Score IA</span>
+          </div>
+          <div>
+            <span className="risk-overview-label">Nivel de riesgo</span>
+            <strong>{nivelRiesgo}</strong>
+            <span>Clasificación del modelo</span>
+          </div>
+          <div>
+            <span className="risk-overview-label">Recomendación IA</span>
+            <strong>{recomendacion}</strong>
+            <span>La decisión final corresponde al analista</span>
+          </div>
+        </section>
+      )}
+
       {/* =====================================================
           AVISO GERENCIA
       ===================================================== */}

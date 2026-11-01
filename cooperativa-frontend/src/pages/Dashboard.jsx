@@ -350,6 +350,11 @@ function Dashboard() {
   // =========================================================
   return (
     <Layout title="Dashboard Principal">
+      <div className="page-intro">
+        <span className="page-eyebrow">Vista general</span>
+        <h2>Seguimiento de solicitudes y riesgo</h2>
+        <p>Indicadores registrados en el sistema para apoyar el trabajo de análisis crediticio.</p>
+      </div>
       {/* =====================================================
           ERROR
       ===================================================== */}
@@ -370,7 +375,8 @@ function Dashboard() {
       {/* =====================================================
           TARJETAS PRINCIPALES
       ===================================================== */}
-      <section className="cards five">
+      <h2 className="dashboard-group-title">Actividad y niveles de riesgo</h2>
+      <section className="cards five dashboard-metrics">
         {/* CLIENTES */}
         <div className="card">
           <h3>
@@ -450,8 +456,9 @@ function Dashboard() {
       {/* =====================================================
           SEGUNDA FILA DE INDICADORES
       ===================================================== */}
+      <h2 className="dashboard-group-title">Estado de las decisiones</h2>
       <section
-        className="summary-cards four"
+        className="summary-cards four dashboard-decisions"
         style={{
           marginBottom: "24px",
         }}

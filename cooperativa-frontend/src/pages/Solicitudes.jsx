@@ -1393,6 +1393,16 @@ export default function Solicitudes() {
 
     <Layout title="Registro de Solicitud de Crédito">
 
+      {puedeModificar && (
+        <nav className="request-steps" aria-label="Secciones de la solicitud">
+          <a href="#solicitud-cliente"><span>01</span> Cliente</a>
+          <a href="#solicitud-buro"><span>02</span> Buró simulado</a>
+          <a href="#solicitud-finanzas"><span>03</span> Finanzas</a>
+          <a href="#solicitud-actividad"><span>04</span> Actividad</a>
+          <a href="#solicitud-credito"><span>05</span> Crédito y guardar</a>
+        </nav>
+      )}
+
       {/* =====================================================
           TARJETAS SUPERIORES
       ===================================================== */}
@@ -1493,7 +1503,7 @@ export default function Solicitudes() {
                 DATOS PERSONALES
             ================================================= */}
 
-            <section className="panel">
+            <section className="panel request-section" id="solicitud-cliente">
 
               <h2 className="section-title">
                 Datos personales
@@ -1678,7 +1688,7 @@ export default function Solicitudes() {
             </section>
 
 
-            <section className="panel">
+            <section className="panel request-section" id="solicitud-buro">
               <h2 className="section-title">Buró de crédito simulado</h2>
               <p>
                 Al seleccionar un cliente, el simulador genera un perfil ficticio
@@ -1739,7 +1749,7 @@ export default function Solicitudes() {
                 INFORMACIÓN FINANCIERA
             ================================================= */}
 
-            <section className="panel">
+            <section className="panel request-section" id="solicitud-finanzas">
 
               <h2 className="section-title">
                 Información financiera
@@ -1925,7 +1935,7 @@ export default function Solicitudes() {
                 INFORMACIÓN ECONÓMICA
             ================================================= */}
 
-            <section className="panel">
+            <section className="panel request-section" id="solicitud-actividad">
 
               <h2 className="section-title">
                 Información económica
@@ -2054,7 +2064,7 @@ export default function Solicitudes() {
                 INFORMACIÓN DEL CRÉDITO
             ================================================= */}
 
-            <section className="panel">
+            <section className="panel request-section" id="solicitud-credito">
 
               <h2 className="section-title">
                 Información del crédito
