@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Layout from "../components/Layout";
 
 import {
@@ -6,7 +6,8 @@ import {
   obtenerSolicitudes,
   crearSolicitud,
   actualizarSolicitud,
-  eliminarSolicitud
+  eliminarSolicitud,
+  consultarBuroSimulado
 } from "../services/api";
 
 
@@ -44,6 +45,32 @@ const initialForm = {
   estado: "Pendiente",
   destino: ""
 };
+
+// Los egresos declarados incluyen las cuotas de créditos.
+function calcularIndicadoresFinancieros(formulario, buro) {
+  if (!buro || formulario.ingresos === "" || formulario.egresos === "") {
+    return { endeudamiento: "", capacidadPago: "" };
+  }
+
+  const ingresos = Number(formulario.ingresos);
+  const egresos = Number(formulario.egresos);
+  const cuota = Number(buro.cuotaMensualTotal);
+
+  if (![ingresos, egresos, cuota].every(Number.isFinite) ||
+      ingresos < 0 || egresos < 0 || cuota < 0) {
+    return { endeudamiento: "", capacidadPago: "" };
+  }
+
+  // El modelo admite un porcentaje de 0 a 100.
+  const porcentaje = ingresos > 0
+    ? Math.min(100, cuota / ingresos * 100)
+    : cuota > 0 ? 100 : 0;
+
+  return {
+    endeudamiento: porcentaje.toFixed(2),
+    capacidadPago: Math.max(0, ingresos - egresos).toFixed(2)
+  };
+}
 
 
 export default function Solicitudes() {
@@ -100,6 +127,16 @@ export default function Solicitudes() {
 
   const [guardando, setGuardando] =
     useState(false);
+
+  const [resultadoBuro, setResultadoBuro] = useState(null);
+  const [consultandoBuro, setConsultandoBuro] = useState(false);
+  const [errorBuro, setErrorBuro] = useState("");
+  const [egresosConfirmados, setEgresosConfirmados] = useState(false);
+  const [origenIndicadores, setOrigenIndicadores] = useState({
+    endeudamiento: null,
+    capacidadPago: null
+  });
+  const versionConsultaBuro = useRef(0);
 
   const [
     solicitudSeleccionada,
@@ -191,12 +228,70 @@ export default function Solicitudes() {
     } = e.target;
 
 
-    setForm(
-      (formAnterior) => ({
-        ...formAnterior,
-        [name]: value
-      })
-    );
+    setForm((formAnterior) => {
+      const actualizado = { ...formAnterior, [name]: value };
+      return resultadoBuro && (name === "ingresos" || name === "egresos")
+        ? {
+            ...actualizado,
+            ...calcularIndicadoresFinancieros(actualizado, resultadoBuro)
+          }
+        : actualizado;
+    });
+
+    if (name === "ingresos" || name === "egresos") {
+      if (name === "egresos") setEgresosConfirmados(false);
+      if (resultadoBuro) {
+        setOrigenIndicadores({
+          endeudamiento: "calculado",
+          capacidadPago: "calculado"
+        });
+      }
+    } else if (name === "endeudamiento" || name === "capacidadPago") {
+      setOrigenIndicadores((anterior) => ({
+        ...anterior,
+        [name]: "ajustado"
+      }));
+    }
+  };
+
+  const consultarBuroCliente = async (clienteId) => {
+    if (!clienteId || !puedeModificar) return;
+
+    const version = ++versionConsultaBuro.current;
+    setConsultandoBuro(true);
+    setResultadoBuro(null);
+    setErrorBuro("");
+    setEgresosConfirmados(false);
+
+    try {
+      const datos = await consultarBuroSimulado(clienteId);
+      if (version !== versionConsultaBuro.current) return;
+      if (String(datos.clienteId) !== String(clienteId) || datos.simulado !== true) {
+        throw new Error("La respuesta del simulador no corresponde al cliente seleccionado.");
+      }
+
+      setResultadoBuro(datos);
+      setForm((actual) => {
+        if (String(actual.clienteId) !== String(clienteId)) return actual;
+        const actualizado = {
+          ...actual,
+          egresos: actual.egresos === ""
+            ? String(datos.cuotaMensualTotal)
+            : actual.egresos
+        };
+        return { ...actualizado, ...calcularIndicadoresFinancieros(actualizado, datos) };
+      });
+      setOrigenIndicadores({
+        endeudamiento: "calculado",
+        capacidadPago: "calculado"
+      });
+    } catch (error) {
+      if (version === versionConsultaBuro.current) {
+        setErrorBuro(error.message || "No se pudo consultar el perfil simulado.");
+      }
+    } finally {
+      if (version === versionConsultaBuro.current) setConsultandoBuro(false);
+    }
   };
 
 
@@ -379,6 +474,13 @@ export default function Solicitudes() {
 
   const seleccionarCliente = (e) => {
 
+    versionConsultaBuro.current += 1;
+    setResultadoBuro(null);
+    setErrorBuro("");
+    setConsultandoBuro(false);
+    setOrigenIndicadores({ endeudamiento: null, capacidadPago: null });
+    setEgresosConfirmados(false);
+
     const id =
       e.target.value;
 
@@ -393,7 +495,13 @@ export default function Solicitudes() {
           cedula: "",
           nombres: "",
           correo: "",
-          telefono: ""
+          telefono: "",
+          ingresos: "",
+          egresos: "",
+          endeudamiento: "",
+          empresa: "",
+          antiguedad: "",
+          capacidadPago: ""
         })
       );
 
@@ -432,9 +540,18 @@ export default function Solicitudes() {
           cliente.correo || "",
 
         telefono:
-          cliente.telefono || ""
+          cliente.telefono || "",
+
+        ingresos: "",
+        egresos: "",
+        endeudamiento: "",
+        empresa: "",
+        antiguedad: "",
+        capacidadPago: ""
       })
     );
+
+    consultarBuroCliente(cliente.id);
   };
 
 
@@ -443,6 +560,13 @@ export default function Solicitudes() {
   // =========================================================
 
   const limpiar = () => {
+
+    versionConsultaBuro.current += 1;
+    setResultadoBuro(null);
+    setErrorBuro("");
+    setConsultandoBuro(false);
+    setOrigenIndicadores({ endeudamiento: null, capacidadPago: null });
+    setEgresosConfirmados(false);
 
     setForm(
       initialForm
@@ -614,6 +738,26 @@ export default function Solicitudes() {
         "Los ingresos mensuales no pueden ser negativos."
       );
 
+      return false;
+    }
+
+    if (resultadoBuro && form.egresos === "") {
+      alert("Ingrese los egresos mensuales totales para calcular los indicadores.");
+      return false;
+    }
+
+    if (resultadoBuro && Number(form.egresos) < Number(resultadoBuro.cuotaMensualTotal)) {
+      alert("Los egresos totales no pueden ser menores que las cuotas simuladas.");
+      return false;
+    }
+
+    if (resultadoBuro && !egresosConfirmados) {
+      alert("Confirme que los egresos incluyen gastos habituales y cuotas antes de guardar.");
+      return false;
+    }
+
+    if (resultadoBuro && (form.endeudamiento === "" || form.capacidadPago === "")) {
+      alert("Revise el endeudamiento y la capacidad de pago antes de guardar.");
       return false;
     }
 
@@ -962,6 +1106,13 @@ export default function Solicitudes() {
 
     const cliente =
       solicitud.cliente;
+
+    versionConsultaBuro.current += 1;
+    setResultadoBuro(null);
+    setErrorBuro("");
+    setConsultandoBuro(false);
+    setOrigenIndicadores({ endeudamiento: null, capacidadPago: null });
+    setEgresosConfirmados(false);
 
 
     setForm({
@@ -1517,6 +1668,61 @@ export default function Solicitudes() {
             </section>
 
 
+            <section className="panel">
+              <h2 className="section-title">Buró de crédito simulado</h2>
+              <p>
+                Al seleccionar un cliente, el simulador genera un perfil ficticio
+                estable según su cédula. Estos datos no son un reporte real.
+              </p>
+
+              {form.clienteId && (
+                <button
+                  type="button"
+                  className="btn btn-yellow"
+                  disabled={consultandoBuro}
+                  onClick={() => consultarBuroCliente(form.clienteId)}
+                >
+                  {consultandoBuro ? "Consultando..." : "Consultar de nuevo"}
+                </button>
+              )}
+
+              {errorBuro && <p role="alert">{errorBuro}</p>}
+
+              {resultadoBuro && (
+                <div className="bureau-grid" aria-live="polite">
+                  <div className="bureau-item">
+                    <strong>Score simulado</strong>
+                    <span>{resultadoBuro.scoreBuro} / {resultadoBuro.escalaMaxima}</span>
+                  </div>
+                  <div className="bureau-item">
+                    <strong>Deuda total simulada</strong>
+                    <span>{formatearDinero(resultadoBuro.deudaTotal)}</span>
+                  </div>
+                  <div className="bureau-item">
+                    <strong>Cuotas mensuales simuladas</strong>
+                    <span>{formatearDinero(resultadoBuro.cuotaMensualTotal)}</span>
+                  </div>
+                  <div className="bureau-item">
+                    <strong>Créditos activos</strong>
+                    <span>{resultadoBuro.creditosActivos}</span>
+                  </div>
+                  <div className="bureau-item">
+                    <strong>Días máximos de mora</strong>
+                    <span>{resultadoBuro.diasMoraMaximos}</span>
+                  </div>
+                  <div className="bureau-item">
+                    <strong>Perfil ficticio</strong>
+                    <span>{({
+                      SIN_ALERTAS_SIMULADAS: "Sin alertas simuladas",
+                      ATRASO_OCASIONAL_SIMULADO: "Atraso ocasional simulado",
+                      ALTO_ENDEUDAMIENTO_SIMULADO: "Alto endeudamiento simulado",
+                      MORA_SIMULADA: "Mora simulada"
+                    })[resultadoBuro.estadoReferencial] || "No determinado"}</span>
+                  </div>
+                </div>
+              )}
+            </section>
+
             {/* =================================================
                 INFORMACIÓN FINANCIERA
             ================================================= */}
@@ -1526,6 +1732,12 @@ export default function Solicitudes() {
               <h2 className="section-title">
                 Información financiera
               </h2>
+
+              <p>
+                Ingresos, egresos, empresa y antigüedad los confirma el analista.
+                Endeudamiento y capacidad de pago se sugieren con las cuotas
+                simuladas y pueden corregirse antes de guardar.
+              </p>
 
 
               <div className="form-grid">
@@ -1546,13 +1758,15 @@ export default function Solicitudes() {
                     placeholder="Ej. 850.00"
                   />
 
+                  <small>Fuente: declaración y documentos del cliente.</small>
+
                 </div>
 
 
                 <div className="form-group">
 
                   <label>
-                    Egresos mensuales
+                    Egresos mensuales totales (incluidas cuotas)
                   </label>
 
                   <input
@@ -1564,6 +1778,11 @@ export default function Solicitudes() {
                     step="0.01"
                     placeholder="Ej. 420.00"
                   />
+
+                  <small>
+                    El simulador propone solo las cuotas. Agregue alimentación,
+                    vivienda y demás gastos mensuales al total.
+                  </small>
 
                 </div>
 
@@ -1585,6 +1804,14 @@ export default function Solicitudes() {
                     placeholder="Ej. 30"
                   />
 
+                  <small>
+                    {origenIndicadores.endeudamiento === "calculado"
+                      ? "Sugerencia: cuotas simuladas / ingresos × 100; máximo 100 % para el modelo."
+                      : origenIndicadores.endeudamiento === "ajustado"
+                        ? "Valor ajustado por el analista."
+                        : "Fuente: ingreso manual o cálculo tras consultar el simulador."}
+                  </small>
+
                 </div>
 
 
@@ -1601,6 +1828,8 @@ export default function Solicitudes() {
                     placeholder="Empresa o lugar de trabajo"
                   />
 
+                  <small>Fuente: declaración y documentos del cliente.</small>
+
                 </div>
 
 
@@ -1616,6 +1845,8 @@ export default function Solicitudes() {
                     onChange={update}
                     placeholder="Ej. 2 años"
                   />
+
+                  <small>Fuente: declaración y documentos del cliente.</small>
 
                 </div>
 
@@ -1636,7 +1867,29 @@ export default function Solicitudes() {
                     placeholder="Ej. 250.00"
                   />
 
+                  <small>
+                    {origenIndicadores.capacidadPago === "calculado"
+                      ? "Sugerencia: ingresos − egresos totales; mínimo USD 0."
+                      : origenIndicadores.capacidadPago === "ajustado"
+                        ? "Valor ajustado por el analista."
+                        : "Fuente: ingreso manual o cálculo tras consultar el simulador."}
+                  </small>
+
                 </div>
+
+                {resultadoBuro && (
+                  <div className="form-group full">
+                    <label className="buro-confirmacion">
+                      <input
+                        type="checkbox"
+                        checked={egresosConfirmados}
+                        onChange={(e) => setEgresosConfirmados(e.target.checked)}
+                      />{" "}
+                      Confirmo que los egresos totales incluyen los gastos habituales
+                      y las cuotas simuladas; revisé los importes antes de guardar.
+                    </label>
+                  </div>
+                )}
 
               </div>
 

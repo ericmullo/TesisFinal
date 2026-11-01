@@ -96,15 +96,15 @@ export async function probarBackend() {
 // =========================================================
 // BURÓ DE CRÉDITO SIMULADO
 // =========================================================
-export async function consultarBuroSimulado(solicitudId) {
+export async function consultarBuroSimulado(clienteId) {
   const response = await fetchAutenticado(
-    `${API_URL}/buro/simular/${solicitudId}`,
-    { method: "POST" }
+    `${API_URL}/buro/simular/cliente/${clienteId}`
   );
 
   if (!response.ok) {
+    const error = await response.json().catch(() => null);
     throw new Error(
-      "No se pudo consultar el buró simulado."
+      error?.mensaje || "No se pudo consultar el buró simulado."
     );
   }
 

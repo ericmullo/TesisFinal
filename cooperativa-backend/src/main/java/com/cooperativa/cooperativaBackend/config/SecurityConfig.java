@@ -341,10 +341,10 @@ public class SecurityConfig {
                         )
 
 
-                        // Consultar buró simulado: solo ADMIN y ANALISTA.
+                        // Consultar perfil ficticio del cliente: solo ADMIN y ANALISTA.
                         .requestMatchers(
-                                HttpMethod.POST,
-                                "/api/buro/simular/*"
+                                HttpMethod.GET,
+                                "/api/buro/simular/cliente/*"
                         )
                         .hasAnyRole(
                                 "ADMIN",
