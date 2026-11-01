@@ -341,6 +341,17 @@ public class SecurityConfig {
                         )
 
 
+                        // Consultar buró simulado: solo ADMIN y ANALISTA.
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/api/buro/simular/*"
+                        )
+                        .hasAnyRole(
+                                "ADMIN",
+                                "ANALISTA"
+                        )
+
+
                         // =============================================
                         // CUALQUIER OTRA API
                         // =============================================

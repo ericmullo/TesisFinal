@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Layout from "../components/Layout";
 import {
   obtenerSolicitudes,
@@ -6,6 +6,7 @@ import {
   obtenerEvaluacionesPorSolicitud,
   verificarDocumentacion,
   crearEvaluacion,
+  consultarBuroSimulado,
   aprobarSolicitud,
   rechazarSolicitud
 } from "../services/api";
@@ -69,6 +70,14 @@ export default function EvaluacionRiesgo() {
   const [generando, setGenerando] =
     useState(false);
 
+  const [resultadoBuro, setResultadoBuro] =
+    useState(null);
+  const [consultandoBuro, setConsultandoBuro] =
+    useState(false);
+  const [errorBuro, setErrorBuro] =
+    useState("");
+  const versionConsultaBuro = useRef(0);
+
   // =========================================================
   // DECISIÓN DEL ANALISTA
   // =========================================================
@@ -129,6 +138,12 @@ export default function EvaluacionRiesgo() {
       const id =
         e.target.value;
 
+      // Invalida la respuesta de cualquier consulta anterior.
+      versionConsultaBuro.current += 1;
+      setResultadoBuro(null);
+      setErrorBuro("");
+      setConsultandoBuro(false);
+
       if (!id) {
         setSolicitudSeleccionada(null);
         setDocumentos([]);
@@ -156,6 +171,36 @@ export default function EvaluacionRiesgo() {
         solicitud.id
       );
     };
+
+  const ejecutarConsultaBuro = async () => {
+    if (!puedeEvaluar || !solicitudSeleccionada?.id) {
+      return;
+    }
+
+    const solicitudId = solicitudSeleccionada.id;
+    const version = ++versionConsultaBuro.current;
+
+    setConsultandoBuro(true);
+    setErrorBuro("");
+    setResultadoBuro(null);
+
+    try {
+      const datos = await consultarBuroSimulado(solicitudId);
+
+      if (version === versionConsultaBuro.current &&
+          String(datos.solicitudId) === String(solicitudId)) {
+        setResultadoBuro(datos);
+      }
+    } catch (error) {
+      if (version === versionConsultaBuro.current) {
+        setErrorBuro(error.message);
+      }
+    } finally {
+      if (version === versionConsultaBuro.current) {
+        setConsultandoBuro(false);
+      }
+    }
+  };
 
   // =========================================================
   // CARGAR INFORMACIÓN DE LA SOLICITUD
@@ -1260,6 +1305,63 @@ export default function EvaluacionRiesgo() {
               </div>
             </section>
 
+            <section className="panel">
+              <h2 className="section-title">
+                Consulta de buró de crédito simulado
+              </h2>
+
+              <p>
+                Información ficticia para fines académicos.
+                No representa un historial crediticio real ni
+                modifica la evaluación del modelo IA.
+              </p>
+
+              {puedeEvaluar && (
+                <button
+                  type="button"
+                  className="btn btn-yellow"
+                  onClick={ejecutarConsultaBuro}
+                  disabled={consultandoBuro}
+                >
+                  {consultandoBuro
+                    ? "Consultando..."
+                    : "Consultar buró simulado"}
+                </button>
+              )}
+
+              {errorBuro && (
+                <p role="alert">{errorBuro}</p>
+              )}
+
+              {resultadoBuro && (
+                <div className="history-list">
+                  <h3>Resultado simulado</h3>
+                  <p>No representa información crediticia real.</p>
+
+                  <History title="Score del buró">
+                    {resultadoBuro.scoreBuro} / {resultadoBuro.escalaMaxima}
+                  </History>
+                  <History title="Deuda total">
+                    {formatearDinero(resultadoBuro.deudaTotal)}
+                  </History>
+                  <History title="Cuota mensual total">
+                    {formatearDinero(resultadoBuro.cuotaMensualTotal)}
+                  </History>
+                  <History title="Créditos activos">
+                    {resultadoBuro.creditosActivos}
+                  </History>
+                  <History title="Días máximos de mora">
+                    {resultadoBuro.diasMoraMaximos}
+                  </History>
+                  <History title="Estado referencial">
+                    {resultadoBuro.estadoReferencial === "REQUIERE_REVISION"
+                      ? "Requiere revisión"
+                      : "Sin alertas simuladas"}
+                  </History>
+                </div>
+              )}
+            </section>
+
             {/* =================================================
                 EXPLICACIÓN
             ================================================= */}
@@ -1498,6 +1600,10 @@ export default function EvaluacionRiesgo() {
                   type="button"
                   className="btn btn-gray"
                   onClick={() => {
+                    versionConsultaBuro.current += 1;
+                    setResultadoBuro(null);
+                    setErrorBuro("");
+                    setConsultandoBuro(false);
                     setSolicitudSeleccionada(
                       null
                     );

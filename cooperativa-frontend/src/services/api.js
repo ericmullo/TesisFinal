@@ -94,6 +94,25 @@ export async function probarBackend() {
 
 
 // =========================================================
+// BURÓ DE CRÉDITO SIMULADO
+// =========================================================
+export async function consultarBuroSimulado(solicitudId) {
+  const response = await fetchAutenticado(
+    `${API_URL}/buro/simular/${solicitudId}`,
+    { method: "POST" }
+  );
+
+  if (!response.ok) {
+    throw new Error(
+      "No se pudo consultar el buró simulado."
+    );
+  }
+
+  return await response.json();
+}
+
+
+// =========================================================
 // CLIENTES
 // =========================================================
 
