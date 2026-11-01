@@ -17,7 +17,9 @@ class BuroCreditoSimuladoServiceTest {
 
         for (String campo : new String[] {
                 "scoreBuro", "deudaTotal", "cuotaMensualTotal",
-                "creditosActivos", "diasMoraMaximos", "estadoReferencial"
+                "creditosActivos", "diasMoraMaximos", "estadoReferencial",
+                "ingresosMensuales", "egresosMensuales", "nivelEndeudamiento",
+                "empresa", "antiguedadLaboral", "capacidadPago"
         }) {
             assertEquals(primera.get(campo), segunda.get(campo), campo);
         }
@@ -27,5 +29,10 @@ class BuroCreditoSimuladoServiceTest {
         assertTrue((int) primera.get("scoreBuro") <= 950);
         assertTrue((double) primera.get("deudaTotal") >= 0);
         assertTrue((double) primera.get("cuotaMensualTotal") >= 0);
+        assertTrue((double) primera.get("egresosMensuales") >=
+                (double) primera.get("cuotaMensualTotal"));
+        assertEquals(Math.max(0, (double) primera.get("ingresosMensuales")
+                - (double) primera.get("egresosMensuales")),
+                (double) primera.get("capacidadPago"), 0.01);
     }
 }

@@ -131,7 +131,7 @@ export default function Solicitudes() {
   const [resultadoBuro, setResultadoBuro] = useState(null);
   const [consultandoBuro, setConsultandoBuro] = useState(false);
   const [errorBuro, setErrorBuro] = useState("");
-  const [egresosConfirmados, setEgresosConfirmados] = useState(false);
+  const [datosFinancierosConfirmados, setDatosFinancierosConfirmados] = useState(false);
   const [origenIndicadores, setOrigenIndicadores] = useState({
     endeudamiento: null,
     capacidadPago: null
@@ -227,6 +227,10 @@ export default function Solicitudes() {
       value
     } = e.target;
 
+    if (["ingresos", "egresos", "endeudamiento", "empresa", "antiguedad", "capacidadPago"].includes(name)) {
+      setDatosFinancierosConfirmados(false);
+    }
+
 
     setForm((formAnterior) => {
       const actualizado = { ...formAnterior, [name]: value };
@@ -239,7 +243,6 @@ export default function Solicitudes() {
     });
 
     if (name === "ingresos" || name === "egresos") {
-      if (name === "egresos") setEgresosConfirmados(false);
       if (resultadoBuro) {
         setOrigenIndicadores({
           endeudamiento: "calculado",
@@ -261,7 +264,7 @@ export default function Solicitudes() {
     setConsultandoBuro(true);
     setResultadoBuro(null);
     setErrorBuro("");
-    setEgresosConfirmados(false);
+    setDatosFinancierosConfirmados(false);
 
     try {
       const datos = await consultarBuroSimulado(clienteId);
@@ -269,15 +272,22 @@ export default function Solicitudes() {
       if (String(datos.clienteId) !== String(clienteId) || datos.simulado !== true) {
         throw new Error("La respuesta del simulador no corresponde al cliente seleccionado.");
       }
+      if (datos.fuenteDatosFinancieros !== "PERFIL_ACADEMICO_SIMULADO" ||
+          !["ingresosMensuales", "egresosMensuales", "nivelEndeudamiento", "capacidadPago"]
+            .every((campo) => Number.isFinite(datos[campo])) ||
+          !datos.empresa || !datos.antiguedadLaboral) {
+        throw new Error("El backend no devolvió el perfil financiero completo. Reinicie o actualice el servicio.");
+      }
 
       setResultadoBuro(datos);
       setForm((actual) => {
         if (String(actual.clienteId) !== String(clienteId)) return actual;
         const actualizado = {
           ...actual,
-          egresos: actual.egresos === ""
-            ? String(datos.cuotaMensualTotal)
-            : actual.egresos
+          ingresos: String(datos.ingresosMensuales),
+          egresos: String(datos.egresosMensuales),
+          empresa: datos.empresa,
+          antiguedad: datos.antiguedadLaboral
         };
         return { ...actualizado, ...calcularIndicadoresFinancieros(actualizado, datos) };
       });
@@ -479,7 +489,7 @@ export default function Solicitudes() {
     setErrorBuro("");
     setConsultandoBuro(false);
     setOrigenIndicadores({ endeudamiento: null, capacidadPago: null });
-    setEgresosConfirmados(false);
+    setDatosFinancierosConfirmados(false);
 
     const id =
       e.target.value;
@@ -566,7 +576,7 @@ export default function Solicitudes() {
     setErrorBuro("");
     setConsultandoBuro(false);
     setOrigenIndicadores({ endeudamiento: null, capacidadPago: null });
-    setEgresosConfirmados(false);
+    setDatosFinancierosConfirmados(false);
 
     setForm(
       initialForm
@@ -751,8 +761,8 @@ export default function Solicitudes() {
       return false;
     }
 
-    if (resultadoBuro && !egresosConfirmados) {
-      alert("Confirme que los egresos incluyen gastos habituales y cuotas antes de guardar.");
+    if (resultadoBuro && !datosFinancierosConfirmados) {
+      alert("Confirme que revisó los datos financieros simulados antes de guardar.");
       return false;
     }
 
@@ -1112,7 +1122,7 @@ export default function Solicitudes() {
     setErrorBuro("");
     setConsultandoBuro(false);
     setOrigenIndicadores({ endeudamiento: null, capacidadPago: null });
-    setEgresosConfirmados(false);
+    setDatosFinancierosConfirmados(false);
 
 
     setForm({
@@ -1682,7 +1692,9 @@ export default function Solicitudes() {
                   disabled={consultandoBuro}
                   onClick={() => consultarBuroCliente(form.clienteId)}
                 >
-                  {consultandoBuro ? "Consultando..." : "Consultar de nuevo"}
+                  {consultandoBuro
+                    ? "Consultando..."
+                    : "Recargar perfil simulado (reemplaza los seis campos)"}
                 </button>
               )}
 
@@ -1734,9 +1746,9 @@ export default function Solicitudes() {
               </h2>
 
               <p>
-                Ingresos, egresos, empresa y antigüedad los confirma el analista.
-                Endeudamiento y capacidad de pago se sugieren con las cuotas
-                simuladas y pueden corregirse antes de guardar.
+                Los seis campos se precargan con datos ficticios del perfil académico
+                asociado a la cédula. Revise y corrija los valores antes de guardar;
+                no provienen de un buró real.
               </p>
 
 
@@ -1758,7 +1770,11 @@ export default function Solicitudes() {
                     placeholder="Ej. 850.00"
                   />
 
-                  <small>Fuente: declaración y documentos del cliente.</small>
+                  <small>
+                    {resultadoBuro
+                      ? "Valor inicial simulado. Confirme con documentos del cliente."
+                      : "Ingrese el valor declarado por el cliente."}
+                  </small>
 
                 </div>
 
@@ -1780,8 +1796,9 @@ export default function Solicitudes() {
                   />
 
                   <small>
-                    El simulador propone solo las cuotas. Agregue alimentación,
-                    vivienda y demás gastos mensuales al total.
+                    {resultadoBuro
+                      ? "Valor inicial simulado: gastos habituales más cuotas simuladas. Corrija según los documentos."
+                      : "Incluya los gastos habituales y las cuotas de créditos."}
                   </small>
 
                 </div>
@@ -1828,7 +1845,11 @@ export default function Solicitudes() {
                     placeholder="Empresa o lugar de trabajo"
                   />
 
-                  <small>Fuente: declaración y documentos del cliente.</small>
+                  <small>
+                    {resultadoBuro
+                      ? "Lugar de trabajo ficticio. Sustitúyalo por el dato confirmado."
+                      : "Ingrese el lugar de trabajo confirmado."}
+                  </small>
 
                 </div>
 
@@ -1846,7 +1867,11 @@ export default function Solicitudes() {
                     placeholder="Ej. 2 años"
                   />
 
-                  <small>Fuente: declaración y documentos del cliente.</small>
+                  <small>
+                    {resultadoBuro
+                      ? "Antigüedad ficticia. Sustitúyala por el dato confirmado."
+                      : "Ingrese la antigüedad confirmada."}
+                  </small>
 
                 </div>
 
@@ -1882,11 +1907,11 @@ export default function Solicitudes() {
                     <label className="buro-confirmacion">
                       <input
                         type="checkbox"
-                        checked={egresosConfirmados}
-                        onChange={(e) => setEgresosConfirmados(e.target.checked)}
+                        checked={datosFinancierosConfirmados}
+                        onChange={(e) => setDatosFinancierosConfirmados(e.target.checked)}
                       />{" "}
-                      Confirmo que los egresos totales incluyen los gastos habituales
-                      y las cuotas simuladas; revisé los importes antes de guardar.
+                      Confirmo que revisé los seis datos financieros simulados y que
+                      los egresos totales incluyen gastos habituales y cuotas.
                     </label>
                   </div>
                 )}
