@@ -6,4 +6,6 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface ClienteRepository extends JpaRepository<Cliente, Long> {
+    boolean existsByCedula(String cedula);
+    boolean existsByCedulaAndIdNot(String cedula, Long id);
 }

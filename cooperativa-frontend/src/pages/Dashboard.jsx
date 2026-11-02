@@ -1,353 +1,36 @@
-import Layout from "../components/Layout";
 import { useEffect, useState } from "react";
+import Layout from "../components/Layout";
+import { obtenerResumenDashboard } from "../services/api";
 
-import {
-  obtenerClientes,
-  obtenerSolicitudes,
-  obtenerEvaluaciones,
-} from "../services/api";
+const formatoPorcentaje = (valor) => valor == null
+  ? "-"
+  : `${Number(valor).toLocaleString("es-EC", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`;
 
-function Dashboard() {
-  // =========================================================
-  // ESTADOS
-  // =========================================================
-  const [clientes, setClientes] = useState([]);
-  const [solicitudes, setSolicitudes] = useState([]);
-  const [evaluaciones, setEvaluaciones] = useState([]);
+const formatoFecha = (valor) => valor
+  ? new Date(valor).toLocaleDateString("es-EC", { day: "2-digit", month: "2-digit", year: "numeric" })
+  : "-";
 
+export default function Dashboard() {
+  const [resumen, setResumen] = useState(null);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
 
-  // =========================================================
-  // AÑO ACTUAL
-  // =========================================================
-  const anioActual = new Date().getFullYear();
-
-  // =========================================================
-  // CARGAR INFORMACIÓN DEL DASHBOARD
-  // =========================================================
   useEffect(() => {
-    cargarDashboard();
+    let activo = true;
+    obtenerResumenDashboard()
+      .then((datos) => { if (activo) setResumen(datos); })
+      .catch((fallo) => { if (activo) setError(fallo.message); })
+      .finally(() => { if (activo) setCargando(false); });
+    return () => { activo = false; };
   }, []);
 
-  const cargarDashboard = async () => {
-    try {
-      setCargando(true);
-      setError("");
+  const riesgos = resumen?.riesgos || {};
+  const decisiones = resumen?.decisiones || {};
+  const meses = resumen?.solicitudesPorMes || [];
+  const recientes = resumen?.evaluacionesRecientes || [];
+  const maximo = Math.max(1, ...meses.map((item) => Number(item.cantidad) || 0));
+  const decisionesFormales = (decisiones.aprobadas || 0) + (decisiones.rechazadas || 0);
 
-      const [
-        datosClientes,
-        datosSolicitudes,
-        datosEvaluaciones,
-      ] = await Promise.all([
-        obtenerClientes(),
-        obtenerSolicitudes(),
-        obtenerEvaluaciones(),
-      ]);
-
-      setClientes(datosClientes || []);
-      setSolicitudes(datosSolicitudes || []);
-      setEvaluaciones(datosEvaluaciones || []);
-    } catch (error) {
-      console.error(
-        "ERROR AL CARGAR DASHBOARD:",
-        error
-      );
-
-      setError(
-        "No se pudo cargar la información del dashboard."
-      );
-    } finally {
-      setCargando(false);
-    }
-  };
-
-  // =========================================================
-  // CONTADORES GENERALES
-  // =========================================================
-  const totalClientes = clientes.length;
-  const totalSolicitudes = solicitudes.length;
-  const totalEvaluaciones = evaluaciones.length;
-
-  // =========================================================
-  // DISTRIBUCIÓN DE RIESGO
-  // =========================================================
-  const riesgoAlto = evaluaciones.filter(
-    (evaluacion) =>
-      String(evaluacion.nivelRiesgo || "")
-        .toLowerCase() === "alto"
-  ).length;
-
-  const riesgoMedio = evaluaciones.filter(
-    (evaluacion) =>
-      String(evaluacion.nivelRiesgo || "")
-        .toLowerCase() === "medio"
-  ).length;
-
-  const riesgoBajo = evaluaciones.filter(
-    (evaluacion) =>
-      String(evaluacion.nivelRiesgo || "")
-        .toLowerCase() === "bajo"
-  ).length;
-
-  // =========================================================
-  // DECISIONES FORMALES DEL ANALISTA
-  // =========================================================
-  // Solo contamos una decisión como formal cuando existe
-  // fechaDecision. Así no mezclamos registros antiguos.
-  // =========================================================
-  const decisionesFormales = solicitudes.filter(
-    (solicitud) => {
-      const estado = String(
-        solicitud.estado || ""
-      ).toLowerCase();
-
-      const esDecisionFinal =
-        estado === "aprobado" ||
-        estado === "aprobada" ||
-        estado === "rechazado" ||
-        estado === "rechazada";
-
-      return Boolean(
-        solicitud.fechaDecision &&
-        esDecisionFinal
-      );
-    }
-  );
-
-  const solicitudesAprobadas =
-    decisionesFormales.filter(
-      (solicitud) => {
-        const estado = String(
-          solicitud.estado || ""
-        ).toLowerCase();
-
-        return (
-          estado === "aprobado" ||
-          estado === "aprobada"
-        );
-      }
-    ).length;
-
-  const solicitudesRechazadas =
-    decisionesFormales.filter(
-      (solicitud) => {
-        const estado = String(
-          solicitud.estado || ""
-        ).toLowerCase();
-
-        return (
-          estado === "rechazado" ||
-          estado === "rechazada"
-        );
-      }
-    ).length;
-
-  const totalDecisionesFormales =
-    decisionesFormales.length;
-
-  // =========================================================
-  // SOLICITUDES SIN DECISIÓN FORMAL
-  // =========================================================
-  const solicitudesPendientes = solicitudes.filter(
-    (solicitud) =>
-      !solicitud.fechaDecision
-  ).length;
-
-  // =========================================================
-  // SOLICITUDES POR MES - AÑO ACTUAL
-  // =========================================================
-  const obtenerSolicitudesPorMes = () => {
-    const meses = [
-      "Ene",
-      "Feb",
-      "Mar",
-      "Abr",
-      "May",
-      "Jun",
-      "Jul",
-      "Ago",
-      "Sep",
-      "Oct",
-      "Nov",
-      "Dic",
-    ];
-
-    const conteo = Array(12).fill(0);
-
-    solicitudes.forEach((solicitud) => {
-      if (!solicitud.fechaSolicitud) {
-        return;
-      }
-
-      const fecha = new Date(
-        solicitud.fechaSolicitud
-      );
-
-      if (Number.isNaN(fecha.getTime())) {
-        return;
-      }
-
-      // Solo contabilizar solicitudes del año actual
-      if (fecha.getFullYear() !== anioActual) {
-        return;
-      }
-
-      const mes = fecha.getMonth();
-      conteo[mes] += 1;
-    });
-
-    return meses.map((mes, index) => ({
-      mes,
-      cantidad: conteo[index],
-    }));
-  };
-
-  const solicitudesPorMes =
-    obtenerSolicitudesPorMes();
-
-  // =========================================================
-  // ALTURA DE LAS BARRAS
-  // =========================================================
-  const maximoSolicitudesMes = Math.max(
-    ...solicitudesPorMes.map(
-      (item) => item.cantidad
-    ),
-    1
-  );
-
-  const calcularAlturaBarra = (cantidad) => {
-    if (cantidad === 0) {
-      return "10px";
-    }
-
-    const alturaMinima = 35;
-    const alturaMaxima = 220;
-
-    const altura =
-      (cantidad / maximoSolicitudesMes) *
-      alturaMaxima;
-
-    return `${Math.max(
-      altura,
-      alturaMinima
-    )}px`;
-  };
-
-  // =========================================================
-  // ÚLTIMAS EVALUACIONES
-  // =========================================================
-  const evaluacionesRecientes = [
-    ...evaluaciones,
-  ]
-    .sort((a, b) => {
-      const fechaA = a.fechaEvaluacion
-        ? new Date(a.fechaEvaluacion).getTime()
-        : 0;
-
-      const fechaB = b.fechaEvaluacion
-        ? new Date(b.fechaEvaluacion).getTime()
-        : 0;
-
-      return fechaB - fechaA;
-    })
-    .slice(0, 5);
-
-  // =========================================================
-  // FORMATEAR PORCENTAJE
-  // =========================================================
-  const formatearPorcentaje = (valor) => {
-    if (
-      valor === null ||
-      valor === undefined
-    ) {
-      return "-";
-    }
-
-    return `${Number(valor).toLocaleString(
-      "es-EC",
-      {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      }
-    )}%`;
-  };
-
-  // =========================================================
-  // FORMATEAR FECHA
-  // =========================================================
-  const formatearFecha = (fecha) => {
-    if (!fecha) {
-      return "-";
-    }
-
-    return new Date(fecha).toLocaleDateString(
-      "es-EC",
-      {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-      }
-    );
-  };
-
-  // =========================================================
-  // CLASE DEL BADGE DE RIESGO
-  // =========================================================
-  const obtenerClaseRiesgo = (riesgo) => {
-    const valor = String(
-      riesgo || ""
-    ).toLowerCase();
-
-    if (valor === "bajo") {
-      return "badge bajo";
-    }
-
-    if (valor === "medio") {
-      return "badge medio";
-    }
-
-    if (valor === "alto") {
-      return "badge alto";
-    }
-
-    return "badge";
-  };
-
-  // =========================================================
-  // ESTADO VISUAL DE LA EVALUACIÓN
-  // =========================================================
-  const obtenerTextoEstado = (evaluacion) => {
-    if (evaluacion.estado) {
-      return evaluacion.estado;
-    }
-
-    return "Evaluada";
-  };
-
-  // =========================================================
-  // CARGANDO
-  // =========================================================
-  if (cargando) {
-    return (
-      <Layout title="Dashboard Principal">
-        <section className="panel">
-          <p
-            style={{
-              textAlign: "center",
-              padding: "40px",
-            }}
-          >
-            ⏳ Cargando información del dashboard...
-          </p>
-        </section>
-      </Layout>
-    );
-  }
-
-  // =========================================================
-  // RETURN
-  // =========================================================
   return (
     <Layout title="Dashboard Principal">
       <div className="page-intro">
@@ -355,440 +38,93 @@ function Dashboard() {
         <h2>Seguimiento de solicitudes y riesgo</h2>
         <p>Indicadores registrados en el sistema para apoyar el trabajo de análisis crediticio.</p>
       </div>
-      {/* =====================================================
-          ERROR
-      ===================================================== */}
-      {error && (
-        <section
-          className="panel"
-          style={{
-            marginBottom: "20px",
-            borderLeft: "4px solid #c62828",
-          }}
-        >
-          <strong>
-            ⚠️ {error}
-          </strong>
-        </section>
+
+      {cargando && <section className="panel" role="status">Cargando indicadores...</section>}
+      {error && <section className="panel form-error-inline" role="alert">{error}</section>}
+
+      {!cargando && !error && resumen && (
+        <>
+          <h2 className="dashboard-group-title">Actividad y niveles de riesgo</h2>
+          <section className="cards five dashboard-metrics" aria-label="Indicadores de actividad">
+            <Indicador titulo="Total clientes" valor={resumen.totalClientes} descripcion="Clientes registrados" />
+            <Indicador titulo="Total solicitudes" valor={resumen.totalSolicitudes} descripcion="Solicitudes registradas" />
+            <Indicador titulo="Riesgo alto" valor={riesgos.alto} descripcion="Evaluaciones de riesgo alto" tono="red" />
+            <Indicador titulo="Riesgo medio" valor={riesgos.medio} descripcion="Evaluaciones de riesgo medio" tono="orange" />
+            <Indicador titulo="Riesgo bajo" valor={riesgos.bajo} descripcion="Evaluaciones de riesgo bajo" tono="yellow" />
+          </section>
+
+          <h2 className="dashboard-group-title">Estado de las decisiones</h2>
+          <section className="summary-cards four dashboard-decisions" aria-label="Decisiones sobre solicitudes">
+            <IndicadorPequeno titulo="Evaluaciones IA" valor={resumen.totalEvaluaciones} detalle={`Decisiones formales: ${decisionesFormales}`} />
+            <IndicadorPequeno titulo="Sin decisión formal" valor={decisiones.pendientes} tono="yellow" />
+            <IndicadorPequeno titulo="Aprobadas por analista" valor={decisiones.aprobadas} />
+            <IndicadorPequeno titulo="Rechazadas por analista" valor={decisiones.rechazadas} tono="red" />
+          </section>
+
+          <section className="dashboard-grid">
+            <div className="panel">
+              <h2>Solicitudes por mes - {resumen.anio}</h2>
+              <p>Distribución mensual de solicitudes registradas durante {resumen.anio}.</p>
+              <div className="bar-chart" role="img" aria-label="Gráfico de solicitudes por mes">
+                {meses.map((item) => (
+                  <div className="bar" key={item.mes}
+                    style={{ height: `${Math.max(10, (Number(item.cantidad) / maximo) * 220)}px` }}
+                    title={`${item.mes}: ${item.cantidad} solicitudes`}>
+                    <small>{item.cantidad}</small><span>{item.mes}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="panel">
+              <h2>Resumen de riesgo</h2>
+              <p>Clasificación de las evaluaciones realizadas.</p>
+              <div className="risk-list">
+                <div className="risk-item high"><strong>Riesgo alto ({riesgos.alto || 0})</strong>Requiere revisión detallada del analista.</div>
+                <div className="risk-item medium"><strong>Riesgo medio ({riesgos.medio || 0})</strong>Solicitudes que requieren revisión adicional.</div>
+                <div className="risk-item low"><strong>Riesgo bajo ({riesgos.bajo || 0})</strong>Solicitudes con menor riesgo estimado por el modelo.</div>
+              </div>
+            </div>
+          </section>
+
+          <section className="panel footer-panel">
+            <div className="dashboard-table-heading">
+              <div><h2>Últimas solicitudes evaluadas</h2><p>Resultados más recientes generados por el modelo de IA.</p></div>
+              <span>Mostrando las últimas {recientes.length}</span>
+            </div>
+            <div className="dashboard-table-scroll">
+              <table className="table">
+                <thead><tr>
+                  <th>Solicitud</th><th>Cliente</th><th>Tipo de crédito</th><th>Score IA</th>
+                  <th>Mora estimada</th><th>Riesgo</th><th>Estado</th><th>Fecha</th>
+                </tr></thead>
+                <tbody>
+                  {recientes.map((item) => (
+                    <tr key={item.id}>
+                      <td><strong>{item.codigoSolicitud || "-"}</strong></td>
+                      <td>{item.cliente || "-"}</td>
+                      <td>{item.tipoCredito || "-"}</td>
+                      <td><strong>{item.scoreIa == null ? "-" : `${item.scoreIa}/100`}</strong></td>
+                      <td>{formatoPorcentaje(item.probabilidadMora)}</td>
+                      <td><span className={`badge ${(item.nivelRiesgo || "").toLowerCase()}`}>{item.nivelRiesgo || "-"}</span></td>
+                      <td>{item.estado || "Evaluada"}</td>
+                      <td>{formatoFecha(item.fechaEvaluacion)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {recientes.length === 0 && <p className="dashboard-empty">Todavía no existen evaluaciones de riesgo.</p>}
+          </section>
+        </>
       )}
-
-      {/* =====================================================
-          TARJETAS PRINCIPALES
-      ===================================================== */}
-      <h2 className="dashboard-group-title">Actividad y niveles de riesgo</h2>
-      <section className="cards five dashboard-metrics">
-        {/* CLIENTES */}
-        <div className="card">
-          <h3>
-            Total clientes
-          </h3>
-
-          <div className="number">
-            {totalClientes}
-          </div>
-
-          <p>
-            Clientes registrados
-          </p>
-        </div>
-
-        {/* SOLICITUDES */}
-        <div className="card">
-          <h3>
-            Total solicitudes
-          </h3>
-
-          <div className="number">
-            {totalSolicitudes}
-          </div>
-
-          <p>
-            Solicitudes registradas
-          </p>
-        </div>
-
-        {/* RIESGO ALTO */}
-        <div className="card red">
-          <h3>
-            Riesgo alto
-          </h3>
-
-          <div className="number">
-            {riesgoAlto}
-          </div>
-
-          <p>
-            Evaluaciones de riesgo alto
-          </p>
-        </div>
-
-        {/* RIESGO MEDIO */}
-        <div className="card orange">
-          <h3>
-            Riesgo medio
-          </h3>
-
-          <div className="number">
-            {riesgoMedio}
-          </div>
-
-          <p>
-            Evaluaciones de riesgo medio
-          </p>
-        </div>
-
-        {/* RIESGO BAJO */}
-        <div className="card yellow">
-          <h3>
-            Riesgo bajo
-          </h3>
-
-          <div className="number">
-            {riesgoBajo}
-          </div>
-
-          <p>
-            Evaluaciones de riesgo bajo
-          </p>
-        </div>
-      </section>
-
-      {/* =====================================================
-          SEGUNDA FILA DE INDICADORES
-      ===================================================== */}
-      <h2 className="dashboard-group-title">Estado de las decisiones</h2>
-      <section
-        className="summary-cards four dashboard-decisions"
-        style={{
-          marginBottom: "24px",
-        }}
-      >
-        <div className="small-card">
-          <h3>
-            Evaluaciones IA
-          </h3>
-
-          <strong>
-            {totalEvaluaciones}
-          </strong>
-
-          <small
-            style={{
-              display: "block",
-              marginTop: "6px",
-              color: "#777",
-            }}
-          >
-            Decisiones formales: {totalDecisionesFormales}
-          </small>
-        </div>
-
-        <div className="small-card yellow">
-          <h3>
-            Sin decisión formal
-          </h3>
-
-          <strong>
-            {solicitudesPendientes}
-          </strong>
-        </div>
-
-        <div className="small-card">
-          <h3>
-            Aprobadas por analista
-          </h3>
-
-          <strong>
-            {solicitudesAprobadas}
-          </strong>
-        </div>
-
-        <div className="small-card red">
-          <h3>
-            Rechazadas por analista
-          </h3>
-
-          <strong>
-            {solicitudesRechazadas}
-          </strong>
-        </div>
-      </section>
-
-      {/* =====================================================
-          GRÁFICO + RESUMEN DE RIESGO
-      ===================================================== */}
-      <section className="dashboard-grid">
-        {/* SOLICITUDES POR MES */}
-        <div className="panel">
-          <h2>
-            Solicitudes por mes - {anioActual}
-          </h2>
-
-          <p
-            style={{
-              color: "#777",
-              marginTop: "-5px",
-              marginBottom: "25px",
-            }}
-          >
-            Distribución mensual de solicitudes registradas durante{" "}
-            {anioActual}
-          </p>
-
-          <div className="bar-chart">
-            {solicitudesPorMes.map(
-              (item) => (
-                <div
-                  className="bar"
-                  style={{
-                    height:
-                      calcularAlturaBarra(
-                        item.cantidad
-                      ),
-                  }}
-                  key={item.mes}
-                  title={`${item.mes}: ${item.cantidad} solicitudes`}
-                >
-                  <small>
-                    {item.cantidad}
-                  </small>
-
-                  <span>
-                    {item.mes}
-                  </span>
-                </div>
-              )
-            )}
-          </div>
-        </div>
-
-        {/* RESUMEN DE RIESGO */}
-        <div className="panel">
-          <h2>
-            Resumen de riesgo
-          </h2>
-
-          <p
-            style={{
-              color: "#777",
-              marginTop: "-5px",
-              marginBottom: "20px",
-            }}
-          >
-            Clasificación de las evaluaciones realizadas
-          </p>
-
-          <div className="risk-list">
-            <div className="risk-item high">
-              <strong>
-                Riesgo alto ({riesgoAlto})
-              </strong>
-
-              Requiere revisión detallada del analista.
-            </div>
-
-            <div className="risk-item medium">
-              <strong>
-                Riesgo medio ({riesgoMedio})
-              </strong>
-
-              Solicitudes que requieren revisión adicional.
-            </div>
-
-            <div className="risk-item low">
-              <strong>
-                Riesgo bajo ({riesgoBajo})
-              </strong>
-
-              Solicitudes con menor riesgo estimado por el modelo.
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* =====================================================
-          ÚLTIMAS EVALUACIONES
-      ===================================================== */}
-      <section className="panel footer-panel">
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            gap: "20px",
-            marginBottom: "20px",
-          }}
-        >
-          <div>
-            <h2
-              style={{
-                marginBottom: "5px",
-              }}
-            >
-              Últimas solicitudes evaluadas
-            </h2>
-
-            <p
-              style={{
-                margin: 0,
-                color: "#777",
-              }}
-            >
-              Resultados más recientes generados por el modelo de IA
-            </p>
-          </div>
-
-          <span
-            style={{
-              fontSize: "13px",
-              color: "#777",
-            }}
-          >
-            Mostrando las últimas{" "}
-            {evaluacionesRecientes.length}
-          </span>
-        </div>
-
-        <table className="table">
-          <thead>
-            <tr>
-              <th>
-                Solicitud
-              </th>
-
-              <th>
-                Cliente
-              </th>
-
-              <th>
-                Tipo de crédito
-              </th>
-
-              <th>
-                Score IA
-              </th>
-
-              <th>
-                Mora estimada
-              </th>
-
-              <th>
-                Riesgo
-              </th>
-
-              <th>
-                Estado
-              </th>
-
-              <th>
-                Fecha
-              </th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {evaluacionesRecientes.map(
-              (evaluacion) => {
-                const solicitud =
-                  evaluacion.solicitud;
-
-                const cliente =
-                  solicitud?.cliente;
-
-                return (
-                  <tr key={evaluacion.id}>
-                    <td>
-                      <strong>
-                        {solicitud?.codigoSolicitud || "-"}
-                      </strong>
-                    </td>
-
-                    <td>
-                      {cliente
-                        ? `${cliente.nombres || ""} ${cliente.apellidos || ""}`.trim()
-                        : "-"}
-                    </td>
-
-                    <td>
-                      {solicitud?.tipoCredito ||
-                        "-"}
-                    </td>
-
-                    <td>
-                      <strong>
-                        {evaluacion.scoreIa != null
-                          ? `${evaluacion.scoreIa}/100`
-                          : "-"}
-                      </strong>
-                    </td>
-
-                    <td>
-                      {formatearPorcentaje(
-                        evaluacion.probabilidadMora
-                      )}
-                    </td>
-
-                    <td>
-                      <span
-                        className={
-                          obtenerClaseRiesgo(
-                            evaluacion.nivelRiesgo
-                          )
-                        }
-                      >
-                        {evaluacion.nivelRiesgo ||
-                          "-"}
-                      </span>
-                    </td>
-
-                    <td>
-                      {obtenerTextoEstado(
-                        evaluacion
-                      )}
-                    </td>
-
-                    <td>
-                      {formatearFecha(
-                        evaluacion.fechaEvaluacion
-                      )}
-                    </td>
-                  </tr>
-                );
-              }
-            )}
-          </tbody>
-        </table>
-
-        {evaluacionesRecientes.length === 0 && (
-          <div
-            style={{
-              padding: "35px",
-              textAlign: "center",
-              color: "#777",
-            }}
-          >
-            <div
-              style={{
-                fontSize: "32px",
-                marginBottom: "10px",
-              }}
-            >
-              🧠
-            </div>
-
-            <strong>
-              No existen evaluaciones de riesgo todavía.
-            </strong>
-
-            <p>
-              Cuando una solicitud sea evaluada mediante
-              el modelo de IA, aparecerá aquí.
-            </p>
-          </div>
-        )}
-      </section>
     </Layout>
   );
 }
 
-export default Dashboard;
+function Indicador({ titulo, valor, descripcion, tono = "" }) {
+  return <div className={`card ${tono}`}><h3>{titulo}</h3><div className="number">{valor ?? 0}</div><p>{descripcion}</p></div>;
+}
+
+function IndicadorPequeno({ titulo, valor, detalle, tono = "" }) {
+  return <div className={`small-card ${tono}`}><h3>{titulo}</h3><strong>{valor ?? 0}</strong>{detalle && <small>{detalle}</small>}</div>;
+}

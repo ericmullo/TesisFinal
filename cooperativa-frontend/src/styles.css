@@ -5538,6 +5538,8 @@ body {
   text-decoration: none;
 }
 .request-steps a:hover { border-color: var(--brand-green); background: #eaf4ed; }
+.request-steps a.step-complete { background: #e4f4e9; border-color: #9fc9ad; }
+.request-steps a small { color: var(--muted-text); font-size: 11px; font-weight: 600; }
 .request-steps a span {
   display: grid;
   place-items: center;
@@ -5552,6 +5554,11 @@ body {
 .request-section:target { border-color: #a5c6af; box-shadow: 0 0 0 3px rgba(0, 107, 59, .09), var(--panel-shadow); }
 .request-section .bureau-grid { margin-top: 18px; }
 .request-section .buro-confirmacion { padding: 12px 14px; background: var(--surface-soft); border-radius: 10px; }
+.buro-sin-historial { padding: 15px; background: #f4f8f5; border: 1px solid var(--line); border-radius: 10px; }
+.form-error-banner,
+.form-error-inline { padding: 12px 15px; color: #7b2323; background: #fff1f1; border: 1px solid #e5b6b6; border-radius: 10px; font-weight: 600; }
+.form-error-banner { margin-bottom: 15px; }
+.form-error-inline { margin-bottom: 18px; }
 
 .risk-overview {
   display: grid;

@@ -2,6 +2,14 @@ export const API_URL =
   import.meta.env.VITE_API_URL ||
   "http://localhost:8080/api";
 
+export async function obtenerResumenDashboard() {
+  const response = await fetchAutenticado(`${API_URL}/dashboard/resumen`);
+  if (!response.ok) {
+    throw new Error("No se pudo cargar el resumen del dashboard.");
+  }
+  return response.json();
+}
+
 
 // =========================================================
 // AUTENTICACIÓN - TOKEN

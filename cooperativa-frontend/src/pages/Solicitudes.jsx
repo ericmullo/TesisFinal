@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import Layout from "../components/Layout";
+import ResumenBuroSimulado from "../components/ResumenBuroSimulado";
 
 import {
   obtenerClientes,
@@ -48,13 +49,13 @@ const initialForm = {
 
 // Los egresos declarados incluyen las cuotas de créditos.
 function calcularIndicadoresFinancieros(formulario, buro) {
-  if (!buro || formulario.ingresos === "" || formulario.egresos === "") {
+  if (formulario.ingresos === "" || formulario.egresos === "") {
     return { endeudamiento: "", capacidadPago: "" };
   }
 
   const ingresos = Number(formulario.ingresos);
   const egresos = Number(formulario.egresos);
-  const cuota = Number(buro.cuotaMensualTotal);
+  const cuota = Number(buro?.cuotaMensualTotal || 0);
 
   if (![ingresos, egresos, cuota].every(Number.isFinite) ||
       ingresos < 0 || egresos < 0 || cuota < 0) {
@@ -67,7 +68,7 @@ function calcularIndicadoresFinancieros(formulario, buro) {
     : cuota > 0 ? 100 : 0;
 
   return {
-    endeudamiento: porcentaje.toFixed(2),
+    endeudamiento: buro && !buro.sinHistorial ? porcentaje.toFixed(2) : formulario.endeudamiento,
     capacidadPago: Math.max(0, ingresos - egresos).toFixed(2)
   };
 }
@@ -127,6 +128,8 @@ export default function Solicitudes() {
 
   const [guardando, setGuardando] =
     useState(false);
+  const [errorFormulario, setErrorFormulario] = useState("");
+  const [seccionError, setSeccionError] = useState("");
 
   const [resultadoBuro, setResultadoBuro] = useState(null);
   const [consultandoBuro, setConsultandoBuro] = useState(false);
@@ -221,6 +224,8 @@ export default function Solicitudes() {
   // =========================================================
 
   const update = (e) => {
+    setErrorFormulario("");
+    setSeccionError("");
 
     const {
       name,
@@ -234,7 +239,7 @@ export default function Solicitudes() {
 
     setForm((formAnterior) => {
       const actualizado = { ...formAnterior, [name]: value };
-      return resultadoBuro && (name === "ingresos" || name === "egresos")
+      return name === "ingresos" || name === "egresos"
         ? {
             ...actualizado,
             ...calcularIndicadoresFinancieros(actualizado, resultadoBuro)
@@ -243,18 +248,26 @@ export default function Solicitudes() {
     });
 
     if (name === "ingresos" || name === "egresos") {
-      if (resultadoBuro) {
-        setOrigenIndicadores({
-          endeudamiento: "calculado",
-          capacidadPago: "calculado"
-        });
-      }
+      setOrigenIndicadores({
+        endeudamiento: resultadoBuro && !resultadoBuro.sinHistorial ? "calculado" : null,
+        capacidadPago: "calculado"
+      });
     } else if (name === "endeudamiento" || name === "capacidadPago") {
       setOrigenIndicadores((anterior) => ({
         ...anterior,
         [name]: "ajustado"
       }));
     }
+  };
+
+  const mostrarErrorFormulario = (mensaje) => {
+    setErrorFormulario(mensaje);
+    const seccion = /cliente/i.test(mensaje) ? "solicitud-cliente"
+      : /ingres|egres|endeud|capacidad|cuota|financier/i.test(mensaje) ? "solicitud-finanzas"
+        : /antigüedad|actividad|ventas|fuente/i.test(mensaje) ? "solicitud-actividad"
+          : "solicitud-credito";
+    setSeccionError(seccion);
+    requestAnimationFrame(() => document.getElementById(seccion)?.scrollIntoView({ behavior: "smooth", block: "start" }));
   };
 
   const consultarBuroCliente = async (clienteId) => {
@@ -272,29 +285,14 @@ export default function Solicitudes() {
       if (String(datos.clienteId) !== String(clienteId) || datos.simulado !== true) {
         throw new Error("La respuesta del simulador no corresponde al cliente seleccionado.");
       }
-      if (datos.fuenteDatosFinancieros !== "PERFIL_ACADEMICO_SIMULADO" ||
-          !["ingresosMensuales", "egresosMensuales", "nivelEndeudamiento", "capacidadPago"]
-            .every((campo) => Number.isFinite(datos[campo])) ||
-          !datos.empresa || !datos.antiguedadLaboral) {
-        throw new Error("El backend no devolvió el perfil financiero completo. Reinicie o actualice el servicio.");
+      if (typeof datos.sinHistorial !== "boolean" ||
+          !Number.isFinite(datos.cuotaMensualTotal)) {
+        throw new Error("El backend no devolvió un perfil crediticio válido.");
       }
 
       setResultadoBuro(datos);
-      setForm((actual) => {
-        if (String(actual.clienteId) !== String(clienteId)) return actual;
-        const actualizado = {
-          ...actual,
-          ingresos: String(datos.ingresosMensuales),
-          egresos: String(datos.egresosMensuales),
-          empresa: datos.empresa,
-          antiguedad: datos.antiguedadLaboral
-        };
-        return { ...actualizado, ...calcularIndicadoresFinancieros(actualizado, datos) };
-      });
-      setOrigenIndicadores({
-        endeudamiento: "calculado",
-        capacidadPago: "calculado"
-      });
+      // La consulta externa no reemplaza datos declarados por el solicitante.
+      // Los indicadores se sugieren al editar ingresos o egresos.
     } catch (error) {
       if (version === versionConsultaBuro.current) {
         setErrorBuro(error.message || "No se pudo consultar el perfil simulado.");
@@ -570,6 +568,8 @@ export default function Solicitudes() {
   // =========================================================
 
   const limpiar = () => {
+    setErrorFormulario("");
+    setSeccionError("");
 
     versionConsultaBuro.current += 1;
     setResultadoBuro(null);
@@ -715,12 +715,13 @@ export default function Solicitudes() {
   // =========================================================
 
   const validarFormulario = () => {
+    setErrorFormulario("");
 
     if (
       !form.clienteId
     ) {
 
-      alert(
+      mostrarErrorFormulario(
         "Debe seleccionar un cliente."
       );
 
@@ -732,7 +733,7 @@ export default function Solicitudes() {
       form.ingresos === ""
     ) {
 
-      alert(
+      mostrarErrorFormulario(
         "Ingrese los ingresos mensuales."
       );
 
@@ -744,30 +745,30 @@ export default function Solicitudes() {
       Number(form.ingresos) < 0
     ) {
 
-      alert(
+      mostrarErrorFormulario(
         "Los ingresos mensuales no pueden ser negativos."
       );
 
       return false;
     }
 
-    if (resultadoBuro && form.egresos === "") {
-      alert("Ingrese los egresos mensuales totales para calcular los indicadores.");
+    if (form.egresos === "") {
+      mostrarErrorFormulario("Ingrese los egresos mensuales totales para calcular los indicadores.");
       return false;
     }
 
     if (resultadoBuro && Number(form.egresos) < Number(resultadoBuro.cuotaMensualTotal)) {
-      alert("Los egresos totales no pueden ser menores que las cuotas simuladas.");
+      mostrarErrorFormulario("Los egresos totales no pueden ser menores que las cuotas simuladas.");
       return false;
     }
 
     if (resultadoBuro && !datosFinancierosConfirmados) {
-      alert("Confirme que revisó los datos financieros simulados antes de guardar.");
+      mostrarErrorFormulario("Confirme los datos declarados y las cuotas simuladas antes de guardar.");
       return false;
     }
 
-    if (resultadoBuro && (form.endeudamiento === "" || form.capacidadPago === "")) {
-      alert("Revise el endeudamiento y la capacidad de pago antes de guardar.");
+    if (form.endeudamiento === "" || form.capacidadPago === "") {
+      mostrarErrorFormulario("Revise el endeudamiento y la capacidad de pago antes de guardar.");
       return false;
     }
 
@@ -776,7 +777,7 @@ export default function Solicitudes() {
       !form.antiguedad.trim()
     ) {
 
-      alert(
+      mostrarErrorFormulario(
         "Ingrese la antigüedad laboral o de la actividad económica."
       );
 
@@ -788,7 +789,7 @@ export default function Solicitudes() {
       form.monto === ""
     ) {
 
-      alert(
+      mostrarErrorFormulario(
         "Ingrese el monto solicitado."
       );
 
@@ -800,7 +801,7 @@ export default function Solicitudes() {
       Number(form.monto) <= 0
     ) {
 
-      alert(
+      mostrarErrorFormulario(
         "El monto solicitado debe ser mayor a cero."
       );
 
@@ -812,7 +813,7 @@ export default function Solicitudes() {
       !form.fuentePago
     ) {
 
-      alert(
+      mostrarErrorFormulario(
         "Debe indicar la fuente principal de pago."
       );
 
@@ -824,7 +825,7 @@ export default function Solicitudes() {
       !form.destino.trim()
     ) {
 
-      alert(
+      mostrarErrorFormulario(
         "Debe indicar el destino del crédito."
       );
 
@@ -845,7 +846,7 @@ export default function Solicitudes() {
         form.ventasAnuales === ""
       ) {
 
-        alert(
+        mostrarErrorFormulario(
           "Debe ingresar las ventas anuales para este tipo de crédito."
         );
 
@@ -857,7 +858,7 @@ export default function Solicitudes() {
         Number(form.ventasAnuales) < 0
       ) {
 
-        alert(
+        mostrarErrorFormulario(
           "Las ventas anuales no pueden ser negativas."
         );
 
@@ -869,7 +870,7 @@ export default function Solicitudes() {
         !form.actividadEconomica.trim()
       ) {
 
-        alert(
+        mostrarErrorFormulario(
           "Debe ingresar la actividad económica."
         );
 
@@ -890,7 +891,7 @@ export default function Solicitudes() {
         Number(form.ventasAnuales) > 300000
       ) {
 
-        alert(
+        mostrarErrorFormulario(
           "Las ventas anuales superan el rango de Microcrédito."
         );
 
@@ -902,7 +903,7 @@ export default function Solicitudes() {
         !form.productoCredito
       ) {
 
-        alert(
+        mostrarErrorFormulario(
           "Debe seleccionar un producto de Microcrédito."
         );
 
@@ -920,7 +921,7 @@ export default function Solicitudes() {
       Number(form.ventasAnuales) <= 300000
     ) {
 
-      alert(
+      mostrarErrorFormulario(
         "Para crédito Productivo las ventas anuales deben superar los USD 300.000."
       );
 
@@ -1036,28 +1037,9 @@ export default function Solicitudes() {
         error?.message;
 
 
-      if (
-        mensajeBackend
-      ) {
-
-        alert(
-          mensajeBackend
-        );
-
-      } else if (
-        modoEdicion
-      ) {
-
-        alert(
-          "No se pudo actualizar la solicitud."
-        );
-
-      } else {
-
-        alert(
-          "No se pudo registrar la solicitud."
-        );
-      }
+      mostrarErrorFormulario(mensajeBackend || (modoEdicion
+        ? "No se pudo actualizar la solicitud."
+        : "No se pudo registrar la solicitud."));
 
     } finally {
 
@@ -1393,13 +1375,22 @@ export default function Solicitudes() {
 
     <Layout title="Registro de Solicitud de Crédito">
 
+      {errorFormulario && <p className="form-error-banner" role="alert">{errorFormulario}</p>}
+
       {puedeModificar && (
         <nav className="request-steps" aria-label="Secciones de la solicitud">
-          <a href="#solicitud-cliente"><span>01</span> Cliente</a>
-          <a href="#solicitud-buro"><span>02</span> Buró simulado</a>
-          <a href="#solicitud-finanzas"><span>03</span> Finanzas</a>
-          <a href="#solicitud-actividad"><span>04</span> Actividad</a>
-          <a href="#solicitud-credito"><span>05</span> Crédito y guardar</a>
+          {[
+            { id: "solicitud-cliente", numero: "01", titulo: "Cliente", completo: Boolean(form.clienteId) },
+            { id: "solicitud-buro", numero: "02", titulo: "Buró simulado", completo: Boolean(resultadoBuro), opcional: true },
+            { id: "solicitud-finanzas", numero: "03", titulo: "Finanzas", completo: form.ingresos !== "" && form.egresos !== "" && form.endeudamiento !== "" && form.capacidadPago !== "" && Boolean(form.antiguedad.trim()) },
+            { id: "solicitud-actividad", numero: "04", titulo: "Actividad", completo: Boolean(form.fuentePago) && (!["Microcrédito", "Productivo"].includes(form.tipoCredito) || (form.ventasAnuales !== "" && Boolean(form.actividadEconomica.trim()))) },
+            { id: "solicitud-credito", numero: "05", titulo: "Crédito y guardar", completo: Number(form.monto) > 0 && Boolean(form.destino.trim()) }
+          ].map((paso) => (
+            <a href={`#${paso.id}`} key={paso.id} className={paso.completo ? "step-complete" : ""}>
+              <span>{paso.numero}</span> {paso.titulo}
+              <small>{paso.completo ? "Completo" : paso.opcional ? "Opcional" : "Pendiente"}</small>
+            </a>
+          ))}
         </nav>
       )}
 
@@ -1504,6 +1495,7 @@ export default function Solicitudes() {
             ================================================= */}
 
             <section className="panel request-section" id="solicitud-cliente">
+              {seccionError === "solicitud-cliente" && <p className="form-error-inline" role="alert">{errorFormulario}</p>}
 
               <h2 className="section-title">
                 Datos personales
@@ -1691,8 +1683,9 @@ export default function Solicitudes() {
             <section className="panel request-section" id="solicitud-buro">
               <h2 className="section-title">Buró de crédito simulado</h2>
               <p>
-                Al seleccionar un cliente, el simulador genera un perfil ficticio
-                estable según su cédula. Estos datos no son un reporte real.
+                Al seleccionar un cliente, el simulador genera un perfil crediticio
+                ficticio según su cédula. No consulta un buró real ni conoce sus
+                ingresos o datos laborales.
               </p>
 
               {form.clienteId && (
@@ -1704,45 +1697,13 @@ export default function Solicitudes() {
                 >
                   {consultandoBuro
                     ? "Consultando..."
-                    : "Recargar perfil simulado (reemplaza los seis campos)"}
+                    : "Volver a consultar perfil simulado"}
                 </button>
               )}
 
               {errorBuro && <p role="alert">{errorBuro}</p>}
 
-              {resultadoBuro && (
-                <div className="bureau-grid" aria-live="polite">
-                  <div className="bureau-item">
-                    <strong>Score simulado</strong>
-                    <span>{resultadoBuro.scoreBuro} / {resultadoBuro.escalaMaxima}</span>
-                  </div>
-                  <div className="bureau-item">
-                    <strong>Deuda total simulada</strong>
-                    <span>{formatearDinero(resultadoBuro.deudaTotal)}</span>
-                  </div>
-                  <div className="bureau-item">
-                    <strong>Cuotas mensuales simuladas</strong>
-                    <span>{formatearDinero(resultadoBuro.cuotaMensualTotal)}</span>
-                  </div>
-                  <div className="bureau-item">
-                    <strong>Créditos activos</strong>
-                    <span>{resultadoBuro.creditosActivos}</span>
-                  </div>
-                  <div className="bureau-item">
-                    <strong>Días máximos de mora</strong>
-                    <span>{resultadoBuro.diasMoraMaximos}</span>
-                  </div>
-                  <div className="bureau-item">
-                    <strong>Perfil ficticio</strong>
-                    <span>{({
-                      SIN_ALERTAS_SIMULADAS: "Sin alertas simuladas",
-                      ATRASO_OCASIONAL_SIMULADO: "Atraso ocasional simulado",
-                      ALTO_ENDEUDAMIENTO_SIMULADO: "Alto endeudamiento simulado",
-                      MORA_SIMULADA: "Mora simulada"
-                    })[resultadoBuro.estadoReferencial] || "No determinado"}</span>
-                  </div>
-                </div>
-              )}
+              <ResumenBuroSimulado resultado={resultadoBuro} formatearDinero={formatearDinero} />
             </section>
 
             {/* =================================================
@@ -1750,15 +1711,16 @@ export default function Solicitudes() {
             ================================================= */}
 
             <section className="panel request-section" id="solicitud-finanzas">
+              {seccionError === "solicitud-finanzas" && <p className="form-error-inline" role="alert">{errorFormulario}</p>}
 
               <h2 className="section-title">
                 Información financiera
               </h2>
 
               <p>
-                Los seis campos se precargan con datos ficticios del perfil académico
-                asociado a la cédula. Revise y corrija los valores antes de guardar;
-                no provienen de un buró real.
+                Ingrese los valores declarados por el solicitante y contrástelos con
+                sus documentos. La consulta simulada solo sugiere cuotas crediticias;
+                no proporciona ingresos, empresa ni antigüedad laboral.
               </p>
 
 
@@ -1781,9 +1743,7 @@ export default function Solicitudes() {
                   />
 
                   <small>
-                    {resultadoBuro
-                      ? "Valor inicial simulado. Confirme con documentos del cliente."
-                      : "Ingrese el valor declarado por el cliente."}
+                    Ingrese el valor declarado y confirmado con documentos.
                   </small>
 
                 </div>
@@ -1806,9 +1766,9 @@ export default function Solicitudes() {
                   />
 
                   <small>
-                    {resultadoBuro
-                      ? "Valor inicial simulado: gastos habituales más cuotas simuladas. Corrija según los documentos."
-                      : "Incluya los gastos habituales y las cuotas de créditos."}
+                    Incluya gastos habituales y cuotas. {resultadoBuro && !resultadoBuro.sinHistorial
+                      ? `Cuotas simuladas: ${formatearDinero(resultadoBuro.cuotaMensualTotal)}.`
+                      : ""}
                   </small>
 
                 </div>
@@ -1856,9 +1816,7 @@ export default function Solicitudes() {
                   />
 
                   <small>
-                    {resultadoBuro
-                      ? "Lugar de trabajo ficticio. Sustitúyalo por el dato confirmado."
-                      : "Ingrese el lugar de trabajo confirmado."}
+                    Ingrese el lugar de trabajo confirmado.
                   </small>
 
                 </div>
@@ -1878,9 +1836,7 @@ export default function Solicitudes() {
                   />
 
                   <small>
-                    {resultadoBuro
-                      ? "Antigüedad ficticia. Sustitúyala por el dato confirmado."
-                      : "Ingrese la antigüedad confirmada."}
+                    Ingrese la antigüedad confirmada.
                   </small>
 
                 </div>
@@ -1920,8 +1876,8 @@ export default function Solicitudes() {
                         checked={datosFinancierosConfirmados}
                         onChange={(e) => setDatosFinancierosConfirmados(e.target.checked)}
                       />{" "}
-                      Confirmo que revisé los seis datos financieros simulados y que
-                      los egresos totales incluyen gastos habituales y cuotas.
+                      Confirmo que revisé los datos financieros declarados y que
+                      los egresos totales incluyen los gastos habituales y las cuotas conocidas.
                     </label>
                   </div>
                 )}
@@ -1936,6 +1892,7 @@ export default function Solicitudes() {
             ================================================= */}
 
             <section className="panel request-section" id="solicitud-actividad">
+              {seccionError === "solicitud-actividad" && <p className="form-error-inline" role="alert">{errorFormulario}</p>}
 
               <h2 className="section-title">
                 Información económica
@@ -2065,6 +2022,7 @@ export default function Solicitudes() {
             ================================================= */}
 
             <section className="panel request-section" id="solicitud-credito">
+              {seccionError === "solicitud-credito" && <p className="form-error-inline" role="alert">{errorFormulario}</p>}
 
               <h2 className="section-title">
                 Información del crédito

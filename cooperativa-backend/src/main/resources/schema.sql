@@ -1,3 +1,2 @@
-CREATE SEQUENCE IF NOT EXISTS seq_codigo_solicitud
-    START WITH 1
-    INCREMENT BY 1;
+-- Esquema administrado por Flyway en db/migration/V1__esquema_inicial.sql.
+-- Este archivo se conserva solo como referencia para instalaciones anteriores.

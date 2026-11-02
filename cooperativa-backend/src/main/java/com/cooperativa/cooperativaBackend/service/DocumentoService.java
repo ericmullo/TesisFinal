@@ -2,13 +2,16 @@ package com.cooperativa.cooperativaBackend.service;
 
 import com.cooperativa.cooperativaBackend.model.Documento;
 import com.cooperativa.cooperativaBackend.model.Solicitud;
+import com.cooperativa.cooperativaBackend.exception.ValidacionException;
 import com.cooperativa.cooperativaBackend.repository.DocumentoRepository;
 import com.cooperativa.cooperativaBackend.repository.SolicitudRepository;
 
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -26,13 +29,13 @@ public class DocumentoService {
      * Carpeta donde se almacenarán físicamente
      * los documentos.
      */
-    private final Path directorioDocumentos =
-            Paths.get("uploads", "documentos");
+    private final Path directorioDocumentos;
 
 
     public DocumentoService(
             DocumentoRepository documentoRepository,
-            SolicitudRepository solicitudRepository
+            SolicitudRepository solicitudRepository,
+            @Value("${DOCUMENTS_DIR:uploads/documentos}") String documentsDir
     ) {
 
         this.documentoRepository =
@@ -40,6 +43,8 @@ public class DocumentoService {
 
         this.solicitudRepository =
                 solicitudRepository;
+
+        this.directorioDocumentos = Paths.get(documentsDir).toAbsolutePath().normalize();
 
         try {
 
@@ -208,16 +213,15 @@ public class DocumentoService {
                         nombreOriginal
                 );
 
+        validarContenido(archivo, extension);
+
 
         String nombreGuardado =
                 UUID.randomUUID()
                         + extension;
 
 
-        Path rutaDestino =
-                directorioDocumentos
-                        .resolve(nombreGuardado)
-                        .normalize();
+        Path rutaDestino = resolverRutaSegura(nombreGuardado);
 
 
         /*
@@ -403,10 +407,7 @@ public class DocumentoService {
 
             try {
 
-                Path archivo =
-                        directorioDocumentos
-                                .resolve(rutaArchivo)
-                                .normalize();
+                Path archivo = resolverRutaSegura(rutaArchivo);
 
 
                 Files.deleteIfExists(
@@ -449,12 +450,7 @@ public class DocumentoService {
         }
 
 
-        Path archivo =
-                directorioDocumentos
-                        .resolve(
-                                documento.getRutaArchivo()
-                        )
-                        .normalize();
+        Path archivo = resolverRutaSegura(documento.getRutaArchivo());
 
 
         if (!Files.exists(archivo)) {
@@ -497,6 +493,38 @@ public class DocumentoService {
                 .substring(posicion)
                 .toLowerCase();
 
+    }
+
+    private Path resolverRutaSegura(String nombreArchivo) {
+        Path ruta = directorioDocumentos.resolve(nombreArchivo).normalize();
+        if (!ruta.startsWith(directorioDocumentos)) {
+            throw new ValidacionException("Ruta de documento no válida.");
+        }
+        return ruta;
+    }
+
+    private void validarContenido(MultipartFile archivo, String extension) {
+        byte[] cabecera;
+        try (InputStream entrada = archivo.getInputStream()) {
+            cabecera = entrada.readNBytes(8);
+        } catch (IOException exception) {
+            throw new ValidacionException("No se pudo leer el documento.");
+        }
+
+        boolean pdf = cabecera.length >= 5 && cabecera[0] == '%'
+                && cabecera[1] == 'P' && cabecera[2] == 'D'
+                && cabecera[3] == 'F' && cabecera[4] == '-';
+        boolean jpeg = cabecera.length >= 3 && (cabecera[0] & 0xff) == 0xff
+                && (cabecera[1] & 0xff) == 0xd8 && (cabecera[2] & 0xff) == 0xff;
+        boolean png = cabecera.length >= 8 && (cabecera[0] & 0xff) == 0x89
+                && cabecera[1] == 'P' && cabecera[2] == 'N' && cabecera[3] == 'G'
+                && (cabecera[4] & 0xff) == 0x0d && (cabecera[5] & 0xff) == 0x0a
+                && (cabecera[6] & 0xff) == 0x1a && (cabecera[7] & 0xff) == 0x0a;
+        if (!(".pdf".equals(extension) && pdf)
+                && !((".jpg".equals(extension) || ".jpeg".equals(extension)) && jpeg)
+                && !(".png".equals(extension) && png)) {
+            throw new ValidacionException("El contenido no coincide con el tipo de archivo permitido.");
+        }
     }
 
 }

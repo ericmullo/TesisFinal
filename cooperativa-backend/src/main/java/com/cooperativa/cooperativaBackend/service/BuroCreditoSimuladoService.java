@@ -2,6 +2,7 @@ package com.cooperativa.cooperativaBackend.service;
 
 import com.cooperativa.cooperativaBackend.exception.ValidacionException;
 import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Random;
 import org.springframework.stereotype.Service;
@@ -16,7 +17,24 @@ public class BuroCreditoSimuladoService {
 
         // La cédula solo determina el perfil ficticio: no se envía en la respuesta.
         Random random = new Random(cedula.trim().hashCode());
-        int perfil = random.nextInt(4);
+        int perfil = random.nextInt(5);
+        if (perfil == 4) {
+            Map<String, Object> sinHistorial = new LinkedHashMap<>();
+            sinHistorial.put("clienteId", clienteId);
+            sinHistorial.put("proveedor", "SIMULADOR_ACADEMICO");
+            sinHistorial.put("simulado", true);
+            sinHistorial.put("sinHistorial", true);
+            sinHistorial.put("scoreBuro", null);
+            sinHistorial.put("escalaMinima", 0);
+            sinHistorial.put("escalaMaxima", 999);
+            sinHistorial.put("creditosActivos", 0);
+            sinHistorial.put("deudaTotal", 0.0);
+            sinHistorial.put("cuotaMensualTotal", 0.0);
+            sinHistorial.put("diasMoraMaximos", 0);
+            sinHistorial.put("estadoReferencial", "SIN_HISTORIAL_SIMULADO");
+            sinHistorial.put("fechaConsulta", LocalDateTime.now());
+            return sinHistorial;
+        }
         int score;
         int creditosActivos;
         int diasMora;
@@ -25,7 +43,7 @@ public class BuroCreditoSimuladoService {
         switch (perfil) {
             case 0 -> {
                 score = 800 + random.nextInt(151);
-                creditosActivos = random.nextInt(3);
+                creditosActivos = 1 + random.nextInt(2);
                 diasMora = 0;
                 estadoReferencial = "SIN_ALERTAS_SIMULADAS";
             }
@@ -52,47 +70,17 @@ public class BuroCreditoSimuladoService {
         double deudaTotal = creditosActivos * (500 + random.nextInt(5000));
         double cuotaMensual = Math.round(deudaTotal / (12 + random.nextInt(25)) * 100.0) / 100.0;
 
-        // Perfil financiero ficticio para precargar la solicitud de demostración.
-        // Un buró real no necesariamente proporciona ingresos o datos laborales.
-        double ingresosMensuales = switch (perfil) {
-            case 0 -> 1200 + random.nextInt(1801);
-            case 1 -> 800 + random.nextInt(1201);
-            case 2 -> 700 + random.nextInt(701);
-            default -> 500 + random.nextInt(701);
-        };
-        double gastosHabituales = Math.round(ingresosMensuales
-                * (0.35 + random.nextDouble() * 0.20) * 100.0) / 100.0;
-        double egresosMensuales = Math.round((gastosHabituales + cuotaMensual) * 100.0) / 100.0;
-        double nivelEndeudamiento = Math.round(Math.min(100,
-                cuotaMensual / ingresosMensuales * 100) * 100.0) / 100.0;
-        double capacidadPago = Math.round(Math.max(0,
-                ingresosMensuales - egresosMensuales) * 100.0) / 100.0;
-        String[] lugaresSimulados = {
-                "Empresa Demo Norte", "Comercio Demo Centro",
-                "Servicios Demo Sur", "Actividad independiente simulada"
-        };
-        String empresa = lugaresSimulados[random.nextInt(lugaresSimulados.length)];
-        int aniosAntiguedad = 1 + random.nextInt(12);
-        String antiguedadLaboral = aniosAntiguedad
-                + (aniosAntiguedad == 1 ? " año" : " años");
-
         return Map.ofEntries(
                 Map.entry("clienteId", clienteId),
                 Map.entry("proveedor", "SIMULADOR_ACADEMICO"),
                 Map.entry("simulado", true),
+                Map.entry("sinHistorial", false),
                 Map.entry("scoreBuro", score),
                 Map.entry("escalaMinima", 0),
                 Map.entry("escalaMaxima", 999),
                 Map.entry("creditosActivos", creditosActivos),
                 Map.entry("deudaTotal", deudaTotal),
                 Map.entry("cuotaMensualTotal", cuotaMensual),
-                Map.entry("ingresosMensuales", ingresosMensuales),
-                Map.entry("egresosMensuales", egresosMensuales),
-                Map.entry("nivelEndeudamiento", nivelEndeudamiento),
-                Map.entry("empresa", empresa),
-                Map.entry("antiguedadLaboral", antiguedadLaboral),
-                Map.entry("capacidadPago", capacidadPago),
-                Map.entry("fuenteDatosFinancieros", "PERFIL_ACADEMICO_SIMULADO"),
                 Map.entry("diasMoraMaximos", diasMora),
                 Map.entry("estadoReferencial", estadoReferencial),
                 Map.entry("fechaConsulta", LocalDateTime.now())
