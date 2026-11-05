@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Layout from "../components/Layout";
 import {
   obtenerSolicitudes,
@@ -62,6 +63,33 @@ export default function EvaluacionRiesgo() {
 
   const [evaluacion, setEvaluacion] =
     useState(null);
+  const [resultadoAmpliado, setResultadoAmpliado] = useState(false);
+  const botonAmpliarRef = useRef(null);
+  const botonCerrarRef = useRef(null);
+
+  useEffect(() => {
+    if (!resultadoAmpliado) return;
+
+    const desbordamientoAnterior = document.body.style.overflow;
+    const botonQueAbrio = botonAmpliarRef.current;
+    document.body.style.overflow = "hidden";
+    botonCerrarRef.current?.focus();
+
+    const cerrarConEscape = (event) => {
+      if (event.key === "Escape") setResultadoAmpliado(false);
+      if (event.key === "Tab") {
+        event.preventDefault();
+        botonCerrarRef.current?.focus();
+      }
+    };
+    window.addEventListener("keydown", cerrarConEscape);
+
+    return () => {
+      document.body.style.overflow = desbordamientoAnterior;
+      window.removeEventListener("keydown", cerrarConEscape);
+      botonQueAbrio?.focus();
+    };
+  }, [resultadoAmpliado]);
 
   const [cargando, setCargando] =
     useState(false);
@@ -127,6 +155,7 @@ export default function EvaluacionRiesgo() {
   // =========================================================
   const seleccionarSolicitud =
     async (e) => {
+      setResultadoAmpliado(false);
       const id =
         e.target.value;
 
@@ -1159,9 +1188,22 @@ export default function EvaluacionRiesgo() {
                   RESULTADO IA
               =============================================== */}
               <div className="panel">
-                <h2 className="section-title">
-                  Resultado generado por IA
-                </h2>
+                <div className="risk-result-heading">
+                  <h2 className="section-title">
+                    Resultado generado por IA
+                  </h2>
+                  {evaluacion && (
+                    <button
+                      type="button"
+                      className="risk-expand-button"
+                      ref={botonAmpliarRef}
+                      onClick={() => setResultadoAmpliado(true)}
+                      aria-haspopup="dialog"
+                    >
+                      <span aria-hidden="true">⤢</span> Ampliar resultado
+                    </button>
+                  )}
+                </div>
 
                 {!evaluacion ? (
                   <div className="risk-no-result">
@@ -1180,64 +1222,13 @@ export default function EvaluacionRiesgo() {
                     </p>
                   </div>
                 ) : (
-                  <div className="score-box">
-                    <div
-                      className={
-                        evaluacion.scoreIa != null
-                          ? "circle"
-                          : "circle circle-pending"
-                      }
-                    >
-                      <div className="circle-inner">
-                        <span>
-                          {scoreIa}
-                        </span>
-
-                        <small>
-                          / 100
-                        </small>
-
-                        Score IA
-                      </div>
-                    </div>
-
-                    <div className="risk-current">
-                      Nivel de riesgo
-
-                      <strong>
-                        {nivelRiesgo}
-                      </strong>
-                    </div>
-
-                    <div className="prediction-grid">
-                      <Prediction
-                        value={
-                          probabilidadMora
-                        }
-                        text="Probabilidad de mora"
-                      />
-
-                      <Prediction
-                        value={
-                          recomendacion
-                        }
-                        text="Recomendación IA"
-                      />
-                    </div>
-
-                    <div className="result-box">
-                      <h3>
-                        {evaluacion.nivelRiesgo
-                          ? `Clasificación: Riesgo ${evaluacion.nivelRiesgo}`
-                          : "Evaluación pendiente de procesamiento"}
-                      </h3>
-
-                      <p>
-                        {evaluacion.explicacion ||
-                          "Todavía no existe una explicación generada por el modelo."}
-                      </p>
-                    </div>
-                  </div>
+                  <ResultadoIA
+                    evaluacion={evaluacion}
+                    scoreIa={scoreIa}
+                    nivelRiesgo={nivelRiesgo}
+                    probabilidadMora={probabilidadMora}
+                    recomendacion={recomendacion}
+                  />
                 )}
               </div>
             </section>
@@ -1582,6 +1573,51 @@ export default function EvaluacionRiesgo() {
           </>
         )}
 
+      {resultadoAmpliado && evaluacion && createPortal(
+        <div
+          className="risk-result-overlay"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setResultadoAmpliado(false);
+          }}
+        >
+          <section
+            className="risk-result-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="risk-result-dialog-title"
+          >
+            <div className="risk-result-dialog-header">
+              <div>
+                <span className="risk-result-dialog-eyebrow">
+                  {solicitudSeleccionada?.codigoSolicitud || "Solicitud de crédito"}
+                </span>
+                <h2 id="risk-result-dialog-title">Resultado generado por IA</h2>
+                <p>Evaluación de {obtenerNombreCliente()}</p>
+              </div>
+              <button
+                type="button"
+                className="risk-result-close"
+                ref={botonCerrarRef}
+                onClick={() => setResultadoAmpliado(false)}
+                aria-label="Cerrar resultado ampliado"
+              >
+                ×
+              </button>
+            </div>
+            <div className="risk-result-dialog-body">
+              <ResultadoIA
+                evaluacion={evaluacion}
+                scoreIa={scoreIa}
+                nivelRiesgo={nivelRiesgo}
+                probabilidadMora={probabilidadMora}
+                recomendacion={recomendacion}
+              />
+            </div>
+          </section>
+        </div>,
+        document.body
+      )}
+
       {/* =====================================================
           MODAL - DECISIÓN DEL ANALISTA
           SOLO ADMIN / ANALISTA
@@ -1828,6 +1864,42 @@ export default function EvaluacionRiesgo() {
 // ===========================================================
 // COMPONENTES
 // ===========================================================
+function ResultadoIA({ evaluacion, scoreIa, nivelRiesgo, probabilidadMora, recomendacion }) {
+  return (
+    <div className="score-box">
+      <div className={evaluacion.scoreIa != null ? "circle" : "circle circle-pending"}>
+        <div className="circle-inner">
+          <span>{scoreIa}</span>
+          <small>/ 100</small>
+          Score IA
+        </div>
+      </div>
+
+      <div className="risk-current">
+        Nivel de riesgo
+        <strong>{nivelRiesgo}</strong>
+      </div>
+
+      <div className="prediction-grid">
+        <Prediction value={probabilidadMora} text="Probabilidad de mora" />
+        <Prediction value={recomendacion} text="Recomendación IA" />
+      </div>
+
+      <div className="result-box">
+        <h3>
+          {evaluacion.nivelRiesgo
+            ? `Clasificación: Riesgo ${evaluacion.nivelRiesgo}`
+            : "Evaluación pendiente de procesamiento"}
+        </h3>
+        <p>
+          {evaluacion.explicacion ||
+            "Todavía no existe una explicación generada por el modelo."}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 function InfoItem({
   title,
   value,

@@ -49,8 +49,8 @@ export default function Dashboard() {
             <Indicador titulo="Total clientes" valor={resumen.totalClientes} descripcion="Clientes registrados" />
             <Indicador titulo="Total solicitudes" valor={resumen.totalSolicitudes} descripcion="Solicitudes registradas" />
             <Indicador titulo="Riesgo alto" valor={riesgos.alto} descripcion="Evaluaciones de riesgo alto" tono="red" />
-            <Indicador titulo="Riesgo medio" valor={riesgos.medio} descripcion="Evaluaciones de riesgo medio" tono="orange" />
-            <Indicador titulo="Riesgo bajo" valor={riesgos.bajo} descripcion="Evaluaciones de riesgo bajo" tono="yellow" />
+            <Indicador titulo="Riesgo medio" valor={riesgos.medio} descripcion="Evaluaciones de riesgo medio" tono="yellow" />
+            <Indicador titulo="Riesgo bajo" valor={riesgos.bajo} descripcion="Evaluaciones de riesgo bajo" />
           </section>
 
           <h2 className="dashboard-group-title">Estado de las decisiones</h2>
