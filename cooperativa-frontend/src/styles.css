@@ -1170,9 +1170,33 @@ form .form-group .buro-confirmacion input[type="checkbox"] {
    ========================================================= */
 
 .score-box {
+  --risk-color: #00a84f;
+  --risk-text: #006b35;
   text-align: center;
 
   padding: 20px;
+}
+
+.score-box.risk-level-medio {
+  --risk-color: #f4c542;
+  --risk-text: #745400;
+}
+
+.score-box.risk-level-alto {
+  --risk-color: #d93025;
+  --risk-text: #a1261e;
+}
+
+.score-box .prediction-card {
+  border-top-color: var(--risk-color);
+}
+
+.score-box .result-box {
+  border-left-color: var(--risk-color);
+}
+
+.score-box .result-box h3 {
+  color: var(--risk-text);
 }
 
 .circle {
@@ -1187,8 +1211,8 @@ form .form-group .buro-confirmacion input[type="checkbox"] {
 
   background:
     conic-gradient(
-      #00a84f 0deg 260deg,
-      #e5e5e5 260deg 360deg
+      var(--risk-color) 0deg var(--score-angle, 0deg),
+      #e5e5e5 var(--score-angle, 0deg) 360deg
     );
 
   display: flex;
@@ -1219,7 +1243,7 @@ form .form-group .buro-confirmacion input[type="checkbox"] {
 
   justify-content: center;
 
-  color: #006b35;
+  color: var(--risk-text, #006b35);
 
   font-weight: bold;
 }
@@ -3416,7 +3440,7 @@ form .form-group textarea:focus {
 .risk-current strong {
   margin-top: 4px;
 
-  color: #004b24;
+  color: var(--risk-text, #004b24);
 
   font-size: 20px;
 }
@@ -5579,6 +5603,10 @@ body {
   box-shadow: var(--panel-shadow);
 }
 .risk-overview > div:last-child { border-top-color: var(--brand-yellow); }
+.risk-overview > .risk-overview-level.medio { border-top-color: #f4c542; }
+.risk-overview > .risk-overview-level.medio strong { color: #745400; }
+.risk-overview > .risk-overview-level.alto { border-top-color: #d93025; }
+.risk-overview > .risk-overview-level.alto strong { color: #a1261e; }
 .risk-overview-label { color: var(--muted-text); font-size: 13px; font-weight: 700; }
 .risk-overview strong { color: var(--brand-green-dark); font-size: clamp(21px, 2vw, 28px); line-height: 1.2; overflow-wrap: anywhere; }
 .risk-overview strong small { font-size: 14px; color: var(--muted-text); }
@@ -5661,6 +5689,44 @@ body {
   color: #587166;
 }
 
+.risk-result-dialog-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.risk-download-button {
+  flex: none;
+  border: 0;
+  border-radius: 10px;
+  background: #006b35;
+  color: #fff;
+  padding: 11px 16px;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.risk-download-button:hover:not(:disabled) {
+  background: #004b24;
+}
+
+.risk-download-button:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.risk-download-button:focus-visible {
+  outline: 3px solid #ffc400;
+  outline-offset: 3px;
+}
+
+.risk-download-error {
+  margin: 12px 32px 0;
+  color: #a1261e;
+  font-weight: 700;
+}
+
 .risk-result-close {
   display: grid;
   flex: none;
@@ -5715,7 +5781,8 @@ body {
 @media (max-width: 600px) {
   .risk-result-overlay { padding: 10px; }
   .risk-result-dialog { max-height: 96dvh; }
-  .risk-result-dialog-header { padding: 18px; }
+  .risk-result-dialog-header { padding: 18px; flex-wrap: wrap; }
+  .risk-result-dialog-actions { width: 100%; justify-content: space-between; }
   .risk-result-dialog-body { padding: 8px 14px 20px; }
   .risk-result-dialog .score-box { padding: 12px 2px; }
   .risk-result-dialog .prediction-grid { grid-template-columns: 1fr; }

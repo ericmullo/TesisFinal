@@ -64,7 +64,10 @@ export default function EvaluacionRiesgo() {
   const [evaluacion, setEvaluacion] =
     useState(null);
   const [resultadoAmpliado, setResultadoAmpliado] = useState(false);
+  const [descargandoPdf, setDescargandoPdf] = useState(false);
+  const [errorDescarga, setErrorDescarga] = useState("");
   const botonAmpliarRef = useRef(null);
+  const botonDescargarRef = useRef(null);
   const botonCerrarRef = useRef(null);
 
   useEffect(() => {
@@ -78,8 +81,15 @@ export default function EvaluacionRiesgo() {
     const cerrarConEscape = (event) => {
       if (event.key === "Escape") setResultadoAmpliado(false);
       if (event.key === "Tab") {
-        event.preventDefault();
-        botonCerrarRef.current?.focus();
+        const primero = botonDescargarRef.current;
+        const ultimo = botonCerrarRef.current;
+        if (event.shiftKey && document.activeElement === primero) {
+          event.preventDefault();
+          ultimo?.focus();
+        } else if (!event.shiftKey && document.activeElement === ultimo) {
+          event.preventDefault();
+          primero?.focus();
+        }
       }
     };
     window.addEventListener("keydown", cerrarConEscape);
@@ -646,10 +656,33 @@ export default function EvaluacionRiesgo() {
   const nivelRiesgo =
     evaluacion?.nivelRiesgo ??
     "Pendiente";
+  const nivelNormalizado = String(nivelRiesgo).trim().toLowerCase();
+  const bordeNivelRiesgo = nivelNormalizado === "alto"
+    ? "red-left"
+    : nivelNormalizado === "medio" ? "yellow-left" : "";
 
   const recomendacion =
     evaluacion?.recomendacion ??
     "Pendiente";
+
+  const descargarPdf = async () => {
+    if (!solicitudSeleccionada || !evaluacion) return;
+    setDescargandoPdf(true);
+    setErrorDescarga("");
+    try {
+      const { descargarReporteEvaluacionPdf } = await import("../utils/reporteEvaluacionPdf");
+      descargarReporteEvaluacionPdf({
+        solicitud: solicitudSeleccionada,
+        evaluacion,
+        documentos
+      });
+    } catch (error) {
+      console.error("No se pudo generar el PDF de la evaluación:", error);
+      setErrorDescarga("No se pudo generar el PDF. Inténtelo de nuevo.");
+    } finally {
+      setDescargandoPdf(false);
+    }
+  };
 
   // =========================================================
   // RETURN
@@ -714,7 +747,7 @@ export default function EvaluacionRiesgo() {
             <strong>{scoreIa} <small>/ 100</small></strong>
             <span>Score IA</span>
           </div>
-          <div>
+          <div className={`risk-overview-level ${nivelNormalizado}`}>
             <span className="risk-overview-label">Nivel de riesgo</span>
             <strong>{nivelRiesgo}</strong>
             <span>Clasificación del modelo</span>
@@ -1197,7 +1230,10 @@ export default function EvaluacionRiesgo() {
                       type="button"
                       className="risk-expand-button"
                       ref={botonAmpliarRef}
-                      onClick={() => setResultadoAmpliado(true)}
+                      onClick={() => {
+                        setErrorDescarga("");
+                        setResultadoAmpliado(true);
+                      }}
                       aria-haspopup="dialog"
                     >
                       <span aria-hidden="true">⤢</span> Ampliar resultado
@@ -1421,7 +1457,7 @@ export default function EvaluacionRiesgo() {
                           evaluacion.nivelRiesgo ||
                           "Pendiente"
                         }
-                        extra="orange-left"
+                        extra={bordeNivelRiesgo}
                       />
 
                       <InfoItem
@@ -1594,16 +1630,28 @@ export default function EvaluacionRiesgo() {
                 <h2 id="risk-result-dialog-title">Resultado generado por IA</h2>
                 <p>Evaluación de {obtenerNombreCliente()}</p>
               </div>
-              <button
-                type="button"
-                className="risk-result-close"
-                ref={botonCerrarRef}
-                onClick={() => setResultadoAmpliado(false)}
-                aria-label="Cerrar resultado ampliado"
-              >
-                ×
-              </button>
+              <div className="risk-result-dialog-actions">
+                <button
+                  type="button"
+                  className="risk-download-button"
+                  ref={botonDescargarRef}
+                  onClick={descargarPdf}
+                  disabled={descargandoPdf}
+                >
+                  {descargandoPdf ? "Generando PDF..." : "Descargar PDF"}
+                </button>
+                <button
+                  type="button"
+                  className="risk-result-close"
+                  ref={botonCerrarRef}
+                  onClick={() => setResultadoAmpliado(false)}
+                  aria-label="Cerrar resultado ampliado"
+                >
+                  ×
+                </button>
+              </div>
             </div>
+            {errorDescarga && <p className="risk-download-error" role="alert">{errorDescarga}</p>}
             <div className="risk-result-dialog-body">
               <ResultadoIA
                 evaluacion={evaluacion}
@@ -1714,7 +1762,7 @@ export default function EvaluacionRiesgo() {
                     evaluacion.nivelRiesgo ||
                     "Pendiente"
                   }
-                  extra="orange-left"
+                  extra={bordeNivelRiesgo}
                 />
               </div>
 
@@ -1865,8 +1913,15 @@ export default function EvaluacionRiesgo() {
 // COMPONENTES
 // ===========================================================
 function ResultadoIA({ evaluacion, scoreIa, nivelRiesgo, probabilidadMora, recomendacion }) {
+  const nivel = String(evaluacion.nivelRiesgo || "").trim().toLowerCase();
+  const claseNivel = ["bajo", "medio", "alto"].includes(nivel) ? `risk-level-${nivel}` : "";
+  const scoreNumerico = Number(evaluacion.scoreIa);
+  const angulo = evaluacion.scoreIa == null || !Number.isFinite(scoreNumerico)
+    ? 0
+    : Math.max(0, Math.min(100, scoreNumerico)) * 3.6;
+
   return (
-    <div className="score-box">
+    <div className={`score-box ${claseNivel}`} style={{ "--score-angle": `${angulo}deg` }}>
       <div className={evaluacion.scoreIa != null ? "circle" : "circle circle-pending"}>
         <div className="circle-inner">
           <span>{scoreIa}</span>
