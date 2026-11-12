@@ -1004,6 +1004,18 @@ public class EvaluacionRiesgoService {
             );
         }
 
+        if (solicitud.getCapacidadPago() < 0) {
+            throw new ValidacionException(
+                    "La capacidad de pago no puede ser negativa."
+            );
+        }
+
+        if (solicitud.getVentasAnuales() != null && solicitud.getVentasAnuales() < 0) {
+            throw new ValidacionException(
+                    "Las ventas anuales no pueden ser negativas."
+            );
+        }
+
 
         // -----------------------------------------------------
         // TIPO DE CRÉDITO
@@ -1102,14 +1114,6 @@ public class EvaluacionRiesgoService {
             }
 
 
-            if (
-                    solicitud.getVentasAnuales() < 0
-            ) {
-
-                throw new ValidacionException(
-                        "Las ventas anuales no pueden ser negativas."
-                );
-            }
 
 
             if (

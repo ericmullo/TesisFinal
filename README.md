@@ -17,6 +17,8 @@ Flyway crea el esquema desde `cooperativa-backend/src/main/resources/db/migratio
 
 El backend también acepta `IA_URL` (predeterminado `http://localhost:8000`), `FRONTEND_URL` (predeterminado `http://localhost:5173`) y `DOCUMENTS_STORAGE_PATH` para conservar los documentos fuera del directorio de trabajo. Para el envío de correo mediante Gmail API se usan `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`, `GMAIL_REFRESH_TOKEN` y `GMAIL_FROM_EMAIL`.
 
+En Render, configure `IA_URL=https://cooperativa-ia.onrender.com` en el servicio del backend (sin `/predict`). La consulta a la IA admite por defecto hasta 90 segundos de espera de respuesta porque el servicio gratuito puede tardar en activarse. Si define `IA_READ_TIMEOUT_MS` en Render, use al menos `90000`; el tiempo de conexión se configura con `IA_CONNECT_TIMEOUT_MS` (predeterminado `10000`).
+
 ```powershell
 cd cooperativa-backend
 mvn spring-boot:run
