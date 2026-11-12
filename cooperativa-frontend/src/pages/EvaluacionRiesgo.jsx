@@ -129,7 +129,12 @@ export default function EvaluacionRiesgo() {
   // =========================================================
   // DOCUMENTOS OBLIGATORIOS
   // =========================================================
-  const documentosObligatorios = [
+  const documentosActuales = [
+    "Cédula",
+    "Certificado de votación",
+    "Respaldo de ingresos o ventas"
+  ];
+  const documentosAnteriores = [
     "Identificación",
     "Ingresos",
     "General"
@@ -556,17 +561,30 @@ export default function EvaluacionRiesgo() {
   // =========================================================
   // INFORMACIÓN DE DOCUMENTOS
   // =========================================================
-  const tiposCargados =
-    documentos.map(
-      (documento) =>
-        documento.tipoDocumento
-    );
+  const tiposCargados = new Set(
+    documentos.map((documento) =>
+      String(documento.tipoDocumento || "").trim().toLocaleLowerCase("es")
+    )
+  );
 
-  const documentosFaltantes =
-    documentosObligatorios.filter(
-      (tipo) =>
-        !tiposCargados.includes(tipo)
-    );
+  const documentoCargado = (tipo) => {
+    const coincide = (nombre) => tiposCargados.has(nombre.toLocaleLowerCase("es"));
+    if (coincide(tipo)) return true;
+    if (tipo === "Cédula") return coincide("Identificación");
+    if (tipo === "Respaldo de ingresos o ventas") return coincide("Ingresos");
+    return false;
+  };
+
+  // Las solicitudes completas con el esquema antiguo muestran sus nombres reales.
+  const esquemaAnteriorCompleto = documentosAnteriores.every(documentoCargado);
+  const esquemaActualCompleto = documentosActuales.every(documentoCargado);
+  const documentosObligatorios = esquemaAnteriorCompleto && !esquemaActualCompleto
+    ? documentosAnteriores
+    : documentosActuales;
+
+  const documentosFaltantes = documentosObligatorios.filter(
+    (tipo) => !documentoCargado(tipo)
+  );
 
   const cantidadDocumentosCompletos =
     documentosObligatorios.length -
@@ -919,10 +937,7 @@ export default function EvaluacionRiesgo() {
               <div className="risk-document-grid">
                 {documentosObligatorios.map(
                   (tipo) => {
-                    const existe =
-                      tiposCargados.includes(
-                        tipo
-                      );
+                    const existe = documentoCargado(tipo);
 
                     return (
                       <div
