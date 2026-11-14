@@ -1381,7 +1381,7 @@ export default function Solicitudes() {
         <nav className="request-steps" aria-label="Secciones de la solicitud">
           {[
             { id: "solicitud-cliente", numero: "01", titulo: "Cliente", completo: Boolean(form.clienteId) },
-            { id: "solicitud-buro", numero: "02", titulo: "Buró simulado", completo: Boolean(resultadoBuro), opcional: true },
+            { id: "solicitud-buro", numero: "02", titulo: "Buró de crédito", completo: Boolean(resultadoBuro), opcional: true },
             { id: "solicitud-finanzas", numero: "03", titulo: "Finanzas", completo: form.ingresos !== "" && form.egresos !== "" && form.endeudamiento !== "" && form.capacidadPago !== "" && Boolean(form.antiguedad.trim()) },
             { id: "solicitud-actividad", numero: "04", titulo: "Actividad", completo: Boolean(form.fuentePago) && (!["Microcrédito", "Productivo"].includes(form.tipoCredito) || (form.ventasAnuales !== "" && Boolean(form.actividadEconomica.trim()))) },
             { id: "solicitud-credito", numero: "05", titulo: "Crédito y guardar", completo: Number(form.monto) > 0 && Boolean(form.destino.trim()) }
@@ -1681,7 +1681,7 @@ export default function Solicitudes() {
 
 
             <section className="panel request-section" id="solicitud-buro">
-              <h2 className="section-title">Buró de crédito simulado</h2>
+              <h2 className="section-title">Buró de crédito</h2>
               <p>
                 Al seleccionar un cliente, el simulador genera un perfil crediticio
                 ficticio según su cédula. No consulta un buró real ni conoce sus
