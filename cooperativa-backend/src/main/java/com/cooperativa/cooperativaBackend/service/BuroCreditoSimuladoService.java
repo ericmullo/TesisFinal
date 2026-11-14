@@ -2,7 +2,6 @@ package com.cooperativa.cooperativaBackend.service;
 
 import com.cooperativa.cooperativaBackend.exception.ValidacionException;
 import java.time.LocalDateTime;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Random;
 import org.springframework.stereotype.Service;
@@ -19,21 +18,8 @@ public class BuroCreditoSimuladoService {
         Random random = new Random(cedula.trim().hashCode());
         int perfil = random.nextInt(5);
         if (perfil == 4) {
-            Map<String, Object> sinHistorial = new LinkedHashMap<>();
-            sinHistorial.put("clienteId", clienteId);
-            sinHistorial.put("proveedor", "SIMULADOR_ACADEMICO");
-            sinHistorial.put("simulado", true);
-            sinHistorial.put("sinHistorial", true);
-            sinHistorial.put("scoreBuro", null);
-            sinHistorial.put("escalaMinima", 0);
-            sinHistorial.put("escalaMaxima", 999);
-            sinHistorial.put("creditosActivos", 0);
-            sinHistorial.put("deudaTotal", 0.0);
-            sinHistorial.put("cuotaMensualTotal", 0.0);
-            sinHistorial.put("diasMoraMaximos", 0);
-            sinHistorial.put("estadoReferencial", "SIN_HISTORIAL_SIMULADO");
-            sinHistorial.put("fechaConsulta", LocalDateTime.now());
-            return sinHistorial;
+            // Conserva los perfiles ya asignados y completa los que antes quedaban sin historial.
+            perfil = random.nextInt(4);
         }
         int score;
         int creditosActivos;
