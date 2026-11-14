@@ -38,12 +38,34 @@ class ClienteServiceTest {
     }
 
     @Test
-    void rechazaCedulaDuplicada() {
+    void rechazaCedulaDeDiezDigitosConVerificadorIncorrecto() {
         Cliente cliente = new Cliente();
-        cliente.setCedula("0123456789");
+        cliente.setCedula("1719304189");
         cliente.setNombres("Ana");
         cliente.setApellidos("Pérez");
-        when(repositorio.existsByCedula("0123456789")).thenReturn(true);
+
+        assertThrows(ValidacionException.class, () -> servicio.guardarCliente(cliente));
+        verify(repositorio, never()).save(cliente);
+    }
+
+    @Test
+    void rechazaCodigoDeProvinciaIncorrecto() {
+        Cliente cliente = new Cliente();
+        cliente.setCedula("9919304188");
+        cliente.setNombres("Ana");
+        cliente.setApellidos("Pérez");
+
+        assertThrows(ValidacionException.class, () -> servicio.guardarCliente(cliente));
+        verify(repositorio, never()).save(cliente);
+    }
+
+    @Test
+    void rechazaCedulaDuplicada() {
+        Cliente cliente = new Cliente();
+        cliente.setCedula("1719304188");
+        cliente.setNombres("Ana");
+        cliente.setApellidos("Pérez");
+        when(repositorio.existsByCedula("1719304188")).thenReturn(true);
 
         assertThrows(ReglaNegocioException.class, () -> servicio.guardarCliente(cliente));
         verify(repositorio, never()).save(cliente);
@@ -52,14 +74,14 @@ class ClienteServiceTest {
     @Test
     void normalizaCedulaYGuardaClienteValido() {
         Cliente cliente = new Cliente();
-        cliente.setCedula(" 0123456789 ");
+        cliente.setCedula(" 1719304188 ");
         cliente.setNombres(" Ana ");
         cliente.setApellidos(" Pérez ");
         when(repositorio.save(cliente)).thenReturn(cliente);
 
         Cliente guardado = servicio.guardarCliente(cliente);
 
-        assertEquals("0123456789", guardado.getCedula());
+        assertEquals("1719304188", guardado.getCedula());
         assertEquals("Ana", guardado.getNombres());
         assertEquals("Activo", guardado.getEstado());
     }

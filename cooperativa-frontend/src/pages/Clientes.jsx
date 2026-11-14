@@ -175,7 +175,7 @@ function Clientes() {
       );
 
       alert(
-        "No se pudo crear el cliente."
+        error.message || "No se pudo crear el cliente."
       );
     }
   };
@@ -301,7 +301,7 @@ function Clientes() {
       );
 
       alert(
-        "No se pudo actualizar el cliente."
+        error.message || "No se pudo actualizar el cliente."
       );
     }
   };
@@ -691,13 +691,17 @@ function Clientes() {
                 <input
                   type="text"
                   name="cedula"
+                  inputMode="numeric"
+                  maxLength={10}
+                  pattern="[0-9]{10}"
+                  title="Ingrese una cédula ecuatoriana de 10 dígitos"
                   value={
                     formulario.cedula
                   }
                   onChange={
                     manejarCambio
                   }
-                  placeholder="Ej. 1300000000"
+                  placeholder="10 dígitos de la cédula"
                 />
 
               </div>

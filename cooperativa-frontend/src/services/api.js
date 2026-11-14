@@ -186,10 +186,8 @@ export async function crearCliente(cliente) {
 
 
   if (!response.ok) {
-
-    throw new Error(
-      "Error al crear el cliente"
-    );
+    const error = await response.json().catch(() => null);
+    throw new Error(error?.mensaje || "Error al crear el cliente");
   }
 
 
@@ -219,10 +217,8 @@ export async function actualizarCliente(
 
 
   if (!response.ok) {
-
-    throw new Error(
-      "Error al actualizar el cliente"
-    );
+    const error = await response.json().catch(() => null);
+    throw new Error(error?.mensaje || "Error al actualizar el cliente");
   }
 
 

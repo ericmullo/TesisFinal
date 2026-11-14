@@ -94,6 +94,7 @@ public class ClienteService {
         if (!cedula.matches("\\d{10}")) {
             throw new ValidacionException("La cédula debe contener exactamente 10 dígitos.");
         }
+        validarCedulaEcuatoriana(cedula);
         if (cliente.getNombres() == null || cliente.getNombres().isBlank()
                 || cliente.getApellidos() == null || cliente.getApellidos().isBlank()) {
             throw new ValidacionException("Ingrese nombres y apellidos del cliente.");
@@ -103,6 +104,27 @@ public class ClienteService {
         cliente.setApellidos(cliente.getApellidos().trim());
         if (cliente.getCorreo() != null) {
             cliente.setCorreo(cliente.getCorreo().trim());
+        }
+    }
+
+    private void validarCedulaEcuatoriana(String cedula) {
+        int codigo = Integer.parseInt(cedula.substring(0, 2));
+        if (!((codigo >= 1 && codigo <= 24) || codigo == 30 || codigo == 50)) {
+            throw new ValidacionException("La cédula tiene un código de provincia o emisión inválido.");
+        }
+        if (cedula.charAt(2) - '0' > 5) {
+            throw new ValidacionException("El tercer dígito de la cédula ecuatoriana no es válido.");
+        }
+
+        int suma = 0;
+        for (int i = 0; i < 9; i++) {
+            int digito = cedula.charAt(i) - '0';
+            int producto = digito * (i % 2 == 0 ? 2 : 1);
+            suma += producto > 9 ? producto - 9 : producto;
+        }
+        int verificador = (10 - suma % 10) % 10;
+        if (verificador != cedula.charAt(9) - '0') {
+            throw new ValidacionException("El dígito verificador de la cédula ecuatoriana no es válido.");
         }
     }
 }
